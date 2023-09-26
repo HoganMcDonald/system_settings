@@ -1,0 +1,46 @@
+- name: Link global gitignore file
+  file:
+    src: "{{ dotfiles_home }}/roles/git/files/gitignore_global.link"
+    dest: "{{ dotfiles_user_home }}/.gitignore_global"
+    state: link
+    force: yes
+
+- name: Check if gitconfig exists
+  stat: path="{{dotfiles_user_home}}/.gitconfig"
+  register: gitconfig_stat
+
+- name: Back up gitconfig
+  command: mv ~/.gitconfig ~/.gitconfig.bak
+  args:
+    creates: "{{dotfiles_user_home}}/.gitconfig.bak"
+  when: gitconfig_stat.stat.exists
+
+- name: Make sure gitconfig is up to date
+  template:
+    src: "gitconfig.j2"
+    dest: "{{dotfiles_user_home}}/.gitconfig"
+
+# Scripts used in gitconfig
+- name: Link stats script
+  file:
+    src: "{{ dotfiles_home }}/roles/git/files/git-branch-stats.link"
+    dest: "{{ dotfiles_user_home }}/.bin/git-branch-stats.sh"
+    mode: a+x
+    state: link
+    force: yes
+
+- name: Link copy script
+  file:
+    src: "{{ dotfiles_home }}/roles/git/files/git-copy-branch.link"
+    dest: "{{ dotfiles_user_home }}/.bin/git-copy-branch.sh"
+    mode: a+x
+    state: link
+    force: yes
+
+- name: Link cleanup script
+  file:
+    src: "{{ dotfiles_home }}/roles/git/files/git-delete-branches.link"
+    dest: "{{ dotfiles_user_home }}/.bin/git-delete-branches.sh"
+    mode: a+x
+    state: link
+    force: yes
