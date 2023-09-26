@@ -4,9 +4,25 @@
     - role: homebrew
       tags:
         - homebrew
+
     - role: browsers
       tags:
         - browsers
+      dependencies:
+        - role: homebrew
+
     - role: git
       tags:
         - git
+
+    - role: asdf
+      tags:
+        - asdf
+      dependencies:
+        - role: homebrew
+
+    - role: ruby
+      tags:
+        - ruby
+      dependencies:
+        - role: asdf
