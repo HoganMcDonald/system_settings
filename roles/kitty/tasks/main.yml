@@ -1,0 +1,24 @@
+- name: Install Kitty terminal
+  homebrew_cask:
+    name: kitty
+
+- name: Create Kitty config
+  file:
+    src: "{{ dotfiles_home }}/roles/kitty/files/kitty.conf.link"
+    dest: "{{ config }}/kitty/kitty.conf"
+    state: link
+    force: yes
+
+- name: Create Kitty colors
+  file:
+    src: "{{ dotfiles_home }}/roles/kitty/files/colors.conf.link"
+    dest: "{{ config }}/kitty/colors.conf"
+    state: link
+    force: yes
+
+- name: Ensure kitty launches in fullscreen on macOS
+  file:
+    src: "{{ dotfiles_home }}/roles/kitty/files/macos-launch-services-cmdline.link"
+    dest: "{{ config }}/kitty/macos-launch-services-cmdline"
+    state: link
+    force: yes

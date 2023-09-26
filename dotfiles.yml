@@ -1,32 +1,49 @@
 - name: Set up local workstation
   hosts: local
   roles:
+    # ====================
+    #   Tools
+    # ====================
+    - role: config
+      tags:
+        - config
     - role: homebrew
       tags:
         - homebrew
-
-    - role: browsers
-      tags:
-        - browsers
-      dependencies:
-        - role: homebrew
-
     - role: git
       tags:
         - git
-
     - role: asdf
       tags:
         - asdf
       dependencies:
         - role: homebrew
 
+
+    # ====================
+    #   Apps
+    # ====================
+    - role: browsers
+      tags:
+        - browsers
+      dependencies:
+        - role: homebrew
+    - role: kitty
+      tags:
+        - kitty
+      dependencies:
+        - role: config
+        - role: homebrew
+
+
+    # ====================
+    #   Languages
+    # ====================
     - role: ruby
       tags:
         - ruby
       dependencies:
         - role: asdf
-
     - role: JavaScript
       tags:
         - javascript
