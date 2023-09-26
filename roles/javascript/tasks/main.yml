@@ -1,0 +1,21 @@
+- name: Add nodejs plugin
+  command: asdf plugin add nodejs
+  register: node_add
+  failed_when: node_add == 2
+
+- name: Install node versions
+  command: asdf install nodejs {{item}}
+  loop: "{{versions}}"
+
+- name: Set global version for node to {{versions[0]}}
+  command: "asdf global nodejs {{versions[0]}}"
+
+- name: Install "yarn" node.js package globally
+  npm:
+    name: yarn
+    global: yes
+
+- name: Install "nodemon" node.js package globally
+  npm:
+    name: nodemon
+    global: yes
