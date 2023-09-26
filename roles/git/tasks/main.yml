@@ -20,6 +20,10 @@
     src: "gitconfig.j2"
     dest: "{{dotfiles_user_home}}/.gitconfig"
 
+- name: Install github cli
+  homebrew:
+    name: gh
+
 # Scripts used in gitconfig
 - name: Link stats script
   file:

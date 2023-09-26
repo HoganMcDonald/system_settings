@@ -13,11 +13,25 @@
     - role: git
       tags:
         - git
+      dependencies:
+        - homebrew
     - role: asdf
       tags:
         - asdf
       dependencies:
         - role: homebrew
+    - role: cli
+      tags:
+        - cli
+      dependencies:
+        - role: homebrew
+    - role: zsh
+      tags:
+        - zsh
+      dependencies:
+        - role: homebrew
+        - role: cli
+        - role: git
 
 
     # ====================

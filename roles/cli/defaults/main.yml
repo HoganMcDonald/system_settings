@@ -1,0 +1,8 @@
+tools:
+  - prettyping
+  - bat
+  - htop
+  - fzf
+  - diff-so-fancy
+  - tldr
+  - ripgrep

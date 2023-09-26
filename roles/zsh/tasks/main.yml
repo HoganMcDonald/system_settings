@@ -1,0 +1,47 @@
+- name: Install zsh
+  homebrew:
+    name: zsh
+
+# Oh My ZSH
+- name: Check for oh-my-zsh installation
+  stat: "path=~/.oh-my-zsh"
+  register: oh_my_zsh_stat
+- name: Install oh-my-zsh
+  raw: "sh -c \"$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)\""
+  when: not oh_my_zsh_stat.stat.exists
+
+# Oh My ZSH - plugins
+- name: Install syntax highlighting
+  git:
+    repo: https://github.com/zsh-users/zsh-syntax-highlighting.git
+    dest: ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+- name: Install auto-suggestions
+  git:
+    repo: https://github.com/zsh-users/zsh-autosuggestions
+    dest: ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+
+# ZSHRC
+- name: Check for .zshrc
+  stat: path="{{dotfiles_user_home}}/.zshrc"
+  register: zshrc_stat
+- name: Back up .zshrc
+  command: mv ~/.zshrc ~/.zshrc.bak
+  args:
+    creates: "{{dotfiles_user_home}}/.zshrc.bak"
+  when: zshrc_stat.stat.exists
+- name: Link .zshrc
+  file:
+    src: "{{ dotfiles_home }}/roles/zsh/files/zshrc"
+    dest: "{{dotfiles_user_home}}/.zshrc"
+    state: link
+- name: Create hushlogin file
+  file:
+    src: "{{ dotfiles_home }}/roles/zsh/files/hushlogin"
+    dest: "{{ dotfiles_user_home }}/.hushlogin"
+    state: link
+    force: yes
+
+# prompt
+- name: Install Starship prompt
+  homebrew:
+    name: starship
