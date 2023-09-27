@@ -1,0 +1,197 @@
+# ################################################################ #
+# THE FOLLOWING IS AN EXPLANATION OF THE GRAMMAR THAT SKHD PARSES. #
+# FOR SIMPLE EXAMPLE MAPPINGS LOOK FURTHER DOWN THIS FILE..        #
+# ################################################################ #
+
+# A list of all built-in modifier and literal keywords can
+# be found at https://github.com/koekeishiya/skhd/issues/1
+#
+# A hotkey is written according to the following rules:
+#
+#   hotkey       = <mode> '<' <action> | <action>
+#
+#   mode         = 'name of mode' | <mode> ',' <mode>
+#
+#   action       = <keysym> '[' <proc_map_lst> ']' | <keysym> '->' '[' <proc_map_lst> ']'
+#                  <keysym> ':' <command>          | <keysym> '->' ':' <command>
+#                  <keysym> ';' <mode>             | <keysym> '->' ';' <mode>
+#
+#   keysym       = <mod> '-' <key> | <key>
+#
+#   mod          = 'modifier keyword' | <mod> '+' <mod>
+#
+#   key          = <literal> | <keycode>
+#
+#   literal      = 'single letter or built-in keyword'
+#
+#   keycode      = 'apple keyboard kVK_<Key> values (0x3C)'
+#
+#   proc_map_lst = * <proc_map>
+#
+#   proc_map     = <string> ':' <command> | <string>     '~' |
+#                  '*'      ':' <command> | '*'          '~'
+#
+#   string       = '"' 'sequence of characters' '"'
+#
+#   command      = command is executed through '$SHELL -c' and
+#                  follows valid shell syntax. if the $SHELL environment
+#                  variable is not set, it will default to '/bin/bash'.
+#                  when bash is used, the ';' delimeter can be specified
+#                  to chain commands.
+#
+#                  to allow a command to extend into multiple lines,
+#                  prepend '\' at the end of the previous line.
+#
+#                  an EOL character signifies the end of the bind.
+#
+#   ->           = keypress is not consumed by skhd
+#
+#   *            = matches every application not specified in <proc_map_lst>
+#
+#   ~            = application is unbound and keypress is forwarded per usual, when specified in a <proc_map>
+#
+# A mode is declared according to the following rules:
+#
+#   mode_decl = '::' <name> '@' ':' <command> | '::' <name> ':' <command> |
+#               '::' <name> '@'               | '::' <name>
+#
+#   name      = desired name for this mode,
+#
+#   @         = capture keypresses regardless of being bound to an action
+#
+#   command   = command is executed through '$SHELL -c' and
+#               follows valid shell syntax. if the $SHELL environment
+#               variable is not set, it will default to '/bin/bash'.
+#               when bash is used, the ';' delimeter can be specified
+#               to chain commands.
+#
+#               to allow a command to extend into multiple lines,
+#               prepend '\' at the end of the previous line.
+#
+#               an EOL character signifies the end of the bind.
+
+
+# ----------------------------------------
+#      Navigate
+#        alt + { h,j,k,l }
+# ----------------------------------------
+cmd - h : yabai -m window --focus west || yabai -m display --focus west
+cmd - j : yabai -m window --focus south || yabai -m display --focus south
+cmd - k : yabai -m window --focus north || yabai -m display --focus north
+cmd - l : yabai -m window --focus east || yabai -m display --focus east
+# alt - h [
+#     "kitty" : VAR="$(kitty @ ls | jq '.[] | select(.is_focused) | .tabs[] | select(.is_focused) | .title')";\
+#               if [[ $VAR == *"nvim"* ]];\
+#               then kitty @ send-text :call NvimYabaiNavigate\(\'west\',\'h\'\)\\x0d;\
+#               else yabai -m window --focus west || yabai -m display --focus west; fi
+#     *       : yabai -m window --focus west || yabai -m display --focus west
+# ]
+# alt - j [
+#     "kitty" : VAR="$(kitty @ ls | jq '.[] | select(.is_focused) | .tabs[] | select(.is_focused) | .title')";\
+#               if [[ $VAR == *"nvim"* ]];\
+#               then kitty @ send-text :call NvimYabaiNavigate\(\'south\',\'k\'\)\\x0d;\
+#               else yabai -m window --focus south || yabai -m display --focus south; fi
+#     *       : yabai -m window --focus south || yabai -m display --focus south
+# ]
+# alt - k [
+#     "kitty" : VAR="$(kitty @ ls | jq '.[] | select(.is_focused) | .tabs[] | select(.is_focused) | .title')";\
+#               if [[ $VAR == *"nvim"* ]];\
+#               then kitty @ send-text :call NvimYabaiNavigate\(\'north\',\'j\'\)\\x0d;\
+#               else yabai -m window --focus north || yabai -m display --focus north; fi
+#     *       : yabai -m window --focus north || yabai -m display --focus north
+# ]
+# alt - l [
+#     "kitty" : VAR="$(kitty @ ls | jq '.[] | select(.is_focused) | .tabs[] | select(.is_focused) | .title')";\
+#               if [[ $VAR == *"nvim"* ]];\
+#               then kitty @ send-text :call NvimYabaiNavigate\(\'east\',\'l\'\)\\x0d;\
+#               else yabai -m window --focus east || yabai -m display --focus east; fi
+#     *       : yabai -m window --focus east || yabai -m display --focus east
+# ]
+
+
+
+# ----------------------------------------
+#      Navigate Spaces
+#        alt + { p,n,1,2,3,4 }
+# ----------------------------------------
+cmd - 1 : DISPLAY="$(yabai -m query --displays --display | jq '.index')"; yabai -m space --focus $((1+4*($DISPLAY - 1)))
+cmd - 2 : DISPLAY="$(yabai -m query --displays --display | jq '.index')"; yabai -m space --focus $((2+4*($DISPLAY - 1)))
+cmd - 3 : DISPLAY="$(yabai -m query --displays --display | jq '.index')"; yabai -m space --focus $((3+4*($DISPLAY - 1)))
+cmd - 4 : DISPLAY="$(yabai -m query --displays --display | jq '.index')"; yabai -m space --focus $((4+4*($DISPLAY - 1)))
+shift + cmd - p : yabai -m window --space prev; yabai -m space --focus prev; sketchybar --trigger windows_on_spaces
+shift + cmd - n : yabai -m window --space next; yabai -m space --focus next; sketchybar --trigger windows_on_spaces
+
+
+
+# ----------------------------------------
+#      Move Spaces
+#        shift + alt + { 1,2,3,4 }
+# ----------------------------------------
+shift + cmd - 1 : DISPLAY="$(yabai -m query --displays --display | jq '.index')";\
+                  yabai -m window --space $((1+4*($DISPLAY - 1)));\
+                  sketchybar --trigger windows_on_spaces
+
+shift + cmd - 2 : DISPLAY="$(yabai -m query --displays --display | jq '.index')";\
+                  yabai -m window --space $((2+4*($DISPLAY - 1)));\
+                  sketchybar --trigger windows_on_spaces
+
+shift + cmd - 3 : DISPLAY="$(yabai -m query --displays --display | jq '.index')";\
+                  yabai -m window --space $((3+4*($DISPLAY - 1)));\
+                  sketchybar --trigger windows_on_spaces
+
+shift + cmd - 4 : DISPLAY="$(yabai -m query --displays --display | jq '.index')";\
+                  yabai -m window --space $((4+4*($DISPLAY - 1)));\
+                  sketchybar --trigger windows_on_spaces
+
+
+
+# ----------------------------------------
+#      Move
+#        shift + alt + { h,j,k,l }
+# ----------------------------------------
+shift + cmd - h : yabai -m window --warp west || $(yabai -m window --display west && sketchybar --trigger windows_on_spaces && yabai -m display --focus west && yabai -m window --warp last) || yabai -m window --move rel:-10:0
+shift + cmd - j : yabai -m window --warp south || $(yabai -m window --display south && sketchybar --trigger windows_on_spaces && yabai -m display --focus south) || yabai -m window --move rel:0:10
+shift + cmd - k : yabai -m window --warp north || $(yabai -m window --display north && sketchybar --trigger windows_on_spaces && yabai -m display --focus north) || yabai -m window --move rel:0:-10
+shift + cmd - l : yabai -m window --warp east || $(yabai -m window --display east && sketchybar --trigger windows_on_spaces && yabai -m display --focus east && yabai -m window --warp first) || yabai -m window --move rel:10:0
+
+
+
+# ----------------------------------------
+#      Resize
+#        ctrl + alt + { h,j,k,l }
+# ----------------------------------------
+cmd + alt - h : yabai -m window --resize right:-100:0 || yabai -m window --resize left:-100:0
+cmd + alt - j : yabai -m window --resize bottom:0:100 || yabai -m window --resize top:0:100
+cmd + alt - k : yabai -m window --resize bottom:0:-100 || yabai -m window --resize top:0:-100
+cmd + alt - l : yabai -m window --resize right:100:0 || yabai -m window --resize left:100:0
+
+
+
+# ----------------------------------------
+#      New Window
+#        alt + { s,v }
+# ----------------------------------------
+alt - s : yabai -m window --insert east;  skhd -k "cmd - n"
+alt - v : yabai -m window --insert south; skhd -k "cmd - n"
+
+
+
+# ----------------------------------------
+#      Utilities
+#        alt + { s,v }
+# ----------------------------------------
+# Float / Unfloat window: alt - space
+alt - space : yabai -m window --toggle float; sketchybar --trigger window_focus
+
+# Make window zoom to fullscreen: shift + alt - f
+shift + cmd - f : yabai -m window --toggle zoom-fullscreen; sketchybar --trigger window_focus
+
+# Toggle split orientation of the selected windows node: shift + alt - s
+alt + cmd - s : yabai -m window --toggle split
+
+# open apps
+shift + cmd - b : qutebrowser
+shift + cmd - t : /Applications/kitty.app/Contents/MacOS/kitty --single-instance -d ~
+shift + cmd - m : open -na /Applications/spotify.app
+shift + cmd - o : brew services start yabai
+shift + cmd - c : brew services stop yabai

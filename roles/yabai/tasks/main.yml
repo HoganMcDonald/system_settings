@@ -1,0 +1,48 @@
+- name: Install jq
+  homebrew:
+    name: jq
+
+- name: Install yabai
+  homebrew:
+    name: koekeishiya/formulae/yabai
+
+- name: Install skhd
+  homebrew:
+    name: koekeishiya/formulae/skhd
+
+# Yabai config files
+- name: Yabai - Check if config exists
+  stat: path="{{ config }}/yabai"
+  register: yabai_config_stat
+- name: Yabai - Back up config
+  command: "mv {{ config }}/yabai {{ config }}/yabai_old"
+  args:
+    creates: "{{ config }}/yabai_old"
+  when: yabai_config_stat.stat.exists
+- name: Yabai - Make sure config is up to date
+  file:
+    src: "{{ dotfiles_home }}/roles/yabai/files/yabai/"
+    dest: "{{ config }}/yabai"
+    state: link
+    force: yes
+
+# SKHD config files
+- name: SKHD - Check if config exists
+  stat: path="{{ config }}/skhd"
+  register: skhd_config_stat
+- name: skhd - Back up config
+  command: "mv {{ config }}/skhd {{ config }}/skhd_old"
+  args:
+    creates: "{{ config }}/skhd_old"
+  when: skhd_config_stat.stat.exists
+- name: SKHD - Make sure config is up to date
+  file:
+    src: "{{ dotfiles_home }}/roles/yabai/files/skhd/"
+    dest: "{{ config }}/skhd"
+    state: link
+    force: yes
+
+- name: Start yabai
+  command: yabai --start-service
+- name: Start skhd
+  command: skhd --start-service

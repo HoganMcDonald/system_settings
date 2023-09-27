@@ -50,3 +50,11 @@
     - role: JavaScript
       tags:
         - javascript
+
+
+    # ====================
+    #   Desktop
+    # ====================
+    - role: yabai
+      tags:
+        - yabai

@@ -12,7 +12,6 @@
 - name: Set nightly as the global neovim version
   command: asdf global neovim nightly
 
-
 - name: Check if config exists
   stat: path="{{ config }}/nvim"
   register: nvim_config_stat
