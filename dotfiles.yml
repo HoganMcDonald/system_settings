@@ -13,25 +13,15 @@
     - role: git
       tags:
         - git
-      dependencies:
-        - homebrew
     - role: asdf
       tags:
         - asdf
-      dependencies:
-        - role: homebrew
     - role: cli
       tags:
         - cli
-      dependencies:
-        - role: homebrew
     - role: zsh
       tags:
         - zsh
-      dependencies:
-        - role: homebrew
-        - role: cli
-        - role: git
 
 
     # ====================
@@ -40,14 +30,12 @@
     - role: browsers
       tags:
         - browsers
-      dependencies:
-        - role: homebrew
     - role: kitty
       tags:
         - kitty
-      dependencies:
-        - role: config
-        - role: homebrew
+    - role: spotify
+      tags:
+        - spotify
 
 
     # ====================
@@ -56,10 +44,6 @@
     - role: ruby
       tags:
         - ruby
-      dependencies:
-        - role: asdf
     - role: JavaScript
       tags:
         - javascript
-      dependencies:
-        - role: asdf
