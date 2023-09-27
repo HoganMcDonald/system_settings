@@ -1,0 +1,31 @@
+- name: Add neovim plugin
+  command: asdf plugin add neovim
+  register: nvim_add
+  failed_when: nvim_add == 2
+
+- name: Uninstall previous nightly version
+  command: asdf uninstall neovim nightly
+
+- name: Install neovim nightly
+  command: asdf install neovim nightly
+
+- name: Set nightly as the global neovim version
+  command: asdf global neovim nightly
+
+
+- name: Check if config exists
+  stat: path="{{ config }}/nvim"
+  register: nvim_config_stat
+
+- name: Back up config
+  command: "mv {{ config }}/nvim {{ config }}/nvim_old"
+  args:
+    creates: "{{ config }}/nvim_old"
+  when: nvim_config_stat.stat.exists
+
+- name: Make sure config is up to date
+  file:
+    src: "{{ dotfiles_home }}/roles/neovim/files/"
+    dest: "{{ config }}/nvim"
+    state: link
+    force: yes
