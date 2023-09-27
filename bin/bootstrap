@@ -11,8 +11,7 @@ if ! [ -x "$(command -v ansible)" ]; then
   pip3 install ansible
 fi
 
-ansible-playbook -i ~/system/hosts ~/system/dotfiles.yml --tags $tags
-# ansible-playbook -i ~/system/hosts ~/system/dotfiles.yml --ask-become-pass --tags $tags
+ansible-playbook -i ~/system/hosts ~/system/dotfiles.yml --ask-become-pass --tags $tags
 
 if command -v terminal-notifier 1>/dev/null 2>&1; then
   terminal-notifier -title "dotfiles: Bootstrap complete" -message "Successfully set up dev environment."
