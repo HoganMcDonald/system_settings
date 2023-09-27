@@ -5,3 +5,33 @@
 - name: Install Spicetify
   homebrew:
     name: khanhas/tap/spicetify-cli
+
+- name: Copy theme files
+  file:
+    src: "{{ dotfiles_home }}/roles/spotify/files/"
+    dest: "{{ config }}/spicetify/Themes/Halcyon"
+    state: link
+    force: yes
+
+# Configure Extensions
+- name: Keyboard Shortcuts
+  command: spicetify config extensions keyboardShortcut.js
+
+- name: Full App Display
+  command: spicetify config extensions fullAppDisplay.js
+
+- name: Bookmark
+  command: spicetify config extensions bookmark.js
+
+- name: Set Theme
+  command: spicetify config current_theme Halcyon
+
+- name: Ensure install is happening from a clean state
+  command: spicetify restore
+  ignore_errors: True
+
+- name: Delete old backup and return to default state
+  command: spicetify clear
+
+- name: Create a backup and apply config
+  command: spicetify backup apply
