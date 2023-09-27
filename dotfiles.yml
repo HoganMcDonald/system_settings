@@ -58,3 +58,6 @@
     - role: yabai
       tags:
         - yabai
+    - role: sketchybar
+      tags:
+        - sketchybar

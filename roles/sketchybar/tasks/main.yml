@@ -1,0 +1,31 @@
+- name: Prepare to install sketchybar
+  homebrew_tap:
+    name: FelixKratz/formulae
+
+- name: Install SF-Symbols
+  homebrew_cask:
+    name: sf-symbols
+
+- name: Install sketchybar
+  homebrew:
+    name: sketchybar
+
+- name: Check if config exists
+  stat: path="{{ config }}/sketchybar"
+  register: sketchybar_config_stat
+
+- name: Back up config
+  command: "mv {{ config }}/sketchybar {{ config }}/sketchybar_old"
+  args:
+    creates: "{{ config }}/sketchybar_old"
+  when: sketchybar_config_stat.stat.exists
+
+- name: Make sure config is up to date
+  file:
+    src: "{{ dotfiles_home }}/roles/sketchybar/files/"
+    dest: "{{ config }}/sketchybar"
+    state: link
+    force: yes
+
+- name: Start sketchybar
+  command: brew services start sketchybar
