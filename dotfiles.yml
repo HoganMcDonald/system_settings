@@ -61,3 +61,11 @@
     - role: sketchybar
       tags:
         - sketchybar
+
+
+    # ====================
+    #   System
+    # ====================
+    - role: macos
+      tags:
+        - macos

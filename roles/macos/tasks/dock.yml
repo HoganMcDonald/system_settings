@@ -1,0 +1,52 @@
+- block:
+  - name: "Dock - Persistent Apps - Buils apps list"
+    set_fact:
+      persistent_apps_array: "{{ persistent_apps_array|default([])  }} + [ '<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>{{ item }}</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>' ]" # noqa 204
+    loop: "{{ Dock_PersistentApps }}"
+    when: Dock_PersistentApps is defined and Dock_PersistentApps != []
+
+  - name: "Dock - Persistent Apps - Add to dock"
+    osx_defaults: { domain: 'com.apple.dock', key: 'persistent-apps', type: array, value: "{{ item }}" }
+    loop:
+      - [] # first inject an empty array to clear dock
+      - "{{ persistent_apps_array }}" # then inject the freshly build list
+    when: persistent_apps_array is defined and persistent_apps_array != []
+    changed_when: no
+    notify: Restart Dock
+
+  - name: "Dock - Persistent Others - Build items list"
+    set_fact:
+      persistent_others_array: "{{ persistent_others_array|default([])  }} + [ '<dict><key>tile-type</key><string>{{ item.type | default('directory') }}-tile</string><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>file://{% if item is mapping %}{{ item.path }}{% else %}{{ item }}{% endif %}</string><key>_CFURLStringType</key><integer>15</integer></dict><key>arrangement</key><integer>{{ item.arrange | default(1) }}</integer></dict></dict>' ]" # noqa 204
+    loop: "{{ Dock_PersistentOthers }}"
+    when: Dock_PersistentOthers is defined and Dock_PersistentOthers != []
+
+  - name: "Dock - Persistent Others - Add to dock"
+    osx_defaults: { domain: 'com.apple.dock', key: 'persistent-others', type: array, value: "{{ item }}" }
+    loop:
+      - []
+      - "{{ persistent_others_array }}"
+    when: persistent_others_array is defined and persistent_others_array != []
+    changed_when: no
+    notify: Restart Dock
+
+  - name: "Dock - Appearance"
+    osx_defaults: { domain: 'com.apple.dock', key: "{{ item.key }}", type: "{{ item.type }}", value: "{{ item.value }}" }
+    loop:
+      - { key: 'tilesize',                 type: 'int',     value: '{{ Dock_TileSize }}'}
+      - { key: 'magnification',            type: 'bool',    value: '{{ Dock_Magnification }}'}
+      - { key: 'largesize',                type: 'float',   value: '{{ Dock_LargeSize }}'}
+      - { key: 'orientation',              type: 'string',  value: '{{ Dock_Orientation }}'}
+      - { key: 'mineffect',                type: 'string',  value: '{{ Dock_MinEffect }}'}
+      - { key: 'AppleActionOnDoubleClick', type: 'string',  value: '{{ Dock_AppleActionOnDoubleClick }}'}
+      - { key: 'minimize-to-application',  type: 'boolean', value: '{{ Dock_MinimizeToApplication }}'}
+      - { key: 'launchanim',               type: 'boolean', value: '{{ Dock_LaunchAnim }}'}
+      - { key: 'autohide',                 type: 'bool',    value: '{{ Dock_Autohide }}'}
+      - { key: 'autohide-time-modifier',   type: 'float',   value: '{{ Dock_AutohideTimeModifier }}'}
+      - { key: 'show-process-indicators',  type: 'boolean', value: '{{ Dock_ShowProcessIndicators }}'}
+      - { key: 'showhidden',               type: 'boolean', value: '{{ Dock_ShowHidden }}'}
+      - { key: 'mouse-over-hilite-stack',  type: 'boolean', value: '{{ Dock_MouseOverHiliteStack }}'}
+      - { key: 'mod-count',                type: 'int',     value: '1'}
+      - { key: 'version',                  type: 'int',     value: '1'}
+      # set `version` and `mod-count` to '1' to prevent DockFixUp to be replace the whole Dock in case of a new user
+    when: item.value | string | length > 0
+    notify: Restart Dock

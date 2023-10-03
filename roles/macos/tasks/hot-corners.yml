@@ -1,0 +1,23 @@
+- block:
+  - name: "Hot Corners - Modifiers"
+    osx_defaults: { domain: 'com.apple.dock', key: "{{ item.0.key }}", type: int, value: "{{ item.1.value }}" }
+    with_subelements:
+      - "{{ HotCorners_Modifiers }}"
+      - value
+    # loop: "{{ hot_corners_modifiers | subelements('value') }}" # instead of 'with_subelements' but more updated but more verbose
+    when: (item.0.key == 'wvous-bl-modifier' and item.1.name == HotCorners_BottomLeftModifier) or
+          (item.0.key == 'wvous-br-modifier' and item.1.name == HotCorners_BottomRightModifier) or
+          (item.0.key == 'wvous-tl-modifier' and item.1.name == HotCorners_TopLeftModifier) or
+          (item.0.key == 'wvous-tr-modifier' and item.1.name == HotCorners_TopRightModifier)
+    notify: Restart Dock
+
+  - name: "Hot Corners - Actions"
+    osx_defaults: { domain: 'com.apple.dock', key: "{{ item.0.key }}", type: int, value: "{{ item.1.value }}" }
+    with_subelements:
+      - "{{ HotCorners_Actions }}"
+      - value
+    when: (item.0.key == 'wvous-bl-corner' and item.1.name == HotCorners_BottomLeftAction) or
+          (item.0.key == 'wvous-br-corner' and item.1.name == HotCorners_BottomRightAction) or
+          (item.0.key == 'wvous-tl-corner' and item.1.name == HotCorners_TopLeftAction) or
+          (item.0.key == 'wvous-tr-corner' and item.1.name == HotCorners_TopRightAction)
+    notify: Restart Dock
