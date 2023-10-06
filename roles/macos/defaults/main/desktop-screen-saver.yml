@@ -1,0 +1,3 @@
+DesktopScreenSaver_BackGroundImage: "{{ dotfiles_home }}/roles/macos/files/wallpaper.png"           # Background image
+DesktopScreenSaver_askForPassword: yes           # Require password after sleep or screen saver begins
+DesktopScreenSaver_askForPasswordDelay: 0        # Require password immediately

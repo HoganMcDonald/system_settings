@@ -1,6 +1,7 @@
 dotfiles_user_home: "{{ '~' | expanduser }}"
 dotfiles_home: "{{ dotfiles_user_home }}/system"
 config: "{{ dotfiles_user_home }}/.config"
+target_user_id: hoganmcdonald
 
 full_name: Hogan McDonald
 git_user: hoganmcdonald
