@@ -1,23 +1,18 @@
-local fn = vim.fn
-local lsp = vim.lsp
-local diagnostic = vim.diagnostic
-local keymap = vim.keymap
-
-local M  = {}
+local M = {}
 
 M.setup = function()
   local signs = {
-    { name = "DiagnosticSignError", text = "" },
-    { name = "DiagnosticSignWarn", text = "" },
-    { name = "DiagnosticSignHint", text = "" },
-    { name = "DiagnosticSignInfo", text = "" },
+    { name = 'DiagnosticSignError', text = '' },
+    { name = 'DiagnosticSignWarn', text = '' },
+    { name = 'DiagnosticSignHint', text = '' },
+    { name = 'DiagnosticSignInfo', text = '' },
   }
 
   for _, sign in ipairs(signs) do
-    fn.sign_define(sign.name, { texthl = sign.name, text = sign.text, numhl = "" })
+    vim.fn.sign_define(sign.name, { texthl = sign.name, text = sign.text, numhl = '' })
   end
 
-  diagnostic.config({
+  vim.diagnostic.config({
     virtual_text = false,
     signs = { active = signs },
     update_in_insert = true,
@@ -25,20 +20,20 @@ M.setup = function()
     severity_sort = true,
     float = {
       focusable = false,
-      style = "minimal",
-      border = "rounded",
-      source = "always",
-      header = "",
-      prefix = "",
+      style = 'minimal',
+      border = 'rounded',
+      source = 'always',
+      header = '',
+      prefix = '',
     },
   })
 
-  lsp.handlers["textDocument/hover"] = lsp.with(lsp.handlers.hover, {
-    border = "rounded",
+  vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(vim.lsp.handlers.hover, {
+    border = 'rounded',
   })
 
-  lsp.handlers["textDocument/signatureHelp"] = lsp.with(lsp.handlers.signature_help, {
-    border = "rounded",
+  vim.lsp.handlers['textDocument/signatureHelp'] = vim.lsp.with(vim.lsp.handlers.signature_help, {
+    border = 'rounded',
   })
 end
 
@@ -46,20 +41,20 @@ local function lsp_keymaps(bufnr)
   local opts = { silent = true, remap = false, buffer = bufnr }
 
   -- Generate LSP functionality
-  keymap.set("n", "K",  lsp.buf.hover, opts)
-  keymap.set("n", "ge", lsp.buf.rename, opts)
-  keymap.set("n", "gd", lsp.buf.definition, opts)
-  keymap.set("n", "gD", lsp.buf.declaration, opts)
-  keymap.set("n", "gi", lsp.buf.implementation, opts)
-  keymap.set("n", "gt", lsp.buf.type_definition, opts)
+  vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+  vim.keymap.set('n', 'ge', vim.lsp.buf.rename, opts)
+  vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+  vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
+  vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
+  vim.keymap.set('n', 'gt', vim.lsp.buf.type_definition, opts)
 
   -- Navigate diagnostics errors/mesages
-  keymap.set("n", "gk", diagnostic.goto_next, opts)
-  keymap.set("n", "gj", diagnostic.goto_prev, opts)
+  vim.keymap.set('n', 'gk', vim.diagnostic.goto_next, opts)
+  vim.keymap.set('n', 'gj', vim.diagnostic.goto_prev, opts)
 
   -- Telescope helpers for listing symbols and diagnostics
-  keymap.set("n", "<leader>fs", "<cmd>Telescope lsp_document_symbols<cr>", opts)
-  keymap.set("n", "<leader>fd", "<cmd>Telescope diagnostics<cr>", opts)
+  vim.keymap.set('n', '<leader>fs', '<cmd>Telescope lsp_document_symbols<cr>', opts)
+  vim.keymap.set('n', '<leader>fd', '<cmd>Telescope diagnostics<cr>', opts)
 end
 
 M.on_attach = function(_, bufnr)
@@ -68,8 +63,8 @@ end
 
 local capabilities = vim.lsp.protocol.make_client_capabilities()
 capabilities.textDocument.foldingRange = {
-    dynamicRegistration = false,
-    lineFoldingOnly = true
+  dynamicRegistration = false,
+  lineFoldingOnly = true,
 }
 
 M.capabilities = capabilities

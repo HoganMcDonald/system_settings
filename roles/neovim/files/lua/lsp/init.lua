@@ -1,5 +1,13 @@
-local present, _ = pcall(require, "lspconfig")
-if not present then return end
+local M = {}
 
-require("lsp.config")
-require("lsp.handlers").setup()
+function M.setup()
+  local present, _ = pcall(require, 'lspconfig')
+  if not present then
+    return
+  end
+
+  require('lsp.config').setup()
+  -- require('lsp.handlers').setup()
+end
+
+return M

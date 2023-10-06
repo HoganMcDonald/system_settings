@@ -11,8 +11,6 @@ Neovim init file
 -----------------------------------------------------------
 -- Import Lua modules
 -----------------------------------------------------------
-require('plugins')
-require('core.settings')
-require('core.keymaps')
-require('core.autocmds')
-require('lsp.init')
+require('config').setup()
+require('plugins').setup()
+require('lsp').setup()

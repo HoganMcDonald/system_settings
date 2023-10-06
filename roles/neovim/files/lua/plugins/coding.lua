@@ -1,0 +1,148 @@
+local Colors = require('util.colors')
+local bg = require('util.highlight').bg
+
+return {
+  {
+    'kkoomen/vim-doge',
+    event = 'BufEnter',
+    build = ':call doge#install()',
+  },
+
+  -- completion
+  {
+    'ms-jpq/coq_nvim',
+    dependencies = {
+      'ms-jpq/coq.artifacts',
+    },
+    build = function()
+      vim.cmd('COQdeps')
+    end,
+    config = function()
+      vim.g.coq_settings = {
+        auto_start = 'shut-up',
+      }
+      vim.cmd('COQnow --shut-up')
+    end,
+  },
+
+  -- test runner
+  {
+    'vim-test/vim-test',
+    keys = {
+      { '<leader>tf', ':TestFile<cr>', desc = 'Run test file' },
+      { '<leader>tn', ':TestNearest<cr>', desc = 'Run nearest test' },
+      { '<leader>tl', ':TestLast<cr>', desc = 'Re-run last test' },
+      { '<leader>ta', ':TestSuite<cr>', desc = 'Run entire test suite' },
+    },
+    config = function()
+      vim.g['test#strategy'] = 'neovim'
+    end,
+  },
+
+  -- color column but only when you need it
+  {
+    'm4xshen/smartcolumn.nvim',
+    event = 'BufEnter',
+    opts = {
+      colorcolumn = '80',
+      disabled_filetypes = {
+        'help',
+        'text',
+        'markdown',
+        'dashboard',
+        'NvimTree',
+        'Lazy',
+        'mason',
+        'help',
+        'eruby',
+      },
+      custom_colorcolumn = {},
+      scope = 'window',
+    },
+    config = function(_, opts)
+      require('smartcolumn').setup(opts)
+      bg('ColorColumn', Colors.GREY)
+    end,
+  },
+
+  -- indent guides for Neovim
+  {
+    'lukas-reineke/indent-blankline.nvim',
+    event = { 'BufReadPost', 'BufNewFile' },
+    opts = {
+      char = '│',
+      filetype_exclude = {
+        'help',
+        'alpha',
+        'dashboard',
+        'neo-tree',
+        'Trouble',
+        'lazy',
+        'mason',
+        'notify',
+        'toggleterm',
+        'lazyterm',
+      },
+      show_trailing_blankline_indent = false,
+      show_current_context = false,
+    },
+  },
+
+  -- auto pairs
+  {
+    'echasnovski/mini.pairs',
+    event = 'VeryLazy',
+    opts = {},
+  },
+
+  -- Fast and feature-rich surround actions. For text that includes
+  -- surrounding characters like brackets or quotes, this allows you
+  -- to select the text inside, change or modify the surrounding characters,
+  -- and more.
+  {
+    'echasnovski/mini.surround',
+    keys = function(_, keys)
+      -- Populate the keys based on the user's options
+      local plugin = require('lazy.core.config').spec.plugins['mini.surround']
+      local opts = require('lazy.core.plugin').values(plugin, 'opts', false)
+      local mappings = {
+        { opts.mappings.add, desc = 'Add surrounding', mode = { 'n', 'v' } },
+        { opts.mappings.delete, desc = 'Delete surrounding' },
+        { opts.mappings.find, desc = 'Find right surrounding' },
+        { opts.mappings.find_left, desc = 'Find left surrounding' },
+        { opts.mappings.highlight, desc = 'Highlight surrounding' },
+        { opts.mappings.replace, desc = 'Replace surrounding' },
+        { opts.mappings.update_n_lines, desc = 'Update `MiniSurround.config.n_lines`' },
+      }
+      mappings = vim.tbl_filter(function(m)
+        return m[1] and #m[1] > 0
+      end, mappings)
+      return vim.list_extend(mappings, keys)
+    end,
+    opts = {
+      mappings = {
+        add = 'gza', -- Add surrounding in Normal and Visual modes
+        delete = 'gzd', -- Delete surrounding
+        find = 'gzf', -- Find surrounding (to the right)
+        find_left = 'gzF', -- Find surrounding (to the left)
+        highlight = 'gzh', -- Highlight surrounding
+        replace = 'rzr', -- Replace surrounding
+        update_n_lines = 'gzn', -- Update `n_lines`
+      },
+    },
+  },
+
+  -- comments
+  { 'JoosepAlviste/nvim-ts-context-commentstring', lazy = true },
+  {
+    'echasnovski/mini.comment',
+    event = 'VeryLazy',
+    opts = {
+      options = {
+        custom_commentstring = function()
+          return require('ts_context_commentstring.internal').calculate_commentstring() or vim.bo.commentstring
+        end,
+      },
+    },
+  },
+}
