@@ -1,0 +1,3 @@
+Screen_ScreenshotCaptureLocation: "~/screenshots"   # location to store screenshots
+Screen_ScreenshotCaptureType: "png"                 # format to save screenshots in
+Screen_ScreenshotCaptureDisableShadow: true         # disables drop shadow on screenshots

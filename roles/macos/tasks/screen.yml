@@ -1,0 +1,12 @@
+- block:
+  - name: "Screen - create custom folder screenshots"
+    command: "mkdir -p {{ Screen_ScreenshotCaptureLocation }}"
+    when: Screen_ScreenshotCaptureLocation is defined
+
+  - name: "screen - use custom folder for screenshots"
+    osx_defaults: { domain: 'com.apple.screencapture', key: "{{ item.key }}", type: "{{ item.type }}", value: "{{ item.value }}" }
+    loop:
+      - { description: 'Changes the location used for screenshots', key: 'location', type: string, value: "{{ Screen_ScreenshotCaptureLocation }}" }
+      - { description: 'Stores screenshots as png', key: 'type', type: string, value: "{{ Screen_ScreenshotCaptureType }}" }
+      - { description: 'Disables shadow on screenshots', key: 'disable-shadow', type: bool, value: "{{ Screen_ScreenshotCaptureDisableShadow }}" }
+    when: item.value | string | length > 0

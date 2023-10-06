@@ -6,7 +6,6 @@
       - { description: 'Dim keyboard after idle time in seconds', key: 'Keyboard Dim Time', type: 'string', value: "{{ Keyboard_kDimTime }}" }
     when: item.value | string | length > 0
   # the above block is run as superuser
-  become: yes
 
 - block:
   - name: "Keyboard - User - Full Keyboard Access"

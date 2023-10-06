@@ -1,4 +1,5 @@
 - { include: keyboard.yml,  tags: "keyboard" }
+- { include: screen.yml,  tags: "screen" }
 - { include: dock.yml,  tags: "dock" }
 - { include: energy-saver.yml,  tags: "energy-saver" }
 - { include: hot-corners.yml,  tags: "hot-corners" }
