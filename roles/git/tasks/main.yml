@@ -24,6 +24,9 @@
   homebrew:
     name: gh
 
+- name: Create .bin directory
+  command: "mkdir -p ~/.bin"
+
 # Scripts used in gitconfig
 - name: Link stats script
   file:
