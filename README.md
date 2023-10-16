@@ -4,6 +4,8 @@ This repo contains an ansible playbook for setting up new systems for developmen
 
 ## Images
 
+![preview image](/docs/preview.png)
+
 ## Install
 
 ```

@@ -190,7 +190,7 @@ shift + cmd - f : yabai -m window --toggle zoom-fullscreen; sketchybar --trigger
 alt + cmd - s : yabai -m window --toggle split
 
 # open apps
-shift + cmd - b : qutebrowser
+shift + cmd - b : open -na /Applications/Firefox Developer Edition.app
 shift + cmd - t : /Applications/kitty.app/Contents/MacOS/kitty --single-instance -d ~
 shift + cmd - m : open -na /Applications/spotify.app
 shift + cmd - o : brew services start yabai
