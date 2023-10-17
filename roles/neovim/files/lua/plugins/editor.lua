@@ -240,9 +240,6 @@ return {
         number = false,
         relativenumber = false,
         signcolumn = 'yes',
-        mappings = {
-          custom_only = false,
-        },
       },
       renderer = {
         highlight_git = true,

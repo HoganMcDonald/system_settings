@@ -39,8 +39,8 @@ return {
 
         center = {
           { desc = '  Find File                 SPC p f', action = 'Telescope find_files' },
-          { desc = '  Recents                   SPC p o', action = 'Telescope oldfiles' },
-          { desc = '  Find Word                 SPC f a', action = 'Telescope live_grep' },
+          { desc = ' Recents                   SPC p o', action = 'Telescope oldfiles' },
+          { desc = '  Find Word                 SPC f a', action = 'Telescope live_grep' },
           -- f = { description = { "  Load Last Session         SPC l  " }, command = "SessionLoad" },
         },
 
