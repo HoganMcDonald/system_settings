@@ -7,7 +7,7 @@ function M.setup()
   end
 
   require('lsp.config').setup()
-  -- require('lsp.handlers').setup()
+  require('lsp.handlers').setup()
 end
 
 return M
