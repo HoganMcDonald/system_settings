@@ -42,6 +42,7 @@ local function lsp_keymaps(bufnr)
 
   -- Generate LSP functionality
   vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+  vim.keymap.set('n', '<leader>lh', vim.lsp.buf.signature_help, { desc = 'signature help', silent = true, remap = false, buffer = bufnr })
   vim.keymap.set('n', 'ge', vim.lsp.buf.rename, opts)
   vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
   vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)

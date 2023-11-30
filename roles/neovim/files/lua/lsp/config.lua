@@ -3,7 +3,7 @@ local M = {}
 function M.mason_setup()
   local present, mason = pcall(require, 'mason')
   if not present then
-    vim.notify('Couldn\'t load Mason' .. mason,  vim.log.levels.ERROR)
+    vim.notify('Couldn\'t load Mason' .. mason, vim.log.levels.ERROR)
     return
   end
 
@@ -35,6 +35,7 @@ function M.setup()
   }
 
   local lspconfig_ok, lspconfig = pcall(require, 'lspconfig')
+  local coq = require "coq"
   if not lspconfig_ok then
     vim.notify('Couldn\'t load LSP-Config' .. lspconfig, vim.log.levels.ERROR)
     return
@@ -42,21 +43,32 @@ function M.setup()
 
   require('mason-lspconfig').setup_handlers({
     function(server_name)
-      lspconfig[server_name].setup(defaults)
+      lspconfig[server_name].setup(
+        coq.lsp_ensure_capabilities(
+          defaults
+        )
+      )
     end,
     ['lua_ls'] = function()
-      lspconfig.lua_ls.setup(
-        vim.tbl_deep_extend('force', require('lsp.settings.lua_ls'), defaults)
+      lspconfig.lua_ls.setup((
+        coq.lsp_ensure_capabilities(
+          vim.tbl_deep_extend('force', require('lsp.settings.lua_ls'), defaults)
+        )
+      )
       )
     end,
     ['solargraph'] = function()
       lspconfig.solargraph.setup(
-        vim.tbl_deep_extend('force', require('lsp.settings.solargraph'), defaults)
+        coq.lsp_ensure_capabilities(
+          vim.tbl_deep_extend('force', require('lsp.settings.solargraph'), defaults)
+        )
       )
     end,
     ['jsonls'] = function()
       lspconfig.jsonls.setup(
-        vim.tbl_deep_extend('force', require('lsp.settings.jsonls'), defaults)
+        coq.lsp_ensure_capabilities(
+          vim.tbl_deep_extend('force', require('lsp.settings.jsonls'), defaults)
+        )
       )
     end,
   })
