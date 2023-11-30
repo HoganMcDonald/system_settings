@@ -17,6 +17,7 @@ return {
           load_textobjects = true
         end,
       },
+      'windwp/nvim-ts-autotag',
     },
     cmd = { 'TSUpdateSync' },
     keys = {
@@ -54,6 +55,9 @@ return {
           scope_incremental = false,
           node_decremental = '<bs>',
         },
+      },
+      autotag = {
+        enable = true,
       },
     },
     config = function(_, opts)
