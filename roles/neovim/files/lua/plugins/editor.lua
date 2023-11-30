@@ -10,8 +10,8 @@ return {
     cmd = 'Telescope',
     keys = {
       { '<leader>pf', ':Telescope find_files<cr>', desc = 'Find files' },
-      { '<leader>po', ':Telescope oldfiles<cr>', desc = 'Old files' },
-      { '<leader>fa', ':Telescope live_grep<cr>', desc = 'All files' },
+      { '<leader>po', ':Telescope oldfiles<cr>',   desc = 'Old files' },
+      { '<leader>fa', ':Telescope live_grep<cr>',  desc = 'All files' },
     },
     opts = {
       defaults = {
@@ -81,10 +81,10 @@ return {
     'akinsho/bufferline.nvim',
     event = 'BufEnter',
     keys = {
-      { '<leader>bp', '<Cmd>BufferLineTogglePin<CR>', desc = 'Toggle buffer pin' },
+      { '<leader>bp', '<Cmd>BufferLineTogglePin<CR>',            desc = 'Toggle buffer pin' },
       { '<leader>bd', '<Cmd>BufferLineGroupClose ungrouped<CR>', desc = 'Delete non-pinned buffers' },
-      { '<S-TAB>', ':BufferLineCyclePrev<cr>', desc = 'Previous buffer' },
-      { '<TAB>', ':BufferLineCycleNext<cr>', desc = 'Next buffer' },
+      { '<S-TAB>',    ':BufferLineCyclePrev<cr>',                desc = 'Previous buffer' },
+      { '<TAB>',      ':BufferLineCycleNext<cr>',                desc = 'Next buffer' },
     },
     config = function()
       local opts = {
@@ -457,7 +457,7 @@ return {
         ['<leader>p'] = { name = 'project' },
         ['<leader>d'] = { name = 'documentation' },
         ['<leader>t'] = { name = 'tests' },
-        ['<leader>sn'] = { name = 'noice' },
+        ['<leader>x'] = { name = 'diagnostic' },
       },
     },
     config = function(_, opts)
@@ -556,8 +556,8 @@ return {
       require('statuscol').setup({
         relculright = true,
         segments = {
-          { text = { builtin.foldfunc }, click = 'v:lua.ScFa' },
-          { text = { '%s' }, click = 'v:lua.ScSa' },
+          { text = { builtin.foldfunc },      click = 'v:lua.ScFa' },
+          { text = { '%s' },                  click = 'v:lua.ScSa' },
           { text = { builtin.lnumfunc, ' ' }, click = 'v:lua.ScLa' },
         },
       })
@@ -633,7 +633,7 @@ return {
         function()
           return '▊'
         end,
-        color = { fg = Colors.BLUE }, -- Sets highlighting of component
+        color = { fg = Colors.BLUE },      -- Sets highlighting of component
         padding = { left = 0, right = 1 }, -- We don't need space before this
       })
 
@@ -727,7 +727,7 @@ return {
 
       -- Add components to right sections
       ins_right({
-        'o:encoding', -- option component same as &encoding in viml
+        'o:encoding',       -- option component same as &encoding in viml
         fmt = string.upper, -- I'm not sure why it's upper case either ;)
         cond = conditions.hide_in_width,
         color = { fg = Colors.FOREGROUND },
@@ -819,11 +819,19 @@ return {
     },
     config = true
   },
+
+  -- diagnostics
   {
     "folke/trouble.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
+    event = 'BufEnter',
     keys = {
-      { '<leader>ld', ':TroubleToggle<cr>', desc = 'Open trouble diagnostics' },
+      { '<leader>xx', function() require("trouble").toggle() end,                          desc = 'Toggle Trouble diagnostics' },
+      { '<leader>xw', function() require("trouble").toggle("workspace_diagnostics") end,   desc = 'Toggle Workspace diagnostics' },
+      { '<leader>xd', function() require("trouble").toggle("document_diagnostics") end,    desc = 'Toggle Document diagnostics' },
+      { '<leader>xq', function() require("trouble").toggle("quickfix") end,                desc = 'Toggle quickfix' },
+      { '<leader>xl', function() require("trouble").toggle("loclist") end,                 desc = 'Toggle loclist' },
+      { 'gR',         function() require("trouble").toggle("lsp_references") end,          desc = 'Toggle LSP References' },
     },
     opts = {
       -- your configuration comes here
