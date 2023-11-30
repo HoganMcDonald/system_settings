@@ -56,7 +56,7 @@ local function ui()
   opt.splitright = true -- vertical split to the right
   opt.splitbelow = true -- horizontal split to the bottom
   opt.linebreak = true -- wrap on word boundary
-  opt.wrap = false -- disable line wrap
+  opt.wrap = true -- disable line wrap
   opt.cmdheight = 0 -- hides command bar when not in use
 end
 
