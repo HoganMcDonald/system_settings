@@ -17,4 +17,9 @@ return {
       },
     },
   },
+
+  -- scratchpad
+  {
+    'metakirby5/codi.vim'
+  },
 }
