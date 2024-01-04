@@ -40,14 +40,6 @@ local function setup_editor()
   -- highlight selection after adjusting indent
   map('v', '<', '<gv')
   map('v', '>', '>gv')
-
-  -- format buffer
-  map(
-    'n',
-    '<leader>bf',
-    ':lua vim.lsp.buf.format { async = true }<cr>',
-    { noremap = true, silent = true, desc = 'format' }
-  )
 end
 
 function M.setup()
