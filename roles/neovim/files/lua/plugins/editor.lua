@@ -456,6 +456,7 @@ return {
         ['<leader>w'] = { name = 'windows' },
         ['<leader>p'] = { name = 'project' },
         ['<leader>d'] = { name = 'documentation' },
+        ['<leader>r'] = { name = 'code runner' },
         ['<leader>t'] = { name = 'tests' },
         ['<leader>x'] = { name = 'diagnostic' },
       },
@@ -838,5 +839,10 @@ return {
       -- or leave it empty to use the default settings
       -- refer to the configuration section below
     },
+  },
+
+  -- global sed
+  {
+    "nvim-pack/nvim-spectre",
   },
 }
