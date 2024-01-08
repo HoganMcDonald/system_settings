@@ -15,17 +15,15 @@ local function setup_movement()
   map({ 'n', 'x' }, 'j', 'v:count == 0 ? \'gj\' : \'j\'', { expr = true, silent = true })
   map({ 'n', 'x' }, 'k', 'v:count == 0 ? \'gk\' : \'k\'', { expr = true, silent = true })
 
-  -- Move to window using the <alt> hjkl keys
-  map('n', '˙', '<C-w>h', { desc = 'Go to left window', remap = true })
-  map('n', '∆', '<C-w>j', { desc = 'Go to lower window', remap = true })
-  map('n', '˚', '<C-w>k', { desc = 'Go to upper window', remap = true })
-  map('n', '¬', '<C-w>l', { desc = 'Go to right window', remap = true })
-
   -- Resize window using <ctrl> arrow keys
-  map('n', '<C-Left>', '<cmd>vertical resize -2<cr>', { desc = 'Decrease window width' })
-  map('n', '<C-Down>', '<cmd>resize -2<cr>', { desc = 'Decrease window height' })
-  map('n', '<C-Up>', '<cmd>resize +2<cr>', { desc = 'Increase window height' })
-  map('n', '<C-Right>', '<cmd>vertical resize +2<cr>', { desc = 'Increase window width' })
+  map('n', '<M-S-Left>', '<cmd>vertical resize -2<cr>', { desc = 'Decrease window width' })
+  map('n', 'Ó', '<cmd>vertical resize -2<cr>', { desc = 'Decrease window width' })
+  map('n', '<M-S-Down>', '<cmd>resize -2<cr>', { desc = 'Decrease window height' })
+  map('n', 'Ô', '<cmd>resize -2<cr>', { desc = 'Decrease window height' })
+  map('n', '<M-S-Up>', '<cmd>resize +2<cr>', { desc = 'Increase window height' })
+  map('n', '', '<cmd>resize +2<cr>', { desc = 'Increase window height' })
+  map('n', '<M-S-Right>', '<cmd>vertical resize +2<cr>', { desc = 'Increase window width' })
+  map('n', 'Ò', '<cmd>vertical resize +2<cr>', { desc = 'Increase window width' })
 
   -- window creation
   map('n', '<leader>ws', ':vsp<cr>', { noremap = true, silent = true, desc = 'split' })

@@ -1,0 +1,10 @@
+- name: Install tmux
+  homebrew:
+    name: tmux
+
+- name: tmux - link config file
+  file:
+    src: "{{ dotfiles_home }}/roles/tmux/files/tmux.conf"
+    dest: "~/.tmux.conf"
+    state: link
+    force: yes

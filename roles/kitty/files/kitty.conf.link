@@ -75,7 +75,7 @@ term xterm-256color
 # Keys
 map cmd+right next_tab
 map cmd+left prev_tab
-map cmd+shift+left neighboring_window left
-map cmd+shift+right neighboring_window right
-map cmd+shift+up neighboring_window up
-map cmd+shift+down neighboring_window down
+map ctrl+shift+h no_op
+map ctrl+shift+j no_op
+map ctrl+shift+k no_op
+map ctrl+shift+l no_op

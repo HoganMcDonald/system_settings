@@ -55,4 +55,54 @@ return {
       fg('DashboardCenter', Colors.FOREGROUND)
     end,
   },
+
+  -- tmux integration
+  {
+    "alexghergh/nvim-tmux-navigation",
+    lazy = false,
+    keys = {
+      {
+        '˙',
+        function ()
+          require('nvim-tmux-navigation').NvimTmuxNavigateLeft()
+        end,
+        silent = true,
+      },
+      {
+        '∆',
+        function ()
+          require('nvim-tmux-navigation').NvimTmuxNavigateDown()
+        end,
+        silent = true,
+      },
+      {
+        '˚',
+        function ()
+          require('nvim-tmux-navigation').NvimTmuxNavigateUp()
+        end,
+        silent = true,
+      },
+      {
+        '¬',
+        function ()
+          require('nvim-tmux-navigation').NvimTmuxNavigateRight()
+        end,
+        silent = true,
+      },
+      {
+        '«',
+        function ()
+          require('nvim-tmux-navigation').NvimTmuxNavigateLastActive()
+        end,
+        silent = true,
+      },
+      {
+        '<M-space>',
+        function ()
+          require('nvim-tmux-navigation').NvimTmuxNavigateNext()
+        end,
+        silent = true,
+      },
+    },
+  },
 }

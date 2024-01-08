@@ -73,81 +73,18 @@
 
 # ----------------------------------------
 #      Navigate
-#        alt + { h,j,k,l }
+#        cmd + { h,j,k,l }
 # ----------------------------------------
 cmd - h : yabai -m window --focus west || yabai -m display --focus west
 cmd - j : yabai -m window --focus south || yabai -m display --focus south
 cmd - k : yabai -m window --focus north || yabai -m display --focus north
 cmd - l : yabai -m window --focus east || yabai -m display --focus east
-# alt - h [
-#     "kitty" : VAR="$(kitty @ ls | jq '.[] | select(.is_focused) | .tabs[] | select(.is_focused) | .title')";\
-#               if [[ $VAR == *"nvim"* ]];\
-#               then kitty @ send-text :call NvimYabaiNavigate\(\'west\',\'h\'\)\\x0d;\
-#               else yabai -m window --focus west || yabai -m display --focus west; fi
-#     *       : yabai -m window --focus west || yabai -m display --focus west
-# ]
-# alt - j [
-#     "kitty" : VAR="$(kitty @ ls | jq '.[] | select(.is_focused) | .tabs[] | select(.is_focused) | .title')";\
-#               if [[ $VAR == *"nvim"* ]];\
-#               then kitty @ send-text :call NvimYabaiNavigate\(\'south\',\'k\'\)\\x0d;\
-#               else yabai -m window --focus south || yabai -m display --focus south; fi
-#     *       : yabai -m window --focus south || yabai -m display --focus south
-# ]
-# alt - k [
-#     "kitty" : VAR="$(kitty @ ls | jq '.[] | select(.is_focused) | .tabs[] | select(.is_focused) | .title')";\
-#               if [[ $VAR == *"nvim"* ]];\
-#               then kitty @ send-text :call NvimYabaiNavigate\(\'north\',\'j\'\)\\x0d;\
-#               else yabai -m window --focus north || yabai -m display --focus north; fi
-#     *       : yabai -m window --focus north || yabai -m display --focus north
-# ]
-# alt - l [
-#     "kitty" : VAR="$(kitty @ ls | jq '.[] | select(.is_focused) | .tabs[] | select(.is_focused) | .title')";\
-#               if [[ $VAR == *"nvim"* ]];\
-#               then kitty @ send-text :call NvimYabaiNavigate\(\'east\',\'l\'\)\\x0d;\
-#               else yabai -m window --focus east || yabai -m display --focus east; fi
-#     *       : yabai -m window --focus east || yabai -m display --focus east
-# ]
-
-
-
-# ----------------------------------------
-#      Navigate Spaces
-#        alt + { p,n,1,2,3,4 }
-# ----------------------------------------
-cmd - 1 : DISPLAY="$(yabai -m query --displays --display | jq '.index')"; yabai -m space --focus $((1+4*($DISPLAY - 1)))
-cmd - 2 : DISPLAY="$(yabai -m query --displays --display | jq '.index')"; yabai -m space --focus $((2+4*($DISPLAY - 1)))
-cmd - 3 : DISPLAY="$(yabai -m query --displays --display | jq '.index')"; yabai -m space --focus $((3+4*($DISPLAY - 1)))
-cmd - 4 : DISPLAY="$(yabai -m query --displays --display | jq '.index')"; yabai -m space --focus $((4+4*($DISPLAY - 1)))
-shift + cmd - p : yabai -m window --space prev; yabai -m space --focus prev; sketchybar --trigger windows_on_spaces
-shift + cmd - n : yabai -m window --space next; yabai -m space --focus next; sketchybar --trigger windows_on_spaces
-
-
-
-# ----------------------------------------
-#      Move Spaces
-#        shift + alt + { 1,2,3,4 }
-# ----------------------------------------
-shift + cmd - 1 : DISPLAY="$(yabai -m query --displays --display | jq '.index')";\
-                  yabai -m window --space $((1+4*($DISPLAY - 1)));\
-                  sketchybar --trigger windows_on_spaces
-
-shift + cmd - 2 : DISPLAY="$(yabai -m query --displays --display | jq '.index')";\
-                  yabai -m window --space $((2+4*($DISPLAY - 1)));\
-                  sketchybar --trigger windows_on_spaces
-
-shift + cmd - 3 : DISPLAY="$(yabai -m query --displays --display | jq '.index')";\
-                  yabai -m window --space $((3+4*($DISPLAY - 1)));\
-                  sketchybar --trigger windows_on_spaces
-
-shift + cmd - 4 : DISPLAY="$(yabai -m query --displays --display | jq '.index')";\
-                  yabai -m window --space $((4+4*($DISPLAY - 1)));\
-                  sketchybar --trigger windows_on_spaces
 
 
 
 # ----------------------------------------
 #      Move
-#        shift + alt + { h,j,k,l }
+#        cmd + shift + { h,j,k,l }
 # ----------------------------------------
 shift + cmd - h : yabai -m window --warp west || $(yabai -m window --display west && sketchybar --trigger windows_on_spaces && yabai -m display --focus west && yabai -m window --warp last) || yabai -m window --move rel:-10:0
 shift + cmd - j : yabai -m window --warp south || $(yabai -m window --display south && sketchybar --trigger windows_on_spaces && yabai -m display --focus south) || yabai -m window --move rel:0:10
@@ -158,21 +95,12 @@ shift + cmd - l : yabai -m window --warp east || $(yabai -m window --display eas
 
 # ----------------------------------------
 #      Resize
-#        ctrl + alt + { h,j,k,l }
+#        cmd + shift + { ←,↑,↓,→ }
 # ----------------------------------------
-cmd + alt - h : yabai -m window --resize right:-100:0 || yabai -m window --resize left:-100:0
-cmd + alt - j : yabai -m window --resize bottom:0:100 || yabai -m window --resize top:0:100
-cmd + alt - k : yabai -m window --resize bottom:0:-100 || yabai -m window --resize top:0:-100
-cmd + alt - l : yabai -m window --resize right:100:0 || yabai -m window --resize left:100:0
-
-
-
-# ----------------------------------------
-#      New Window
-#        alt + { s,v }
-# ----------------------------------------
-alt - s : yabai -m window --insert east;  skhd -k "cmd - n"
-alt - v : yabai -m window --insert south; skhd -k "cmd - n"
+cmd + shift - left : yabai -m window --resize right:-100:0 || yabai -m window --resize left:-100:0
+cmd + shift - down : yabai -m window --resize bottom:0:100 || yabai -m window --resize top:0:100
+cmd + shift - up : yabai -m window --resize bottom:0:-100 || yabai -m window --resize top:0:-100
+cmd + shift - right : yabai -m window --resize right:100:0 || yabai -m window --resize left:100:0
 
 
 
@@ -181,17 +109,15 @@ alt - v : yabai -m window --insert south; skhd -k "cmd - n"
 #        alt + { s,v }
 # ----------------------------------------
 # Float / Unfloat window: alt - space
-alt - space : yabai -m window --toggle float; sketchybar --trigger window_focus
+cmd + shift - space : yabai -m window --toggle float; sketchybar --trigger window_focus
 
 # Make window zoom to fullscreen: shift + alt - f
-shift + cmd - f : yabai -m window --toggle zoom-fullscreen; sketchybar --trigger window_focus
+cmd + shift - f : yabai -m window --toggle zoom-fullscreen; sketchybar --trigger window_focus
 
 # Toggle split orientation of the selected windows node: shift + alt - s
-alt + cmd - s : yabai -m window --toggle split
+cmd + shift - s : yabai -m window --toggle split
 
 # open apps
 shift + cmd - b : open -na /Applications/Firefox Developer Edition.app
 shift + cmd - t : /Applications/kitty.app/Contents/MacOS/kitty --single-instance -d ~
 shift + cmd - m : open -na /Applications/spotify.app
-shift + cmd - o : brew services start yabai
-shift + cmd - c : brew services stop yabai
