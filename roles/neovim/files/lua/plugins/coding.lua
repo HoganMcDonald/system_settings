@@ -109,7 +109,7 @@ return {
     end,
   },
 
-  -- indent uides for Neovim
+  -- indent guides for Neovim
   {
     'lukas-reineke/indent-blankline.nvim',
     main = "ibl",
