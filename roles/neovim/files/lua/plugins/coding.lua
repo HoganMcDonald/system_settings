@@ -2,12 +2,6 @@ local Colors = require('util.colors')
 local bg = require('util.highlight').bg
 
 return {
-  {
-    'kkoomen/vim-doge',
-    event = 'BufEnter',
-    build = ':call doge#install()',
-  },
-
   -- completion
   {
     'ms-jpq/coq_nvim',
