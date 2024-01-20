@@ -831,12 +831,12 @@ return {
     dependencies = { "nvim-tree/nvim-web-devicons" },
     event = 'BufEnter',
     keys = {
-      { '<leader>xx', function() require("trouble").toggle() end,                          desc = 'Toggle Trouble diagnostics' },
-      { '<leader>xw', function() require("trouble").toggle("workspace_diagnostics") end,   desc = 'Toggle Workspace diagnostics' },
-      { '<leader>xd', function() require("trouble").toggle("document_diagnostics") end,    desc = 'Toggle Document diagnostics' },
-      { '<leader>xq', function() require("trouble").toggle("quickfix") end,                desc = 'Toggle quickfix' },
-      { '<leader>xl', function() require("trouble").toggle("loclist") end,                 desc = 'Toggle loclist' },
-      { 'gR',         function() require("trouble").toggle("lsp_references") end,          desc = 'Toggle LSP References' },
+      { '<leader>xx', function() require("trouble").toggle() end,                        desc = 'Toggle Trouble diagnostics' },
+      { '<leader>xw', function() require("trouble").toggle("workspace_diagnostics") end, desc = 'Toggle Workspace diagnostics' },
+      { '<leader>xd', function() require("trouble").toggle("document_diagnostics") end,  desc = 'Toggle Document diagnostics' },
+      { '<leader>xq', function() require("trouble").toggle("quickfix") end,              desc = 'Toggle quickfix' },
+      { '<leader>xl', function() require("trouble").toggle("loclist") end,               desc = 'Toggle loclist' },
+      { 'gR',         function() require("trouble").toggle("lsp_references") end,        desc = 'Toggle LSP References' },
     },
     opts = {
       -- your configuration comes here
