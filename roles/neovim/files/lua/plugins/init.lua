@@ -10,6 +10,7 @@ local groups = {
   'colorscheme',
   'core',
   'lsp',
+  'dap',
   'editor',
   'git',
   'treesitter',
