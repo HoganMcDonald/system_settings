@@ -825,16 +825,6 @@ return {
     },
   },
 
-  -- terminals
-  {
-    'akinsho/toggleterm.nvim',
-    version = "*",
-    keys = {
-      { '\\', ':ToggleTerm<cr>' }
-    },
-    config = true
-  },
-
   -- diagnostics
   {
     "folke/trouble.nvim",
