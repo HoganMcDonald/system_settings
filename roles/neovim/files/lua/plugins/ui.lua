@@ -12,14 +12,14 @@ return {
     'norcalli/nvim-colorizer.lua',
     event = 'BufRead',
     opts = {
-      RGB = true, -- #RGB hex codes
-      RRGGBB = true, -- #RRGGBB hex codes
-      names = false, -- "Name" codes like Blue
+      RGB = true,       -- #RGB hex codes
+      RRGGBB = true,    -- #RRGGBB hex codes
+      names = false,    -- "Name" codes like Blue
       RRGGBBAA = false, -- #RRGGBBAA hex codes
-      rgb_fn = false, -- CSS rgb() and rgba() functions
-      hsl_fn = false, -- CSS hsl() and hsla() functions
-      css = false, -- Enable all CSS features: rgb_fn, hsl_fn, names, RGB, RRGGBB
-      css_fn = false, -- Enable all CSS *functions*: rgb_fn, hsl_fn
+      rgb_fn = false,   -- CSS rgb() and rgba() functions
+      hsl_fn = false,   -- CSS hsl() and hsla() functions
+      css = false,      -- Enable all CSS features: rgb_fn, hsl_fn, names, RGB, RRGGBB
+      css_fn = false,   -- Enable all CSS *functions*: rgb_fn, hsl_fn
 
       -- Available modes: foreground, background
       mode = 'background', -- Set the display mode.
@@ -37,14 +37,14 @@ return {
     opts = {
       -- All these keys will be mapped to their corresponding default scrolling animation
       mappings = { '<C-y>', '<C-e>', 'zt', 'zz', 'zb' },
-      hide_cursor = true, -- Hide cursor while scrolling
-      stop_eof = true, -- Stop at <EOF> when scrolling downwards
+      hide_cursor = true,          -- Hide cursor while scrolling
+      stop_eof = true,             -- Stop at <EOF> when scrolling downwards
       use_local_scrolloff = false, -- Use the local scope of scrolloff instead of the global scope
-      respect_scrolloff = false, -- Stop scrolling when the cursor reaches the scrolloff margin of the file
+      respect_scrolloff = false,   -- Stop scrolling when the cursor reaches the scrolloff margin of the file
       cursor_scrolls_alone = true, -- The cursor will keep on scrolling even if the window cannot scroll further
-      easing_function = nil, -- Default easing function
-      pre_hook = nil, -- Function to run before the scrolling animation starts
-      post_hook = nil, -- Function to run after the scrolling animation ends
+      easing_function = nil,       -- Default easing function
+      pre_hook = nil,              -- Function to run before the scrolling animation starts
+      post_hook = nil,             -- Function to run after the scrolling animation ends
     },
   },
 
@@ -81,27 +81,5 @@ return {
     end,
   },
 
-  -- Better `vim.notify()`
-  {
-    "rcarriga/nvim-notify",
-    keys = {
-      {
-        "<leader>un",
-        function()
-          require("notify").dismiss({ silent = true, pending = true })
-        end,
-        desc = "Dismiss all Notifications",
-      },
-    },
-    opts = {
-      background_colour = Colors.BACKGROUND,
-      timeout = 3000,
-      max_height = function()
-        return math.floor(vim.o.lines * 0.75)
-      end,
-      max_width = function()
-        return math.floor(vim.o.columns * 0.75)
-      end,
-    },
-  },
+  { 'kevinhwang91/nvim-hlslens' },
 }
