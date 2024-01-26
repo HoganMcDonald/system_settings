@@ -81,5 +81,10 @@ return {
     end,
   },
 
-  { 'kevinhwang91/nvim-hlslens' },
+  {
+    'kevinhwang91/nvim-hlslens',
+    config = function(_, opts)
+      require('hlslens').setup(opts)
+    end,
+  },
 }
