@@ -744,7 +744,7 @@ return {
             return ''
           end
         end,
-        color = { fg = Colors.FOREGROUND, gui = 'bold' },
+        color = { fg = Colors.UI_GREY, gui = 'bold' },
       })
 
       -- Insert mid section. You can make any number of sections in neovim :)
