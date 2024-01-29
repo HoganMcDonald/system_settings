@@ -802,41 +802,55 @@ return {
 
   -- winbar
   {
-    'fgheng/winbar.nvim',
+    "SmiteshP/nvim-navic",     -- statusline/winbar component using lsp
+    dependencies = "neovim/nvim-lspconfig",
     opts = {
-      enabled = true,
-
-      show_file_path = true,
-      show_symbols = true,
-
-      colors = {
-        path = '',
-        file_name = '',
-        symbols = '',
-      },
-
+      highlight = true,
+      separator = " 〉",
+      -- VScode-like icons
       icons = {
-        file_icon_default = '',
-        seperator = '>',
-        editor_state = '●',
-        lock_icon = '',
-      },
+        File = " ",
+        Module = " ",
+        Namespace = " ",
+        Package = " ",
+        Class = " ",
+        Method = " ",
+        Property = " ",
+        Field = " ",
+        Constructor = " ",
+        Enum = " ",
+        Interface = " ",
+        Function = " ",
+        Variable = " ",
+        Constant = " ",
+        String = " ",
+        Number = " ",
+        Boolean = " ",
+        Array = " ",
+        Object = " ",
+        Key = " ",
+        Null = " ",
+        EnumMember = " ",
+        Struct = " ",
+        Event = " ",
+        Operator = " ",
+        TypeParameter = " ",
+      }
+    },
+  },
 
-      exclude_filetype = {
-        'help',
-        'startify',
-        'dashboard',
-        'packer',
-        'neogitstatus',
-        'NvimTree',
-        'Trouble',
-        'alpha',
-        'lir',
-        'Outline',
-        'spectre_panel',
-        'toggleterm',
-        'qf',
-      },
+  {
+    "utilyre/barbecue.nvim",
+    name = "barbecue",
+    version = "*",
+    dependencies = {
+      "SmiteshP/nvim-navic",
+      "nvim-tree/nvim-web-devicons",       -- optional dependency
+    },
+    opts = {
+      theme = {
+        normal = { bg = Colors.BLACK }
+      }
     },
   },
 
