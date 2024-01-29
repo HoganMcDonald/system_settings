@@ -1,5 +1,6 @@
 Dock_PersistentApps: []                          # A plain path string, if empty [] it won't change anything
 Dock_PersistentOthers: []                        # Either a plain path string or a dict like "{path: /path, type: [file | directory], arrange: [1-5] }"
+Dock_ActiveAppsOnly: yes
 Dock_TileSize: 36                                # Dock size
 Dock_Magnification: no                           # Dock magnification
 Dock_LargeSize: 128                              # Icon size of magnified Dock items

@@ -47,6 +47,7 @@
       - { key: 'showhidden',               type: 'boolean', value: '{{ Dock_ShowHidden }}'}
       - { key: 'show-recents',             type: 'boolean', value: '{{ Dock_ShowRecents }}'}
       - { key: 'mouse-over-hilite-stack',  type: 'boolean', value: '{{ Dock_MouseOverHiliteStack }}'}
+      - { key: 'static-only',              type: 'boolean', value: '{{ Dock_ActiveAppsOnly }}'}
       - { key: 'mod-count',                type: 'int',     value: '1'}
       - { key: 'version',                  type: 'int',     value: '1'}
       # set `version` and `mod-count` to '1' to prevent DockFixUp to be replace the whole Dock in case of a new user
