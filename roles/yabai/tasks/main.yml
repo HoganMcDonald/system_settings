@@ -10,6 +10,14 @@
   homebrew:
     name: koekeishiya/formulae/skhd
 
+- name: Tap borders
+  homebrew_tap:
+    name: FelixKratz/formulae
+
+- name: Install borders
+  homebrew:
+    name: borders
+
 # Yabai config files
 - name: Yabai - Check if config exists
   stat: path="{{ config }}/yabai"
@@ -42,7 +50,26 @@
     state: link
     force: yes
 
+# borders config files
+- name: borders - Check if config exists
+  stat: path="{{ config }}/borders"
+  register: borders_config_stat
+- name: borders - Back up config
+  command: "mv {{ config }}/borders {{ config }}/borders_old"
+  args:
+    creates: "{{ config }}/borders_old"
+  when: borders_config_stat.stat.exists
+- name: borders - Make sure config is up to date
+  file:
+    src: "{{ dotfiles_home }}/roles/yabai/files/borders/"
+    dest: "{{ config }}/borders"
+    state: link
+    force: yes
+
+
 - name: Start yabai
   command: yabai --start-service
 - name: Start skhd
   command: skhd --start-service
+- name: Start borders
+  command: brew services start borders
