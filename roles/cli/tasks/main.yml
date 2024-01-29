@@ -2,3 +2,12 @@
   homebrew:
     name: "{{item}}"
   loop: "{{tools}}"
+
+- name: Tap homebrew fonts
+  homebrew_tap:
+    name: homebrew/dupes
+    state: absent
+
+- name: Install font
+  homebrew_cask:
+    name: font-hack-nerd-font
