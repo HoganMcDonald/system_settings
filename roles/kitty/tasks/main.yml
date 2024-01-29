@@ -2,6 +2,9 @@
   homebrew_cask:
     name: kitty
 
+- name: Create Kitty config folder if it doesn't exist
+  shell: "mkdir -p {{ config }}/kitty/"
+
 - name: Create Kitty config
   file:
     src: "{{ dotfiles_home }}/roles/kitty/files/kitty.conf.link"

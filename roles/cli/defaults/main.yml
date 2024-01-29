@@ -6,3 +6,4 @@ tools:
   - diff-so-fancy
   - tldr
   - ripgrep
+  - gnu-sed

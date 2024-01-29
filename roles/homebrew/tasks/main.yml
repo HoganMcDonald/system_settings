@@ -2,7 +2,14 @@
   stat:
     path: /usr/local/bin/brew
   register: homebrew_check
+
 - name: Installing Homebrew
   shell: /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
   when:
     - not homebrew_check.stat.exists
+
+- name: Add to path in current session - only an issue for initial setup
+  shell: (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> /Users/hogan.mcdonald/.zprofile
+
+- name: call brew shellenv script
+  shell: eval "$(/opt/homebrew/bin/brew shellenv)"

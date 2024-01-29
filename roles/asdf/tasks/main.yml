@@ -2,3 +2,6 @@
   homebrew:
     name: asdf
     state: present
+
+- name: Source asdf for the remainder of ansible script
+  shell: . /opt/homebrew/opt/asdf/libexec/asdf.sh
