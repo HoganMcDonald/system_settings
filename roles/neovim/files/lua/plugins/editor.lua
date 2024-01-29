@@ -580,7 +580,10 @@ return {
   -- status line
   {
     'nvim-lualine/lualine.nvim',
-    dependencies = 'nvim-tree/nvim-web-devicons',
+    dependencies = {
+      'nvim-tree/nvim-web-devicons',
+      'f-person/git-blame.nvim',
+    },
     opts = function()
       local conditions = {
         buffer_not_empty = function()
@@ -728,6 +731,20 @@ return {
         end,
         icon = '',
         color = { fg = Colors.white, gui = 'bold' },
+      })
+
+      ins_left({
+        function()
+          local git_blame = require('gitblame')
+          -- This disables showing of the blame text next to the cursor
+          vim.g.gitblame_display_virtual_text = 0
+          if git_blame.is_blame_text_available then
+            return git_blame.get_current_blame_text()
+          else
+            return ''
+          end
+        end,
+        color = { fg = Colors.FOREGROUND, gui = 'bold' },
       })
 
       -- Insert mid section. You can make any number of sections in neovim :)
