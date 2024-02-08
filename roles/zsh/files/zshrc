@@ -109,3 +109,5 @@ source $HOME/system/roles/zsh/aliases.zsh
 source $HOME/system/roles/zsh/path.zsh
 
 eval "$(starship init zsh)"
+
+export EDITOR="nvim"

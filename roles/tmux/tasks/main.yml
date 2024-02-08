@@ -8,3 +8,24 @@
     dest: "~/.tmux.conf"
     state: link
     force: yes
+
+- name: Install tmuxinator
+  homebrew:
+    name: tmuxinator
+
+- name: Tmuxinator - Check if config exists
+  stat: path="{{ config }}/tmuxinator"
+  register: tmuxinator_config_stat
+
+- name: Tmuxinator - Back up config
+  command: "mv {{ config }}/tmuxinator {{ config }}/tmuxinator_old"
+  args:
+    creates: "{{ config }}/tmuxinator_old"
+  when: tmuxinator_config_stat.stat.exists
+
+- name: Tmuxinator - Make sure config is up to date
+  file:
+    src: "{{ dotfiles_home }}/roles/tmux/files/tmuxinator/"
+    dest: "{{ config }}/tmuxinator"
+    state: link
+    force: yes

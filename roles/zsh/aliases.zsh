@@ -7,6 +7,7 @@ alias cat='bat'
 alias preview="fzf --preview 'bat --color \"always\" {}'"
 alias top='htop'
 alias man='tldr'
+alias t='tmuxinator'
 
 alias vim='nvim'
 alias v='nvim'
