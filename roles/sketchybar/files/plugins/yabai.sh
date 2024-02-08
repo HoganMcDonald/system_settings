@@ -57,7 +57,7 @@ windows_on_spaces () {
     done
   done <<< "$CURRENT_SPACES"
 
-  sketchybar -m "${args[@]}"
+  # sketchybar -m "${args[@]}"
 }
 
 mouse_clicked() {
