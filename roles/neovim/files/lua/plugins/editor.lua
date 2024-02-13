@@ -9,9 +9,10 @@ return {
     dependencies = { 'nvim-lua/plenary.nvim' },
     cmd = 'Telescope',
     keys = {
-      { '<leader>pf', ':Telescope find_files<cr>', desc = 'Find files' },
-      { '<leader>po', ':Telescope oldfiles<cr>',   desc = 'Old files' },
-      { '<leader>fa', ':Telescope live_grep<cr>',  desc = 'All files' },
+      { '<leader>pf', ':Telescope find_files<cr>',     desc = 'Find files' },
+      { '<leader>po', ':Telescope oldfiles<cr>',       desc = 'Old files' },
+      { '<leader>fa', ':Telescope live_grep<cr>',      desc = 'All files' },
+      { 'gr',         ':Telescope lsp_references<CR>', desc = 'Go to references' },
     },
     opts = {
       defaults = {
