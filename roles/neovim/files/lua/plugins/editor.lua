@@ -78,6 +78,26 @@ return {
   },
 
   -- buffer tabs
+  -- {
+  --   "willothy/nvim-cokeline",
+  --   dependencies = {
+  --     "nvim-lua/plenary.nvim",     -- Required for v0.4.0+
+  --     "nvim-tree/nvim-web-devicons", -- If you want devicons
+  --     "stevearc/resession.nvim"    -- Optional, for persistent history
+  --   },
+  --   -- cmd = 'BufEnter',
+  --   -- keys = {
+  --   --   {
+  --   --     '<S-TAB>',
+  --   --     function ()
+  --   --       require('cokeline.mappings').pick('cokeline-focus-prev')
+  --   --     end,
+  --   --     desc = 'Previous Buffer'
+  --   --   }
+  --   -- },
+  --   config = true,
+  -- },
+
   {
     'akinsho/bufferline.nvim',
     event = 'BufEnter',
@@ -803,7 +823,7 @@ return {
 
   -- winbar
   {
-    "SmiteshP/nvim-navic",     -- statusline/winbar component using lsp
+    "SmiteshP/nvim-navic", -- statusline/winbar component using lsp
     dependencies = "neovim/nvim-lspconfig",
     opts = {
       highlight = true,
@@ -846,7 +866,7 @@ return {
     version = "*",
     dependencies = {
       "SmiteshP/nvim-navic",
-      "nvim-tree/nvim-web-devicons",       -- optional dependency
+      "nvim-tree/nvim-web-devicons", -- optional dependency
     },
     opts = {
       theme = {
@@ -878,5 +898,11 @@ return {
   -- global sed
   {
     "nvim-pack/nvim-spectre",
+  },
+
+  -- peek lines
+  {
+    'nacro90/numb.nvim',
+    config = true,
   },
 }
