@@ -8,3 +8,4 @@ tools:
   - ripgrep
   - gnu-sed
   - pgcli
+  - lazydocker
