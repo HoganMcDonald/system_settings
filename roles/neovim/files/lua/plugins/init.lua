@@ -16,6 +16,7 @@ local groups = {
   'treesitter',
   'coding',
   'ui',
+  'ai',
   'fun',
 }
 
