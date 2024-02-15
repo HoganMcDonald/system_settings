@@ -43,7 +43,8 @@ local function lsp_keymaps(bufnr)
   -- Generate LSP functionality
   vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
   vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
-  vim.keymap.set('n', '<leader>lh', vim.lsp.buf.signature_help, { desc = 'signature help', silent = true, remap = false, buffer = bufnr })
+  vim.keymap.set('n', '<leader>lh', vim.lsp.buf.signature_help,
+    { desc = 'signature help', silent = true, remap = false, buffer = bufnr })
   vim.keymap.set('n', 'ge', vim.lsp.buf.rename, opts)
   vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
   vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
@@ -63,11 +64,18 @@ M.on_attach = function(_, bufnr)
   lsp_keymaps(bufnr)
 end
 
-local capabilities = vim.lsp.protocol.make_client_capabilities()
-capabilities.textDocument.foldingRange = {
-  dynamicRegistration = false,
-  lineFoldingOnly = true,
-}
+local has_cmp, cmp_nvim_lsp = pcall(require, "cmp_nvim_lsp")
+local capabilities = vim.tbl_deep_extend(
+  "force",
+  {},
+  vim.lsp.protocol.make_client_capabilities(),
+  has_cmp and cmp_nvim_lsp.default_capabilities() or {},
+  {
+    dynamicRegistration = false,
+    lineFoldingOnly = true,
+  }
+)
+
 
 M.capabilities = capabilities
 

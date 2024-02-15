@@ -3,114 +3,161 @@ local bg = require('util.highlight').bg
 
 return {
   -- completion
-  -- {
-  --   "hrsh7th/nvim-cmp",
-  --   event = "InsertEnter",
-  --   dependencies = {
-  --     -- {
-  --     --   -- snippet plugin
-  --     --   "L3MON4D3/LuaSnip",
-  --     --   dependencies = "rafamadriz/friendly-snippets",
-  --     --   opts = { history = true, updateevents = "TextChanged,TextChangedI" },
-  --     --   config = function(_, opts)
-  --     --     require("plugins.configs.others").luasnip(opts)
-  --     --   end,
-  --     -- },
-  --
-  --     -- autopairing of (){}[] etc
-  --     {
-  --       "windwp/nvim-autopairs",
-  --       opts = {
-  --         fast_wrap = {},
-  --         disable_filetype = { "TelescopePrompt", "vim" },
-  --       },
-  --       config = function(_, opts)
-  --         require("nvim-autopairs").setup(opts)
-  --
-  --         -- setup cmp for autopairs
-  --         local cmp_autopairs = require "nvim-autopairs.completion.cmp"
-  --         require("cmp").event:on("confirm_done", cmp_autopairs.on_confirm_done())
-  --       end,
-  --     },
-  --
-  --     -- cmp sources plugins
-  --     {
-  --       "saadparwaiz1/cmp_luasnip",
-  --       "hrsh7th/cmp-nvim-lua",
-  --       "hrsh7th/cmp-nvim-lsp",
-  --       "hrsh7th/cmp-buffer",
-  --       "hrsh7th/cmp-path",
-  --     },
-  --   },
-  --   opts = function()
-  --     local cmp = require('cmp')
-  --
-  --     return {
-  --       snippet = {
-  --         -- REQUIRED - you must specify a snippet engine
-  --         expand = function(args)
-  --           vim.fn["vsnip#anonymous"](args.body) -- For `vsnip` users.
-  --           -- require('luasnip').lsp_expand(args.body) -- For `luasnip` users.
-  --           -- require('snippy').expand_snippet(args.body) -- For `snippy` users.
-  --           -- vim.fn["UltiSnips#Anon"](args.body) -- For `ultisnips` users.
-  --         end,
-  --       },
-  --       window = {
-  --         -- completion = cmp.config.window.bordered(),
-  --         -- documentation = cmp.config.window.bordered(),
-  --       },
-  --       mapping = cmp.mapping.preset.insert({
-  --         ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-  --         ['<C-f>'] = cmp.mapping.scroll_docs(4),
-  --         ['<C-Space>'] = cmp.mapping.complete(),
-  --         ['<C-e>'] = cmp.mapping.abort(),
-  --         ['<CR>'] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
-  --       }),
-  --       sources = cmp.config.sources({
-  --         { name = 'nvim_lsp' },
-  --         { name = 'vsnip' }, -- For vsnip users.
-  --         -- { name = 'luasnip' }, -- For luasnip users.
-  --         -- { name = 'ultisnips' }, -- For ultisnips users.
-  --         -- { name = 'snippy' }, -- For snippy users.
-  --       }, {
-  --         { name = 'buffer' },
-  --       })
-  --     }
-  --   end,
-  --   config = function(_, opts)
-  --     require('cmp').setup(opts)
-  --   end,
-  -- },
   {
-    'ms-jpq/coq_nvim',
-    branch = "coq",
+    "hrsh7th/nvim-cmp",
+    version = false, -- last release is way too old
+    event = "InsertEnter",
     dependencies = {
-      { "ms-jpq/coq.artifacts", branch = "artifacts" },
-      { "neovim/nvim-lspconfig" },
-    },
-    event = 'BufEnter',
-    build = function()
-      vim.cmd('COQdeps')
-    end,
-    config = function()
-      vim.g.coq_settings = {
-        auto_start = "shut-up",
-        display = {
-          ghost_text = {
-            enabled = true
-          },
-          pum = {
-            source_context = { "(", ")" }
-          }
+      {
+        -- snippet plugin
+        "L3MON4D3/LuaSnip",
+        dependencies = "rafamadriz/friendly-snippets",
+        opts = { history = true, updateevents = "TextChanged,TextChangedI" },
+        config = function(_, opts)
+          require("luasnip").config.set_config(opts)
+
+          -- vscode format
+          require("luasnip.loaders.from_vscode").lazy_load()
+          require("luasnip.loaders.from_vscode").lazy_load { paths = vim.g.vscode_snippets_path or "" }
+
+          -- snipmate format
+          require("luasnip.loaders.from_snipmate").load()
+          require("luasnip.loaders.from_snipmate").lazy_load { paths = vim.g.snipmate_snippets_path or "" }
+
+          -- lua format
+          require("luasnip.loaders.from_lua").load()
+          require("luasnip.loaders.from_lua").lazy_load { paths = vim.g.lua_snippets_path or "" }
+
+          vim.api.nvim_create_autocmd("InsertLeave", {
+            callback = function()
+              if
+                  require("luasnip").session.current_nodes[vim.api.nvim_get_current_buf()]
+                  and not require("luasnip").session.jump_active
+              then
+                require("luasnip").unlink_current()
+              end
+            end,
+          })
+        end,
+      },
+
+      -- autopairing of (){}[] etc
+      {
+        "windwp/nvim-autopairs",
+        opts = {
+          fast_wrap = {},
+          disable_filetype = { "TelescopePrompt", "vim" },
         },
-        keymap = {
-          recommended = true,
-          manual_complete = "<C-Space>",
-          jump_to_mark = "<C-j>",
-          pre_select = true
-        }
+        config = function(_, opts)
+          require("nvim-autopairs").setup(opts)
+
+          -- setup cmp for autopairs
+          local cmp_autopairs = require "nvim-autopairs.completion.cmp"
+          require("cmp").event:on("confirm_done", cmp_autopairs.on_confirm_done())
+        end,
+      },
+
+      -- sources
+      {
+        "saadparwaiz1/cmp_luasnip",
+        "hrsh7th/cmp-nvim-lua",
+        "hrsh7th/cmp-nvim-lsp",
+        "hrsh7th/cmp-buffer",
+        "hrsh7th/cmp-path",
+      },
+    },
+    opts = function()
+      vim.api.nvim_set_hl(0, "CmpGhostText", { link = "Comment", default = true })
+      local cmp = require("cmp")
+      local defaults = require("cmp.config.default")()
+      return {
+
+        completion = {
+          completeopt = "menu,menuone,noinsert",
+        },
+
+        mapping = cmp.mapping.preset.insert({
+          ["<C-n>"] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
+          ["<C-p>"] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
+          ["<C-b>"] = cmp.mapping.scroll_docs(-4),
+          ["<C-f>"] = cmp.mapping.scroll_docs(4),
+          ["<C-Space>"] = cmp.mapping.complete(),
+          ["<C-e>"] = cmp.mapping.abort(),
+          ["<CR>"] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
+          ["<S-CR>"] = cmp.mapping.confirm({
+            behavior = cmp.ConfirmBehavior.Replace,
+            select = true,
+          }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
+          ["<C-CR>"] = function(fallback)
+            cmp.abort()
+            fallback()
+          end,
+          ["<Tab>"] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_next_item()
+            elseif require("luasnip").expand_or_jumpable() then
+              vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<Plug>luasnip-expand-or-jump", true, true, true), "")
+            else
+              fallback()
+            end
+          end, {
+            "i",
+            "s",
+          }),
+          ["<S-Tab>"] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_prev_item()
+            elseif require("luasnip").jumpable(-1) then
+              vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<Plug>luasnip-jump-prev", true, true, true), "")
+            else
+              fallback()
+            end
+          end, {
+            "i",
+            "s",
+          }),
+        }),
+
+        snippet = {
+          expand = function(args)
+            require("luasnip").lsp_expand(args.body)
+          end,
+        },
+
+        sources = cmp.config.sources({
+          { name = "codeium" },
+          { name = "nvim_lsp" },
+          { name = "path" },
+          { name = "luasnip" },
+          { name = "buffer" },
+          { name = "nvim_lua" },
+        }),
+
+        formatting = {
+          format = function(_, item)
+            local icons = require("util.cmp").icons
+            if icons[item.kind] then
+              item.kind = icons[item.kind] .. item.kind
+            end
+            return item
+          end,
+        },
+
+        experimental = {
+          ghost_text = {
+            hl_group = "CmpGhostText",
+          },
+        },
+
+        sorting = defaults.sorting,
+
       }
-      vim.cmd('COQnow --shut-up')
+    end,
+    config = function(_, opts)
+      for _, source in ipairs(opts.sources) do
+        source.group_index = source.group_index or 1
+      end
+      require("cmp").setup(opts)
     end,
   },
 
@@ -189,54 +236,12 @@ return {
     opts = {},
   },
 
-  -- auto pairs
-  -- {
-  --   'echasnovski/mini.pairs',
-  --   event = 'VeryLazy',
-  --   opts = {},
-  -- },
-
-  -- Fast and feature-rich surround actions. For text that includes
-  -- surroundin characters like brackets or quotes, this allows you
-  -- to select the text inside, change or modify the surrounding characters,
-  -- and more.
-  {
-    'echasnovski/mini.surround',
-    keys = function(_, keys)
-      -- Populate the keys based on the user's options
-      local plugin = require('lazy.core.config').spec.plugins['mini.surround']
-      local opts = require('lazy.core.plugin').values(plugin, 'opts', false)
-      local mappings = {
-        { opts.mappings.add,            desc = 'Add surrounding',                     mode = { 'n', 'v' } },
-        { opts.mappings.delete,         desc = 'Delete surrounding' },
-        { opts.mappings.find,           desc = 'Find right surrounding' },
-        { opts.mappings.find_left,      desc = 'Find left surrounding' },
-        { opts.mappings.highlight,      desc = 'Highlight surrounding' },
-        { opts.mappings.replace,        desc = 'Replace surrounding' },
-        { opts.mappings.update_n_lines, desc = 'Update `MiniSurround.config.n_lines`' },
-      }
-      mappings = vim.tbl_filter(function(m)
-        return m[1] and #m[1] > 0
-      end, mappings)
-      return vim.list_extend(mappings, keys)
-    end,
-    opts = {
-      mappings = {
-        add = 'gza',            -- Add surrounding in Normal and Visual modes
-        delete = 'gzd',         -- Delete surrounding
-        find = 'gzf',           -- Find surrounding (to the right)
-        find_left = 'gzF',      -- Find surrounding (to the left)
-        highlight = 'gzh',      -- Highlight surrounding
-        replace = 'rzr',        -- Replace surrounding
-        update_n_lines = 'gzn', -- Update `n_lines`
-      },
-    },
-  },
-
   -- comments
-  { 'JoosepAlviste/nvim-ts-context-commentstring', lazy = true },
   {
     'echasnovski/mini.comment',
+    dependencies = {
+      { 'JoosepAlviste/nvim-ts-context-commentstring', lazy = true },
+    },
     event = 'VeryLazy',
     opts = {
       options = {
