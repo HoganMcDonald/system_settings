@@ -5,9 +5,9 @@ font_family      Hack Nerd Font Mono
 italic_font      auto
 bold_font        auto
 bold_italic_font auto
-font_size        13
+font_size        11
 placement_strategy top-left
-adjust_line_height 4
+adjust_line_height 12
 adjust_column_width 1
 hide_window_decorations yes
 
