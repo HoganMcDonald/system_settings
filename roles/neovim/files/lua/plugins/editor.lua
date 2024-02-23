@@ -479,7 +479,7 @@ return {
         -- ['<leader>k'] = { name = 'xxx' },
         ['<leader>l'] = { name = 'lsp' },
         -- ['<leader>m'] = { name = 'xxx' },
-        -- ['<leader>n'] = { name = 'xxx' },
+        ['<leader>n'] = { name = 'notes' },
         -- ['<leader>o'] = { name = 'xxx' },
         ['<leader>p'] = { name = 'project' },
         -- ['<leader>q'] = { name = 'xxx' },
@@ -666,6 +666,7 @@ return {
         table.insert(config.sections.lualine_x, component)
       end
 
+      -- bookend
       ins_left({
         function()
           return '▊'
@@ -674,6 +675,7 @@ return {
         padding = { left = 0, right = 1 }, -- We don't need space before this
       })
 
+      -- mode
       ins_left({
         -- mode component
         function()
@@ -706,35 +708,76 @@ return {
         padding = { right = 1 },
       })
 
+      -- git branch
       ins_left({
+        'branch',
+        icon = '',
+        color = { fg = Colors.PURPLE, gui = 'bold' },
+      })
+
+      -- file name
+      ins_left({
+        'filename',
+        cond = conditions.buffer_not_empty,
+        symbols = {
+          modified = '',    -- Text to show when the file is modified.
+          readonly = '',    -- Text to show when the file is non-modifiable or readonly.
+          unnamed = '', -- Text to show for unnamed buffers.
+          newfile = '',   -- Text to show for newly created file before first write
+        },
+        color = { fg = Colors.ACCENT, gui = 'bold' },
+      })
+
+      -- git diff
+      ins_left({
+        'diff',
+        -- Is it me or the symbol for modified us really weird
+        symbols = { added = ' ', modified = '󰝤 ', removed = ' ' },
+        diff_color = {
+          added = { fg = Colors.GREEN },
+          modified = { fg = Colors.BLUE },
+          removed = { fg = Colors.RED },
+        },
+        cond = conditions.hide_in_width,
+      })
+
+      -- git blame
+      ins_left({
+        function()
+          local git_blame = require('gitblame')
+          -- This disables showing of the blame text next to the cursor
+          vim.g.gitblame_display_virtual_text = 0
+          if git_blame.is_blame_text_available then
+            return git_blame.get_current_blame_text()
+          else
+            return ''
+          end
+        end,
+        color = { fg = Colors.UI_GREY, gui = 'bold' },
+      })
+
+      -- Middle Section
+      ins_left({
+        function()
+          return '%='
+        end,
+      })
+
+      -- file size
+      ins_right({
         -- filesize component
         'filesize',
         cond = conditions.buffer_not_empty,
       })
 
-      ins_left({
-        'filename',
-        cond = conditions.buffer_not_empty,
-        color = { fg = Colors.ACCENT, gui = 'bold' },
-      })
+      -- location
+      ins_right({ 'location' })
 
-      ins_left({ 'location' })
+      -- progress
+      ins_right({ 'progress', color = { fg = Colors.FOREGROUND, gui = 'bold' } })
 
-      ins_left({ 'progress', color = { fg = Colors.FOREGROUND, gui = 'bold' } })
-
-      ins_left({
-        'diagnostics',
-        sources = { 'nvim_diagnostic' },
-        symbols = { error = ' ', warn = ' ', info = ' ' },
-        diagnostics_color = {
-          color_error = { fg = Colors.RED },
-          color_warn = { fg = Colors.YELLOW },
-          color_info = { fg = Colors.BLUE },
-        },
-      })
-
-      ins_left({
-        -- Lsp server name .
+      -- lsp server
+      ins_right({
         function()
           local msg = ''
           local buf_ft = vim.api.nvim_buf_get_option(0, 'filetype')
@@ -754,61 +797,19 @@ return {
         color = { fg = Colors.white, gui = 'bold' },
       })
 
-      ins_left({
-        function()
-          local git_blame = require('gitblame')
-          -- This disables showing of the blame text next to the cursor
-          vim.g.gitblame_display_virtual_text = 0
-          if git_blame.is_blame_text_available then
-            return git_blame.get_current_blame_text()
-          else
-            return ''
-          end
-        end,
-        color = { fg = Colors.UI_GREY, gui = 'bold' },
-      })
-
-      -- Insert mid section. You can make any number of sections in neovim :)
-      -- for lualine it's any number greater then 2
-      ins_left({
-        function()
-          return '%='
-        end,
-      })
-
-      -- Add components to right sections
+      -- diagnostics
       ins_right({
-        'o:encoding',       -- option component same as &encoding in viml
-        fmt = string.upper, -- I'm not sure why it's upper case either ;)
-        cond = conditions.hide_in_width,
-        color = { fg = Colors.FOREGROUND },
-      })
-
-      ins_right({
-        'fileformat',
-        fmt = string.upper,
-        icons_enabled = false, -- I think icons are cool but Eviline doesn't have them. sigh
-        color = { fg = Colors.FOREGROUND },
-      })
-
-      ins_right({
-        'branch',
-        icon = '',
-        color = { fg = Colors.PURPLE, gui = 'bold' },
-      })
-
-      ins_right({
-        'diff',
-        -- Is it me or the symbol for modified us really weird
-        symbols = { added = ' ', modified = '󰝤 ', removed = ' ' },
-        diff_color = {
-          added = { fg = Colors.GREEN },
-          modified = { fg = Colors.BLUE },
-          removed = { fg = Colors.RED },
+        'diagnostics',
+        sources = { 'nvim_diagnostic' },
+        symbols = { error = ' ', warn = ' ', info = ' ' },
+        diagnostics_color = {
+          color_error = { fg = Colors.RED },
+          color_warn = { fg = Colors.YELLOW },
+          color_info = { fg = Colors.BLUE },
         },
-        cond = conditions.hide_in_width,
       })
 
+      -- bookend
       ins_right({
         function()
           return '▊'
