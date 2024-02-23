@@ -63,46 +63,61 @@ return {
     keys = {
       {
         '˙',
-        function ()
+        function()
           require('nvim-tmux-navigation').NvimTmuxNavigateLeft()
         end,
         silent = true,
       },
       {
         '∆',
-        function ()
+        function()
           require('nvim-tmux-navigation').NvimTmuxNavigateDown()
         end,
         silent = true,
       },
       {
         '˚',
-        function ()
+        function()
           require('nvim-tmux-navigation').NvimTmuxNavigateUp()
         end,
         silent = true,
       },
       {
         '¬',
-        function ()
+        function()
           require('nvim-tmux-navigation').NvimTmuxNavigateRight()
         end,
         silent = true,
       },
       {
         '«',
-        function ()
+        function()
           require('nvim-tmux-navigation').NvimTmuxNavigateLastActive()
         end,
         silent = true,
       },
       {
         '<M-space>',
-        function ()
+        function()
           require('nvim-tmux-navigation').NvimTmuxNavigateNext()
         end,
         silent = true,
       },
     },
   },
+
+  -- global notes
+  {
+    'backdround/global-note.nvim',
+    keys = {
+      {
+        '<leader>n',
+        function()
+          require('global-note').toggle_note()
+        end,
+        desc = "Toggle global note",
+      },
+    },
+    config = true,
+  }
 }
