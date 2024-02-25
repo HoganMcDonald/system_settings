@@ -9,7 +9,7 @@
     - not homebrew_check.stat.exists
 
 - name: Add to path in current session - only an issue for initial setup
-  shell: (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> /Users/hogan.mcdonald/.zprofile
+  shell: (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> ~/.zprofile
 
 - name: call brew shellenv script
   shell: eval "$(/opt/homebrew/bin/brew shellenv)"
