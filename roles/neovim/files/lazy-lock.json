@@ -1,7 +1,6 @@
 {
   "LuaSnip": { "branch": "master", "commit": "81d83ec368c1e613ce04199d63887cee1a840cec" },
   "barbecue": { "branch": "main", "commit": "cd7e7da622d68136e13721865b4d919efd6325ed" },
-  "base16-nvim": { "branch": "master", "commit": "b3e9ec6a82c05b562cd71f40fe8964438a9ba64a" },
   "bufferline.nvim": { "branch": "main", "commit": "d6cb9b7cac52887bcac65f8698e67479553c0748" },
   "cmp-buffer": { "branch": "main", "commit": "3022dbc9166796b644a841a02de8dd1cc1d311fa" },
   "cmp-nvim-lsp": { "branch": "main", "commit": "5af77f54de1b16c34b23cba810150689a3a90312" },
@@ -53,6 +52,7 @@
   "nvim-web-devicons": { "branch": "master", "commit": "b427ac5f9dff494f839e81441fb3f04a58cbcfbc" },
   "plenary.nvim": { "branch": "master", "commit": "663246936325062427597964d81d30eaa42ab1e4" },
   "promise-async": { "branch": "main", "commit": "94f6f03c6c1e2aab551aacdf0c1e597a7269abb6" },
+  "rails-rspec-toggle.nvim": { "branch": "main", "commit": "8be16ae227a752a4a0bc0d591671f19af888916f" },
   "scratch.nvim": { "branch": "main", "commit": "605201a177400cf68fab56a7f7857fb55f48d666" },
   "smartcolumn.nvim": { "branch": "main", "commit": "a52915d6d9abf9972e249ebcffcc651cf9b062dd" },
   "statuscol.nvim": { "branch": "main", "commit": "3b629754420919575a9e5758027d6e1831dbf2aa" },

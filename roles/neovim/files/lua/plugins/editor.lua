@@ -906,4 +906,25 @@ return {
     'nacro90/numb.nvim',
     config = true,
   },
+
+  -- toggle rspec tests
+  {
+    'HoganMcDonald/rails-rspec-toggle.nvim',
+    dev = true,
+    keys = {
+      {
+        '<leader>tt',
+        function ()
+          require('rails-rspec-toggle').toggle()
+        end,
+        desc = 'Toggle rspec test file',
+      },
+    },
+    opts = {
+      spec_directory = 'spec',
+    },
+    config = function(_, opts)
+      require('rails-rspec-toggle').setup(opts)
+    end,
+  },
 }
