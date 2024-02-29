@@ -382,6 +382,19 @@ return {
     end,
   },
 
+  -- symbol explorer
+  {
+    'simrat39/symbols-outline.nvim',
+    keys = {
+      { '<leader>bs', '<cmd>SymbolsOutline<cr>', desc = 'Toggle symbols' },
+    },
+    opts = {
+      autofold_depth = 2,
+      fold_markers = { '', '' }
+    },
+    config = true,
+  },
+
   -- Flash enhances the built-in search functionality by showing labels
   -- at the end of each match, letting you quickly jump to a specific
   -- location.
@@ -416,9 +429,9 @@ return {
     end,
   },
 
-  -- Automatically highlights other instances of the word under your cursor.
-  -- This works with LSP, Treesitter, and regexp matching to find the other
-  -- instances.
+  -- Automatically highlights/underlines other instances of the word under your
+  -- cursor. This works with LSP, Treesitter, and regexp matching to find the
+  -- other instances.
   {
     'RRethy/vim-illuminate',
     event = { 'BufReadPost', 'BufNewFile' },
@@ -720,10 +733,10 @@ return {
         'filename',
         cond = conditions.buffer_not_empty,
         symbols = {
-          modified = '',    -- Text to show when the file is modified.
-          readonly = '',    -- Text to show when the file is non-modifiable or readonly.
-          unnamed = '', -- Text to show for unnamed buffers.
-          newfile = '',   -- Text to show for newly created file before first write
+          modified = '', -- Text to show when the file is modified.
+          readonly = '', -- Text to show when the file is non-modifiable or readonly.
+          unnamed = '',  -- Text to show for unnamed buffers.
+          newfile = '',  -- Text to show for newly created file before first write
         },
         color = { fg = Colors.ACCENT, gui = 'bold' },
       })
@@ -914,7 +927,7 @@ return {
     keys = {
       {
         '<leader>tt',
-        function ()
+        function()
           require('rails-rspec-toggle').toggle()
         end,
         desc = 'Toggle rspec test file',

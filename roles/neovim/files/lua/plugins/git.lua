@@ -6,6 +6,7 @@ return {
     keys = {
       { '<leader>gc', ':Git commit<cr>', desc = 'Commit' },
     },
+    cmd = "Git"
   },
 
   {
