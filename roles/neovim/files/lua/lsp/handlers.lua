@@ -53,12 +53,8 @@ local function lsp_keymaps(bufnr)
   vim.keymap.set('n', 'gt', vim.lsp.buf.type_definition, opts)
 
   -- Navigate diagnostics errors/mesages
-  vim.keymap.set('n', 'gk', vim.diagnostic.goto_next, opts)
-  vim.keymap.set('n', 'gj', vim.diagnostic.goto_prev, opts)
-
-  -- Telescope helpers for listing symbols and diagnostics
-  vim.keymap.set('n', '<leader>fs', '<cmd>Telescope lsp_document_symbols<cr>', opts)
-  vim.keymap.set('n', '<leader>fd', '<cmd>Telescope diagnostics<cr>', opts)
+  vim.keymap.set('n', ']d', vim.diagnostic.goto_next, opts)
+  vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
 end
 
 M.on_attach = function(_, bufnr)
