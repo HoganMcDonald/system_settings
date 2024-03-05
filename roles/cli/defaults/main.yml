@@ -9,3 +9,4 @@ tools:
   - gnu-sed
   - pgcli
   - lazydocker
+  - lastpass-cli
