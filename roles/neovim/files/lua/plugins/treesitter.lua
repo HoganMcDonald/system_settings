@@ -90,4 +90,24 @@ return {
       end
     end,
   },
+
+  {
+    "sustech-data/wildfire.nvim",
+    event = "VeryLazy",
+    dependencies = { "nvim-treesitter/nvim-treesitter" },
+    config = function()
+      require("wildfire").setup()
+    end,
+  },
+
+  {
+    "briangwaltney/paren-hint.nvim",
+    lazy = false,
+    dependencies = {
+      "nvim-treesitter/nvim-treesitter",
+    },
+    config = function()
+      require("paren-hint")
+    end,
+  },
 }
