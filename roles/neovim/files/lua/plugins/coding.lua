@@ -64,6 +64,7 @@ return {
         "hrsh7th/cmp-nvim-lsp",
         "hrsh7th/cmp-buffer",
         "hrsh7th/cmp-path",
+        "hrsh7th/cmp-emoji",
       },
     },
     opts = function()
@@ -131,6 +132,7 @@ return {
           { name = "luasnip" },
           { name = "buffer" },
           { name = "nvim_lua" },
+          { name = "emoji" },
         }),
 
         formatting = {
@@ -184,6 +186,8 @@ return {
         -- Use a sub-list to run only the first available formatter
         javascript = { { "prettierd", "prettier" } },
         typescript = { { "prettierd", "prettier" } },
+        javascriptreact = { { "prettierd", "prettier" } },
+        typescriptreact = { { "prettierd", "prettier" } },
       },
     },
   },
