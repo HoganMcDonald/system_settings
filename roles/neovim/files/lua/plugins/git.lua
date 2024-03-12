@@ -9,49 +9,6 @@ return {
     cmd = "Git"
   },
 
-  {
-    "NeogitOrg/neogit",
-    dependencies = {
-      "nvim-lua/plenary.nvim", -- required
-      -- diffview
-      'sindrets/diffview.nvim',
-    },
-    keys = {
-      { '<leader>gn', '<cmd>Neogit<cr>', desc = 'Neogit' },
-    },
-    opts = {
-      disable_signs = false,
-      disable_hint = true,
-      disable_context_highlighting = false,
-      disable_builtin_notifications = true,
-      status = {
-        recent_commit_count = 10,
-      },
-      -- customize displayed signs
-      signs = {
-        -- { CLOSED, OPENED }
-        section = { "", "" },
-        item = { "", "" },
-        hunk = { "", "" },
-      },
-      integrations = {
-        diffview = true
-      },
-      sections = {
-        recent = {
-          folded = false,
-        },
-      },
-    },
-    config = function(_, opts)
-      require("neogit").setup(opts)
-
-      hi_link("NeogitCommitViewHeader", "Title")
-      hi_link("NeogitDiffAddHighlight", "DiffInlineAdd")
-      hi_link("NeogitDiffDeleteHighlight", "DiffInlineDelete")
-    end,
-  },
-
   -- diffview
   {
     'sindrets/diffview.nvim',
