@@ -382,19 +382,6 @@ return {
     end,
   },
 
-  -- symbol explorer
-  {
-    'simrat39/symbols-outline.nvim',
-    keys = {
-      { '<leader>bs', '<cmd>SymbolsOutline<cr>', desc = 'Toggle symbols' },
-    },
-    opts = {
-      autofold_depth = 2,
-      fold_markers = { '', '' }
-    },
-    config = true,
-  },
-
   -- Flash enhances the built-in search functionality by showing labels
   -- at the end of each match, letting you quickly jump to a specific
   -- location.
@@ -616,7 +603,6 @@ return {
     'nvim-lualine/lualine.nvim',
     dependencies = {
       'nvim-tree/nvim-web-devicons',
-      'f-person/git-blame.nvim',
     },
     opts = function()
       local conditions = {
@@ -752,21 +738,6 @@ return {
           removed = { fg = Colors.RED },
         },
         cond = conditions.hide_in_width,
-      })
-
-      -- git blame
-      ins_left({
-        function()
-          local git_blame = require('gitblame')
-          -- This disables showing of the blame text next to the cursor
-          vim.g.gitblame_display_virtual_text = 0
-          if git_blame.is_blame_text_available then
-            return git_blame.get_current_blame_text()
-          else
-            return ''
-          end
-        end,
-        color = { fg = Colors.UI_GREY, gui = 'bold' },
       })
 
       -- Middle Section
