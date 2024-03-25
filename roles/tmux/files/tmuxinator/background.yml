@@ -46,3 +46,8 @@ root: ~/
 
 windows:
   - postgres: postgres
+  - sidekiq:
+      root: ~/reforge/
+      panes:
+        - docker-compose exec web bundle exec sidekiq -C config/sidekiq.yml
+
