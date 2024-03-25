@@ -38,6 +38,19 @@ local function setup_editor()
   -- highlight selection after adjusting indent
   map('v', '<', '<gv')
   map('v', '>', '>gv')
+
+  -- copy file path
+  map(
+    'n',
+    '<leader>fc',
+    function()
+      local path = vim.fn.expand("%:p")
+      vim.fn.setreg("+", path)
+      vim.notify('Copied "' .. path .. '" to the clipboard!')
+    end,
+    {
+      desc = 'Copy current file path',
+    })
 end
 
 function M.setup()
