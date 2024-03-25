@@ -20,7 +20,6 @@ function M.mason_lspconfig_setup()
       'solargraph',
       'sqlls',
       'lua_ls',
-      'yamlls',
     },
   })
 end
