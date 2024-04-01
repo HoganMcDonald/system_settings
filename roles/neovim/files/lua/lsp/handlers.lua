@@ -12,7 +12,7 @@ M.setup = function()
     vim.fn.sign_define(sign.name, { texthl = sign.name, text = sign.text, numhl = '' })
   end
 
-  vim.diagnostic.config({
+  vim.diagnostic.config {
     virtual_text = false,
     signs = { active = signs },
     update_in_insert = true,
@@ -26,7 +26,7 @@ M.setup = function()
       header = '',
       prefix = '',
     },
-  })
+  }
 
   vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(vim.lsp.handlers.hover, {
     border = 'rounded',
@@ -44,8 +44,12 @@ local function lsp_keymaps(bufnr)
   vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
   vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
   -- vim.keymap.set('n', '<leader>bf', vim.lsp.buf.format, opts)
-  vim.keymap.set('n', '<leader>lh', vim.lsp.buf.signature_help,
-    { desc = 'signature help', silent = true, remap = false, buffer = bufnr })
+  vim.keymap.set(
+    'n',
+    '<leader>lh',
+    vim.lsp.buf.signature_help,
+    { desc = 'signature help', silent = true, remap = false, buffer = bufnr }
+  )
   vim.keymap.set('n', 'ge', vim.lsp.buf.rename, opts)
   vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
   vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
@@ -61,9 +65,9 @@ M.on_attach = function(_, bufnr)
   lsp_keymaps(bufnr)
 end
 
-local has_cmp, cmp_nvim_lsp = pcall(require, "cmp_nvim_lsp")
+local has_cmp, cmp_nvim_lsp = pcall(require, 'cmp_nvim_lsp')
 local capabilities = vim.tbl_deep_extend(
-  "force",
+  'force',
   {},
   vim.lsp.protocol.make_client_capabilities(),
   has_cmp and cmp_nvim_lsp.default_capabilities() or {},
@@ -72,7 +76,6 @@ local capabilities = vim.tbl_deep_extend(
     lineFoldingOnly = true,
   }
 )
-
 
 M.capabilities = capabilities
 

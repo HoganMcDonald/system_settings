@@ -6,14 +6,14 @@ return {
     keys = {
       { '<leader>gc', ':Git commit<cr>', desc = 'Commit' },
     },
-    cmd = "Git"
+    cmd = 'Git',
   },
 
   -- diffview
   {
     'sindrets/diffview.nvim',
     dependencies = {
-      "nvim-lua/plenary.nvim",
+      'nvim-lua/plenary.nvim',
     },
     keys = {
       {
@@ -23,31 +23,56 @@ return {
           local view = lib.get_current_view()
           if view then
             -- Current tabpage is a Diffview; close it
-            vim.cmd(":DiffviewClose")
+            vim.cmd ':DiffviewClose'
           else
             -- No open Diffview exists: open a new one
-            vim.cmd(":DiffviewOpen")
+            vim.cmd ':DiffviewOpen'
           end
         end,
-        desc = "[diffview] Toggle Diffview"
+        desc = '[diffview] Toggle Diffview',
       },
-      { "<leader>gh", "<cmd>DiffviewFileHistory<cr>",                    mode = { "n" }, desc = "[diffview] Repo history" },
-      { "<leader>gf", "<cmd>DiffviewFileHistory --follow %<cr>",         mode = { "n" }, desc = "[diffview] File history" },
-      { "<leader>gm", "<cmd>DiffviewOpen main<cr>",                      mode = { "n" }, desc = "[diffview] Diff with main" },
-      { "<leader>gl", "<cmd>.DiffviewFileHistory --follow<CR>",          mode = { "n" }, desc = "[diffview] Line history" },
-      { "<leader>gg", "<esc><cmd>'<,'>DiffviewFileHistory --follow<CR>", mode = { "v" }, desc = "[diffview] Range history" },
+      {
+        '<leader>gh',
+        '<cmd>DiffviewFileHistory<cr>',
+        mode = { 'n' },
+        desc = '[diffview] Repo history',
+      },
+      {
+        '<leader>gf',
+        '<cmd>DiffviewFileHistory --follow %<cr>',
+        mode = { 'n' },
+        desc = '[diffview] File history',
+      },
+      {
+        '<leader>gm',
+        '<cmd>DiffviewOpen main<cr>',
+        mode = { 'n' },
+        desc = '[diffview] Diff with main',
+      },
+      {
+        '<leader>gl',
+        '<cmd>.DiffviewFileHistory --follow<CR>',
+        mode = { 'n' },
+        desc = '[diffview] Line history',
+      },
+      {
+        '<leader>gg',
+        '<esc><cmd>\'<,\'>DiffviewFileHistory --follow<CR>',
+        mode = { 'v' },
+        desc = '[diffview] Range history',
+      },
     },
     config = function()
-      local actions = require("diffview.actions")
+      local actions = require 'diffview.actions'
 
       -- set fillchars in vim
-      vim.opt.fillchars:append { diff = "╱" }
+      vim.opt.fillchars:append { diff = '╱' }
 
-      require("diffview").setup({
+      require('diffview').setup {
         diff_binaries = false,
         enhanced_diff_hl = true,
-        git_cmd = { "git" },
-        hg_cmd = { "chg" },
+        git_cmd = { 'git' },
+        hg_cmd = { 'chg' },
         use_icons = true,
         show_help_hints = false,
         view = {
@@ -56,7 +81,7 @@ return {
             winbar_info = false,
           },
           merge_tool = {
-            layout = "diff3_mixed",
+            layout = 'diff3_mixed',
             disable_diagnostics = true,
             winbar_info = true,
           },
@@ -66,15 +91,15 @@ return {
           },
         },
         file_panel = {
-          listing_style = "tree",
+          listing_style = 'tree',
           tree_options = {
             flatten_dirs = true,
-            folder_statuses = "only_folded",
+            folder_statuses = 'only_folded',
           },
           win_config = function()
             local editor_width = vim.o.columns
             return {
-              position = "left",
+              position = 'left',
               width = editor_width >= 247 and 45 or 35,
             }
           end,
@@ -83,16 +108,16 @@ return {
           log_options = {
             git = {
               single_file = {
-                diff_merges = "first-parent",
+                diff_merges = 'first-parent',
                 follow = true,
               },
               multi_file = {
-                diff_merges = "first-parent",
+                diff_merges = 'first-parent',
               },
             },
           },
           win_config = {
-            position = "bottom",
+            position = 'bottom',
             height = 16,
           },
         },
@@ -102,19 +127,19 @@ return {
         },
         keymaps = {
           view = {
-            { "n", "q",     ":DiffviewClose<cr>",      { desc = "Close Panel" } },
-            { "n", "<esc>", ":DiffviewClose<cr>",      { desc = "Close Panel" } },
+            { 'n', 'q', ':DiffviewClose<cr>', { desc = 'Close Panel' } },
+            { 'n', '<esc>', ':DiffviewClose<cr>', { desc = 'Close Panel' } },
           },
           file_history_panel = {
-            { "n", "q",     ":DiffviewClose<cr>",       { desc = "Close Panel" } },
-            { "n", "<esc>", ":DiffviewClose<cr>",       { desc = "Close Panel" } },
+            { 'n', 'q', ':DiffviewClose<cr>', { desc = 'Close Panel' } },
+            { 'n', '<esc>', ':DiffviewClose<cr>', { desc = 'Close Panel' } },
           },
           file_panel = {
-            { "n", "q",     ":DiffviewClose<cr>",      { desc = "Close Panel" } },
-            { "n", "<esc>", ":DiffviewClose<cr>",      { desc = "Close Panel" } },
+            { 'n', 'q', ':DiffviewClose<cr>', { desc = 'Close Panel' } },
+            { 'n', '<esc>', ':DiffviewClose<cr>', { desc = 'Close Panel' } },
           },
         },
-      })
+      }
     end,
   },
 
@@ -123,12 +148,12 @@ return {
     'lewis6991/gitsigns.nvim',
     event = 'BufRead',
     keys = {
-      { '<leader>hn', ':Gitsigns next_hunk<cr>',    desc = 'Next' },
-      { '<leader>hp', ':Gitsigns prev_hunk<cr>',    desc = 'Previous' },
-      { '<leader>hs', ':Gitsigns stage_hunk<cr>',   desc = 'Stage' },
-      { '<leader>hr', ':Gitsigns reset_hunk<cr>',   desc = 'Reset' },
+      { '<leader>hn', ':Gitsigns next_hunk<cr>', desc = 'Next' },
+      { '<leader>hp', ':Gitsigns prev_hunk<cr>', desc = 'Previous' },
+      { '<leader>hs', ':Gitsigns stage_hunk<cr>', desc = 'Stage' },
+      { '<leader>hr', ':Gitsigns reset_hunk<cr>', desc = 'Reset' },
       { '<leader>br', ':Gitsigns reset_buffer<cr>', desc = 'Git reset' },
-      { '<leader>gb', ':Gitsigns blame_line<cr>',   desc = 'Blame Line' },
+      { '<leader>gb', ':Gitsigns blame_line<cr>', desc = 'Blame Line' },
     },
     opts = {
       signs = {

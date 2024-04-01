@@ -1,4 +1,4 @@
-local Colors = require('util.colors')
+local Colors = require 'util.colors'
 local bg = require('util.highlight').bg
 local fg = require('util.highlight').fg
 
@@ -8,7 +8,7 @@ return {
     'kwsp/halcyon-neovim',
     lazy = false,
     config = function()
-      vim.cmd.colorscheme('halcyon')
+      vim.cmd.colorscheme 'halcyon'
 
       -- fixes issue where highlights for vertsplit seem backwards
       bg('VertSplit', Colors.BACKGROUND)

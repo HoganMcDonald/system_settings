@@ -29,7 +29,7 @@ local commands = {
       -- Auto create dir when saving a file, in case some intermediate directory does not exist
       event = 'BufWritePre',
       command = function(event)
-        if event.match:match('^%w%w+://') then
+        if event.match:match '^%w%w+://' then
           return
         end
         local file = vim.loop.fs_realpath(event.match) or event.match
@@ -42,7 +42,7 @@ local commands = {
       -- resize splits if window resized
       event = 'VimResized',
       command = function()
-        vim.cmd('tabdo wincmd =')
+        vim.cmd 'tabdo wincmd ='
       end,
     },
     {

@@ -1,4 +1,4 @@
-local Colors = require('util.colors')
+local Colors = require 'util.colors'
 local bg = require('util.highlight').bg
 local fg = require('util.highlight').fg
 
@@ -9,10 +9,10 @@ return {
     dependencies = { 'nvim-lua/plenary.nvim' },
     cmd = 'Telescope',
     keys = {
-      { '<leader>pf', ':Telescope find_files<cr>',     desc = 'Find files' },
-      { '<leader>po', ':Telescope oldfiles<cr>',       desc = 'Old files' },
-      { '<leader>fa', ':Telescope live_grep<cr>',      desc = 'All files' },
-      { 'gr',         ':Telescope lsp_references<CR>', desc = 'Go to references' },
+      { '<leader>pf', ':Telescope find_files<cr>', desc = 'Find files' },
+      { '<leader>po', ':Telescope oldfiles<cr>', desc = 'Old files' },
+      { '<leader>fa', ':Telescope live_grep<cr>', desc = 'All files' },
+      { 'gr', ':Telescope lsp_references<CR>', desc = 'Go to references' },
     },
     opts = {
       defaults = {
@@ -102,10 +102,10 @@ return {
     'akinsho/bufferline.nvim',
     event = 'BufEnter',
     keys = {
-      { '<leader>bp', '<Cmd>BufferLineTogglePin<CR>',            desc = 'Toggle buffer pin' },
+      { '<leader>bp', '<Cmd>BufferLineTogglePin<CR>', desc = 'Toggle buffer pin' },
       { '<leader>bd', '<Cmd>BufferLineGroupClose ungrouped<CR>', desc = 'Delete non-pinned buffers' },
-      { '<S-TAB>',    ':BufferLineCyclePrev<cr>',                desc = 'Previous buffer' },
-      { '<TAB>',      ':BufferLineCycleNext<cr>',                desc = 'Next buffer' },
+      { '<S-TAB>', ':BufferLineCyclePrev<cr>', desc = 'Previous buffer' },
+      { '<TAB>', ':BufferLineCycleNext<cr>', desc = 'Next buffer' },
     },
     config = function()
       local opts = {
@@ -113,7 +113,7 @@ return {
           offsets = { { filetype = 'NvimTree', text = '', padding = 1 } },
           groups = {
             items = {
-              require('bufferline.groups').builtin.pinned:with({ icon = '' }),
+              require('bufferline.groups').builtin.pinned:with { icon = '' },
             },
           },
           diagnostics = 'nvim_lsp',
@@ -171,7 +171,7 @@ return {
     },
     opts = {
       on_attach = function(bufnr)
-        local api = require('nvim-tree.api')
+        local api = require 'nvim-tree.api'
 
         local function opts(desc)
           return { desc = 'nvim-tree: ' .. desc, buffer = bufnr, noremap = true, silent = true, nowait = true }
@@ -180,69 +180,69 @@ return {
         -- Default mappings. Feel free to modify or remove as you wish.
         --
         -- BEGIN_DEFAULT_ON_ATTACH
-        vim.keymap.set('n', '<C-]>', api.tree.change_root_to_node, opts('CD'))
-        vim.keymap.set('n', '<C-e>', api.node.open.replace_tree_buffer, opts('Open: In Place'))
-        vim.keymap.set('n', '<C-k>', api.node.show_info_popup, opts('Info'))
-        vim.keymap.set('n', '<C-r>', api.fs.rename_sub, opts('Rename: Omit Filename'))
-        vim.keymap.set('n', '<C-t>', api.node.open.tab, opts('Open: New Tab'))
-        vim.keymap.set('n', '<C-v>', api.node.open.vertical, opts('Open: Vertical Split'))
-        vim.keymap.set('n', '<C-x>', api.node.open.horizontal, opts('Open: Horizontal Split'))
-        vim.keymap.set('n', '<BS>', api.node.navigate.parent_close, opts('Close Directory'))
-        vim.keymap.set('n', '<CR>', api.node.open.edit, opts('Open'))
-        vim.keymap.set('n', '<Tab>', api.node.open.preview, opts('Open Preview'))
-        vim.keymap.set('n', '>', api.node.navigate.sibling.next, opts('Next Sibling'))
-        vim.keymap.set('n', '<', api.node.navigate.sibling.prev, opts('Previous Sibling'))
-        vim.keymap.set('n', '.', api.node.run.cmd, opts('Run Command'))
-        vim.keymap.set('n', '-', api.tree.change_root_to_parent, opts('Up'))
-        vim.keymap.set('n', 'a', api.fs.create, opts('Create'))
-        vim.keymap.set('n', 'bmv', api.marks.bulk.move, opts('Move Bookmarked'))
-        vim.keymap.set('n', 'B', api.tree.toggle_no_buffer_filter, opts('Toggle No Buffer'))
-        vim.keymap.set('n', 'c', api.fs.copy.node, opts('Copy'))
-        vim.keymap.set('n', 'C', api.tree.toggle_git_clean_filter, opts('Toggle Git Clean'))
-        vim.keymap.set('n', '[c', api.node.navigate.git.prev, opts('Prev Git'))
-        vim.keymap.set('n', ']c', api.node.navigate.git.next, opts('Next Git'))
-        vim.keymap.set('n', 'd', api.fs.remove, opts('Delete'))
-        vim.keymap.set('n', 'D', api.fs.trash, opts('Trash'))
-        vim.keymap.set('n', 'E', api.tree.expand_all, opts('Expand All'))
-        vim.keymap.set('n', 'e', api.fs.rename_basename, opts('Rename: Basename'))
-        vim.keymap.set('n', ']e', api.node.navigate.diagnostics.next, opts('Next Diagnostic'))
-        vim.keymap.set('n', '[e', api.node.navigate.diagnostics.prev, opts('Prev Diagnostic'))
-        vim.keymap.set('n', 'F', api.live_filter.clear, opts('Clean Filter'))
-        vim.keymap.set('n', 'f', api.live_filter.start, opts('Filter'))
-        vim.keymap.set('n', 'g?', api.tree.toggle_help, opts('Help'))
-        vim.keymap.set('n', 'gy', api.fs.copy.absolute_path, opts('Copy Absolute Path'))
-        vim.keymap.set('n', 'H', api.tree.toggle_hidden_filter, opts('Toggle Dotfiles'))
-        vim.keymap.set('n', 'I', api.tree.toggle_gitignore_filter, opts('Toggle Git Ignore'))
-        vim.keymap.set('n', 'J', api.node.navigate.sibling.last, opts('Last Sibling'))
-        vim.keymap.set('n', 'K', api.node.navigate.sibling.first, opts('First Sibling'))
-        vim.keymap.set('n', 'm', api.marks.toggle, opts('Toggle Bookmark'))
-        vim.keymap.set('n', 'o', api.node.open.edit, opts('Open'))
-        vim.keymap.set('n', 'O', api.node.open.no_window_picker, opts('Open: No Window Picker'))
-        vim.keymap.set('n', 'p', api.fs.paste, opts('Paste'))
-        vim.keymap.set('n', 'P', api.node.navigate.parent, opts('Parent Directory'))
-        vim.keymap.set('n', 'q', api.tree.close, opts('Close'))
-        vim.keymap.set('n', 'r', api.fs.rename, opts('Rename'))
-        vim.keymap.set('n', 'R', api.tree.reload, opts('Refresh'))
-        vim.keymap.set('n', 's', api.node.run.system, opts('Run System'))
-        vim.keymap.set('n', 'S', api.tree.search_node, opts('Search'))
-        vim.keymap.set('n', 'U', api.tree.toggle_custom_filter, opts('Toggle Hidden'))
-        vim.keymap.set('n', 'W', api.tree.collapse_all, opts('Collapse'))
-        vim.keymap.set('n', 'x', api.fs.cut, opts('Cut'))
-        vim.keymap.set('n', 'y', api.fs.copy.filename, opts('Copy Name'))
-        vim.keymap.set('n', 'Y', api.fs.copy.relative_path, opts('Copy Relative Path'))
-        vim.keymap.set('n', '<2-LeftMouse>', api.node.open.edit, opts('Open'))
-        vim.keymap.set('n', '<2-RightMouse>', api.tree.change_root_to_node, opts('CD'))
+        vim.keymap.set('n', '<C-]>', api.tree.change_root_to_node, opts 'CD')
+        vim.keymap.set('n', '<C-e>', api.node.open.replace_tree_buffer, opts 'Open: In Place')
+        vim.keymap.set('n', '<C-k>', api.node.show_info_popup, opts 'Info')
+        vim.keymap.set('n', '<C-r>', api.fs.rename_sub, opts 'Rename: Omit Filename')
+        vim.keymap.set('n', '<C-t>', api.node.open.tab, opts 'Open: New Tab')
+        vim.keymap.set('n', '<C-v>', api.node.open.vertical, opts 'Open: Vertical Split')
+        vim.keymap.set('n', '<C-x>', api.node.open.horizontal, opts 'Open: Horizontal Split')
+        vim.keymap.set('n', '<BS>', api.node.navigate.parent_close, opts 'Close Directory')
+        vim.keymap.set('n', '<CR>', api.node.open.edit, opts 'Open')
+        vim.keymap.set('n', '<Tab>', api.node.open.preview, opts 'Open Preview')
+        vim.keymap.set('n', '>', api.node.navigate.sibling.next, opts 'Next Sibling')
+        vim.keymap.set('n', '<', api.node.navigate.sibling.prev, opts 'Previous Sibling')
+        vim.keymap.set('n', '.', api.node.run.cmd, opts 'Run Command')
+        vim.keymap.set('n', '-', api.tree.change_root_to_parent, opts 'Up')
+        vim.keymap.set('n', 'a', api.fs.create, opts 'Create')
+        vim.keymap.set('n', 'bmv', api.marks.bulk.move, opts 'Move Bookmarked')
+        vim.keymap.set('n', 'B', api.tree.toggle_no_buffer_filter, opts 'Toggle No Buffer')
+        vim.keymap.set('n', 'c', api.fs.copy.node, opts 'Copy')
+        vim.keymap.set('n', 'C', api.tree.toggle_git_clean_filter, opts 'Toggle Git Clean')
+        vim.keymap.set('n', '[c', api.node.navigate.git.prev, opts 'Prev Git')
+        vim.keymap.set('n', ']c', api.node.navigate.git.next, opts 'Next Git')
+        vim.keymap.set('n', 'd', api.fs.remove, opts 'Delete')
+        vim.keymap.set('n', 'D', api.fs.trash, opts 'Trash')
+        vim.keymap.set('n', 'E', api.tree.expand_all, opts 'Expand All')
+        vim.keymap.set('n', 'e', api.fs.rename_basename, opts 'Rename: Basename')
+        vim.keymap.set('n', ']e', api.node.navigate.diagnostics.next, opts 'Next Diagnostic')
+        vim.keymap.set('n', '[e', api.node.navigate.diagnostics.prev, opts 'Prev Diagnostic')
+        vim.keymap.set('n', 'F', api.live_filter.clear, opts 'Clean Filter')
+        vim.keymap.set('n', 'f', api.live_filter.start, opts 'Filter')
+        vim.keymap.set('n', 'g?', api.tree.toggle_help, opts 'Help')
+        vim.keymap.set('n', 'gy', api.fs.copy.absolute_path, opts 'Copy Absolute Path')
+        vim.keymap.set('n', 'H', api.tree.toggle_hidden_filter, opts 'Toggle Dotfiles')
+        vim.keymap.set('n', 'I', api.tree.toggle_gitignore_filter, opts 'Toggle Git Ignore')
+        vim.keymap.set('n', 'J', api.node.navigate.sibling.last, opts 'Last Sibling')
+        vim.keymap.set('n', 'K', api.node.navigate.sibling.first, opts 'First Sibling')
+        vim.keymap.set('n', 'm', api.marks.toggle, opts 'Toggle Bookmark')
+        vim.keymap.set('n', 'o', api.node.open.edit, opts 'Open')
+        vim.keymap.set('n', 'O', api.node.open.no_window_picker, opts 'Open: No Window Picker')
+        vim.keymap.set('n', 'p', api.fs.paste, opts 'Paste')
+        vim.keymap.set('n', 'P', api.node.navigate.parent, opts 'Parent Directory')
+        vim.keymap.set('n', 'q', api.tree.close, opts 'Close')
+        vim.keymap.set('n', 'r', api.fs.rename, opts 'Rename')
+        vim.keymap.set('n', 'R', api.tree.reload, opts 'Refresh')
+        vim.keymap.set('n', 's', api.node.run.system, opts 'Run System')
+        vim.keymap.set('n', 'S', api.tree.search_node, opts 'Search')
+        vim.keymap.set('n', 'U', api.tree.toggle_custom_filter, opts 'Toggle Hidden')
+        vim.keymap.set('n', 'W', api.tree.collapse_all, opts 'Collapse')
+        vim.keymap.set('n', 'x', api.fs.cut, opts 'Cut')
+        vim.keymap.set('n', 'y', api.fs.copy.filename, opts 'Copy Name')
+        vim.keymap.set('n', 'Y', api.fs.copy.relative_path, opts 'Copy Relative Path')
+        vim.keymap.set('n', '<2-LeftMouse>', api.node.open.edit, opts 'Open')
+        vim.keymap.set('n', '<2-RightMouse>', api.tree.change_root_to_node, opts 'CD')
         -- END_DEFAULT_ON_ATTACH
 
         -- Mappings migrated from view.mappings.list
         --
         -- You will need to insert "your code goes here" for any mappings with a custom action_cb
-        vim.keymap.set('n', '<CR>', api.node.open.edit, opts('Open'))
-        vim.keymap.set('n', 'o', api.node.open.edit, opts('Open'))
-        vim.keymap.set('n', '<2-LeftMouse>', api.node.open.edit, opts('Open'))
-        vim.keymap.set('n', 'l', api.node.open.edit, opts('Open'))
-        vim.keymap.set('n', '<BS>', api.node.navigate.parent_close, opts('Close Directory'))
-        vim.keymap.set('n', 'h', api.node.navigate.parent_close, opts('Close Directory'))
+        vim.keymap.set('n', '<CR>', api.node.open.edit, opts 'Open')
+        vim.keymap.set('n', 'o', api.node.open.edit, opts 'Open')
+        vim.keymap.set('n', '<2-LeftMouse>', api.node.open.edit, opts 'Open')
+        vim.keymap.set('n', 'l', api.node.open.edit, opts 'Open')
+        vim.keymap.set('n', '<BS>', api.node.navigate.parent_close, opts 'Close Directory')
+        vim.keymap.set('n', 'h', api.node.navigate.parent_close, opts 'Close Directory')
       end,
       auto_reload_on_write = true,
       disable_netrw = true,
@@ -495,7 +495,7 @@ return {
       },
     },
     config = function(_, opts)
-      local wk = require('which-key')
+      local wk = require 'which-key'
       wk.setup(opts)
       wk.register(opts.defaults)
     end,
@@ -577,24 +577,24 @@ return {
         return newVirtText
       end
 
-      require('ufo').setup({
+      require('ufo').setup {
         fold_virt_text_handler = handler,
-      })
+      }
     end,
   },
 
   {
     'luukvbaal/statuscol.nvim',
     config = function()
-      local builtin = require('statuscol.builtin')
-      require('statuscol').setup({
+      local builtin = require 'statuscol.builtin'
+      require('statuscol').setup {
         relculright = true,
         segments = {
-          { text = { builtin.foldfunc },      click = 'v:lua.ScFa' },
-          { text = { '%s' },                  click = 'v:lua.ScSa' },
+          { text = { builtin.foldfunc }, click = 'v:lua.ScFa' },
+          { text = { '%s' }, click = 'v:lua.ScSa' },
           { text = { builtin.lnumfunc, ' ' }, click = 'v:lua.ScLa' },
         },
-      })
+      }
     end,
   },
 
@@ -607,13 +607,13 @@ return {
     opts = function()
       local conditions = {
         buffer_not_empty = function()
-          return vim.fn.empty(vim.fn.expand('%:t')) ~= 1
+          return vim.fn.empty(vim.fn.expand '%:t') ~= 1
         end,
         hide_in_width = function()
           return vim.fn.winwidth(0) > 80
         end,
         check_git_workspace = function()
-          local filepath = vim.fn.expand('%:p:h')
+          local filepath = vim.fn.expand '%:p:h'
           local gitdir = vim.fn.finddir('.git', filepath .. ';')
           return gitdir and #gitdir > 0 and #gitdir < #filepath
         end,
@@ -666,16 +666,16 @@ return {
       end
 
       -- bookend
-      ins_left({
+      ins_left {
         function()
           return '▊'
         end,
-        color = { fg = Colors.BLUE },      -- Sets highlighting of component
+        color = { fg = Colors.BLUE }, -- Sets highlighting of component
         padding = { left = 0, right = 1 }, -- We don't need space before this
-      })
+      }
 
       -- mode
-      ins_left({
+      ins_left {
         -- mode component
         function()
           -- auto change color according to neovims mode
@@ -705,30 +705,30 @@ return {
         end,
         color = 'LualineMode',
         padding = { right = 1 },
-      })
+      }
 
       -- git branch
-      ins_left({
+      ins_left {
         'branch',
         icon = '',
         color = { fg = Colors.PURPLE, gui = 'bold' },
-      })
+      }
 
       -- file name
-      ins_left({
+      ins_left {
         'filename',
         cond = conditions.buffer_not_empty,
         symbols = {
           modified = '', -- Text to show when the file is modified.
           readonly = '', -- Text to show when the file is non-modifiable or readonly.
-          unnamed = '',  -- Text to show for unnamed buffers.
-          newfile = '',  -- Text to show for newly created file before first write
+          unnamed = '', -- Text to show for unnamed buffers.
+          newfile = '', -- Text to show for newly created file before first write
         },
         color = { fg = Colors.ACCENT, gui = 'bold' },
-      })
+      }
 
       -- git diff
-      ins_left({
+      ins_left {
         'diff',
         -- Is it me or the symbol for modified us really weird
         symbols = { added = ' ', modified = '󰝤 ', removed = ' ' },
@@ -738,30 +738,30 @@ return {
           removed = { fg = Colors.RED },
         },
         cond = conditions.hide_in_width,
-      })
+      }
 
       -- Middle Section
-      ins_left({
+      ins_left {
         function()
           return '%='
         end,
-      })
+      }
 
       -- file size
-      ins_right({
+      ins_right {
         -- filesize component
         'filesize',
         cond = conditions.buffer_not_empty,
-      })
+      }
 
       -- location
-      ins_right({ 'location' })
+      ins_right { 'location' }
 
       -- progress
-      ins_right({ 'progress', color = { fg = Colors.FOREGROUND, gui = 'bold' } })
+      ins_right { 'progress', color = { fg = Colors.FOREGROUND, gui = 'bold' } }
 
       -- lsp server
-      ins_right({
+      ins_right {
         function()
           local msg = ''
           local buf_ft = vim.api.nvim_buf_get_option(0, 'filetype')
@@ -779,10 +779,10 @@ return {
         end,
         icon = '',
         color = { fg = Colors.white, gui = 'bold' },
-      })
+      }
 
       -- diagnostics
-      ins_right({
+      ins_right {
         'diagnostics',
         sources = { 'nvim_diagnostic' },
         symbols = { error = ' ', warn = ' ', info = ' ' },
@@ -791,16 +791,16 @@ return {
           color_warn = { fg = Colors.YELLOW },
           color_info = { fg = Colors.BLUE },
         },
-      })
+      }
 
       -- bookend
-      ins_right({
+      ins_right {
         function()
           return '▊'
         end,
         color = { fg = Colors.BLUE },
         padding = { left = 1 },
-      })
+      }
 
       return config
     end,
@@ -808,70 +808,106 @@ return {
 
   -- winbar
   {
-    "SmiteshP/nvim-navic", -- statusline/winbar component using lsp
-    dependencies = "neovim/nvim-lspconfig",
+    'SmiteshP/nvim-navic', -- statusline/winbar component using lsp
+    dependencies = 'neovim/nvim-lspconfig',
     opts = {
       highlight = true,
-      separator = " 〉",
+      separator = ' 〉',
       -- VScode-like icons
       icons = {
-        File = " ",
-        Module = " ",
-        Namespace = " ",
-        Package = " ",
-        Class = " ",
-        Method = " ",
-        Property = " ",
-        Field = " ",
-        Constructor = " ",
-        Enum = " ",
-        Interface = " ",
-        Function = " ",
-        Variable = " ",
-        Constant = " ",
-        String = " ",
-        Number = " ",
-        Boolean = " ",
-        Array = " ",
-        Object = " ",
-        Key = " ",
-        Null = " ",
-        EnumMember = " ",
-        Struct = " ",
-        Event = " ",
-        Operator = " ",
-        TypeParameter = " ",
-      }
+        File = ' ',
+        Module = ' ',
+        Namespace = ' ',
+        Package = ' ',
+        Class = ' ',
+        Method = ' ',
+        Property = ' ',
+        Field = ' ',
+        Constructor = ' ',
+        Enum = ' ',
+        Interface = ' ',
+        Function = ' ',
+        Variable = ' ',
+        Constant = ' ',
+        String = ' ',
+        Number = ' ',
+        Boolean = ' ',
+        Array = ' ',
+        Object = ' ',
+        Key = ' ',
+        Null = ' ',
+        EnumMember = ' ',
+        Struct = ' ',
+        Event = ' ',
+        Operator = ' ',
+        TypeParameter = ' ',
+      },
     },
   },
 
   {
-    "utilyre/barbecue.nvim",
-    name = "barbecue",
-    version = "*",
+    'utilyre/barbecue.nvim',
+    name = 'barbecue',
+    version = '*',
     dependencies = {
-      "SmiteshP/nvim-navic",
-      "nvim-tree/nvim-web-devicons", -- optional dependency
+      'SmiteshP/nvim-navic',
+      'nvim-tree/nvim-web-devicons', -- optional dependency
     },
     opts = {
       theme = {
-        normal = { bg = Colors.BLACK }
-      }
+        normal = { bg = Colors.BLACK },
+      },
     },
   },
 
   -- diagnostics
   {
-    "folke/trouble.nvim",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
+    'folke/trouble.nvim',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
     event = 'BufEnter',
     keys = {
-      { '<leader>xx', function() require("trouble").toggle() end,                        desc = 'Toggle Trouble diagnostics' },
-      { '<leader>xw', function() require("trouble").toggle("workspace_diagnostics") end, desc = 'Toggle Workspace diagnostics' },
-      { '<leader>xd', function() require("trouble").toggle("document_diagnostics") end,  desc = 'Toggle Document diagnostics' },
-      { '<leader>xq', function() require("trouble").toggle("quickfix") end,              desc = 'Toggle quickfix' },
-      { '<leader>xl', function() require("trouble").toggle("loclist") end,               desc = 'Toggle loclist' },
-      { 'gR',         function() require("trouble").toggle("lsp_references") end,        desc = 'Toggle LSP References' },
+      {
+        '<leader>xx',
+        function()
+          require('trouble').toggle()
+        end,
+        desc = 'Toggle Trouble diagnostics',
+      },
+      {
+        '<leader>xw',
+        function()
+          require('trouble').toggle 'workspace_diagnostics'
+        end,
+        desc = 'Toggle Workspace diagnostics',
+      },
+      {
+        '<leader>xd',
+        function()
+          require('trouble').toggle 'document_diagnostics'
+        end,
+        desc = 'Toggle Document diagnostics',
+      },
+      {
+        '<leader>xq',
+        function()
+          require('trouble').toggle 'quickfix'
+        end,
+        desc = 'Toggle quickfix',
+      },
+      {
+        '<leader>xl',
+        function()
+          require('trouble').toggle 'loclist'
+        end,
+        desc = 'Toggle loclist',
+      },
+      {
+        'gR',
+        function()
+          require('trouble').toggle 'lsp_references'
+        end,
+        desc = 'Toggle LSP References',
+      },
     },
     opts = {
       -- your configuration comes here
@@ -882,7 +918,7 @@ return {
 
   -- global sed
   {
-    "nvim-pack/nvim-spectre",
+    'nvim-pack/nvim-spectre',
   },
 
   -- peek lines

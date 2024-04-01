@@ -1,4 +1,4 @@
-local Colors = require('util.colors')
+local Colors = require 'util.colors'
 local fg = require('util.highlight').fg
 
 return {
@@ -58,7 +58,7 @@ return {
 
   -- tmux integration
   {
-    "alexghergh/nvim-tmux-navigation",
+    'alexghergh/nvim-tmux-navigation',
     lazy = false,
     keys = {
       {
@@ -115,9 +115,9 @@ return {
         function()
           require('global-note').toggle_note()
         end,
-        desc = "Toggle global note",
+        desc = 'Toggle global note',
       },
     },
     config = true,
-  }
+  },
 }

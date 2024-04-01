@@ -11,7 +11,7 @@ function M.mason_setup()
 end
 
 function M.mason_lspconfig_setup()
-  require('mason-lspconfig').setup({
+  require('mason-lspconfig').setup {
     ensure_installed = {
       'bashls',
       'cssls',
@@ -21,7 +21,7 @@ function M.mason_lspconfig_setup()
       'sqlls',
       'lua_ls',
     },
-  })
+  }
 end
 
 function M.setup()
@@ -39,29 +39,20 @@ function M.setup()
     return
   end
 
-
-  require('mason-lspconfig').setup_handlers({
+  require('mason-lspconfig').setup_handlers {
     function(server_name)
-      lspconfig[server_name].setup(
-        defaults
-      )
+      lspconfig[server_name].setup(defaults)
     end,
     ['lua_ls'] = function()
-      lspconfig.lua_ls.setup(
-        vim.tbl_deep_extend('force', require('lsp.settings.lua_ls'), defaults)
-      )
+      lspconfig.lua_ls.setup(vim.tbl_deep_extend('force', require 'lsp.settings.lua_ls', defaults))
     end,
     ['solargraph'] = function()
-      lspconfig.solargraph.setup(
-        vim.tbl_deep_extend('force', require('lsp.settings.solargraph'), defaults)
-      )
+      lspconfig.solargraph.setup(vim.tbl_deep_extend('force', require 'lsp.settings.solargraph', defaults))
     end,
     ['jsonls'] = function()
-      lspconfig.jsonls.setup(
-        vim.tbl_deep_extend('force', require('lsp.settings.jsonls'), defaults)
-      )
+      lspconfig.jsonls.setup(vim.tbl_deep_extend('force', require 'lsp.settings.jsonls', defaults))
     end,
-  })
+  }
 end
 
 return M

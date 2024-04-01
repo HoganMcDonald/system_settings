@@ -6,23 +6,23 @@ return {
       {
         '<leader>ac',
         function()
-          require('duck').hatch('🦀')
+          require('duck').hatch '🦀'
         end,
-        desc = '🦀'
+        desc = '🦀',
       },
       {
         '<leader>ak',
         function()
           require('duck').cook()
         end,
-        desc = 'kill'
+        desc = 'kill',
       },
     },
   },
 
   -- scratchpad
   {
-    "LintaoAmons/scratch.nvim",
+    'LintaoAmons/scratch.nvim',
     keys = {
       {
         '<leader>bn',
@@ -49,8 +49,8 @@ return {
         '<leader>rc',
         '<cmd>FlowRunSelected<cr>',
         desc = 'Run Code (selected)',
-        mode = 'v'
+        mode = 'v',
       },
     },
-  }
+  },
 }
