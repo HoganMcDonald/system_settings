@@ -1,31 +1,5 @@
 local Colors = require("util.colors")
 
--- TODO:
--- "lewis6991/hover.nvim", -- Better [vim.lsp.buf.hover()]
--- "VidocqH/lsp-lens.nvim", -- LSP definition, references in virtual text
--- "https://git.sr.ht/~whynothugo/lsp_lines.nvim", -- LSP diagnostic as lines
--- "hrsh7th/cmp-nvim-lsp", -- LSP for nvim-cmp
--- "antosha417/nvim-lsp-file-operations", -- LSP for file-operations
--- "ray-x/lsp_signature.nvim", -- Signature Hint
--- "zeioth/garbage-day.nvim", -- Automatic Toggle of LSP clients to free RAM
--- "chrisgrieser/nvim-dr-lsp", -- LSP References and Definitions in statusline
--- "soulis-1256/eagle.nvim", -- Mouse CursorHold on object to see Hover thing
--- "folke/neodev.nvim", -- NeoDev for lua things
--- "askfiy/lsp_extra_dim", -- Dim Unused variables
--- "nvimdev/lspsaga.nvim", -- Better LSP things overall
--- "filipdutescu/renamer.nvim", -- Rename LSP variables
--- "folke/trouble.nvim", -- LSP Diagnostics in a split
--- "folke/todo-comments.nvim", -- TODO and all these comment types
-
--- DONE:
--- "neovim/nvim-lspconfig", -- The main LSP thing
--- "utilyre/barbecue.nvim", -- Winbar LSP
--- "SmiteshP/nvim-navic", -- Required for barbecue
--- "aznhe21/actions-preview.nvim", -- Better [vim.lsp.buf.codeaction()]
--- "j-hui/fidget.nvim", -- LSP things status
-
--- NOPE:
-
 return {
   -- lsp installer
   {
@@ -33,6 +7,19 @@ return {
     dependencies = {
       "williamboman/mason-lspconfig.nvim",
       "neovim/nvim-lspconfig",
+    },
+  },
+
+  -- ---------------------
+  -- lsp utilities
+  -- ---------------------
+  -- free up ram by stopping lsps
+  {
+    "zeioth/garbage-day.nvim",
+    dependencies = "neovim/nvim-lspconfig",
+    event = "VeryLazy",
+    opts = {
+      -- your options here
     },
   },
 
@@ -47,6 +34,16 @@ return {
     },
   },
 
+  -- lsp signature in completion
+  {
+    "ray-x/lsp_signature.nvim",
+    event = "VeryLazy",
+    opts = {},
+    config = function(_, opts)
+      require("lsp_signature").setup(opts)
+    end,
+  },
+
   -- virtual text lines
   {
     "https://git.sr.ht/~whynothugo/lsp_lines.nvim",
@@ -59,8 +56,20 @@ return {
   {
     "lewis6991/hover.nvim",
     keys = {
-      { "K", function() require("hover").hover() end, desc = "[hover.nvim] LSP Hover" },
-      { "gK", function() require("hover").hover_select() end, desc = "[hover.nvim] LSP Hover (select)" },
+      {
+        "K",
+        function()
+          require("hover").hover()
+        end,
+        desc = "[hover.nvim] LSP Hover",
+      },
+      {
+        "gK",
+        function()
+          require("hover").hover_select()
+        end,
+        desc = "[hover.nvim] LSP Hover (select)",
+      },
       {
         "<C-p>",
         function()
