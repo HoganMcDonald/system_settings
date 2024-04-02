@@ -55,6 +55,39 @@ return {
     end,
   },
 
+  -- lsp hover
+  {
+    "lewis6991/hover.nvim",
+    keys = {
+      { "K", function() require("hover").hover() end, desc = "[hover.nvim] LSP Hover" },
+      { "gK", function() require("hover").hover_select() end, desc = "[hover.nvim] LSP Hover (select)" },
+      {
+        "<C-p>",
+        function()
+          require("hover").hover_switch("previous")
+        end,
+        desc = "[hover.nvim] Previous Source",
+      },
+      {
+        "<C-n>",
+        function()
+          require("hover").hover_switch("next")
+        end,
+        desc = "[hover.nvim] Next Source",
+      },
+    },
+    opts = {
+      init = function()
+        require("hover.providers.lsp")
+        -- require('hover.providers.gh')
+        -- require('hover.providers.gh_user')
+        -- require('hover.providers.jira')
+        require("hover.providers.man")
+        require("hover.providers.dictionary")
+      end,
+    },
+  },
+
   -- code actions previews
   {
     "aznhe21/actions-preview.nvim",

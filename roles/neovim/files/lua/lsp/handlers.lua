@@ -41,7 +41,7 @@ local function lsp_keymaps(bufnr)
   local opts = { silent = true, remap = false, buffer = bufnr }
 
   -- Generate LSP functionality
-  vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+  -- vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
   -- vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
   -- vim.keymap.set('n', '<leader>bf', vim.lsp.buf.format, opts)
   vim.keymap.set(
