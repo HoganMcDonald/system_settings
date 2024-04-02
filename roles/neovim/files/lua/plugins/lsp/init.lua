@@ -1,7 +1,6 @@
 local Colors = require("util.colors")
 
 -- TODO:
--- "j-hui/fidget.nvim", -- LSP things status
 -- "lewis6991/hover.nvim", -- Better [vim.lsp.buf.hover()]
 -- "VidocqH/lsp-lens.nvim", -- LSP definition, references in virtual text
 -- "https://git.sr.ht/~whynothugo/lsp_lines.nvim", -- LSP diagnostic as lines
@@ -23,6 +22,7 @@ local Colors = require("util.colors")
 -- "utilyre/barbecue.nvim", -- Winbar LSP
 -- "SmiteshP/nvim-navic", -- Required for barbecue
 -- "aznhe21/actions-preview.nvim", -- Better [vim.lsp.buf.codeaction()]
+-- "j-hui/fidget.nvim", -- LSP things status
 
 -- NOPE:
 
@@ -39,6 +39,14 @@ return {
   -- ---------------------
   -- lsp ui elements
   -- ---------------------
+  -- lsp progress
+  {
+    "j-hui/fidget.nvim",
+    opts = {
+      -- options
+    },
+  },
+
   -- virtual text lines
   {
     "https://git.sr.ht/~whynothugo/lsp_lines.nvim",

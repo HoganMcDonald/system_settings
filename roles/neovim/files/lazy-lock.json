@@ -14,6 +14,7 @@
   "dashboard-nvim": { "branch": "master", "commit": "354e7bd0ad62f6e8b5ab9394b1ec7dbcaaa1470c" },
   "diffview.nvim": { "branch": "main", "commit": "3dc498c9777fe79156f3d32dddd483b8b3dbd95f" },
   "duck.nvim": { "branch": "main", "commit": "d8a6b08af440e5a0e2b3b357e2f78bb1883272cd" },
+  "fidget.nvim": { "branch": "main", "commit": "933db4596e4bab1b09b6d48a10e21819e4cc458f" },
   "flash.nvim": { "branch": "main", "commit": "48817af25f51c0590653bbc290866e4890fe1cbe" },
   "flow.nvim": { "branch": "master", "commit": "2b733e0823f18a0dd43bacf3b56de125c4aa95d9" },
   "friendly-snippets": { "branch": "main", "commit": "dcd4a586439a1c81357d5b9d26319ae218cc9479" },
