@@ -63,8 +63,6 @@ return {
       },
     },
     config = function()
-      local actions = require 'diffview.actions'
-
       -- set fillchars in vim
       vim.opt.fillchars:append { diff = '╱' }
 
@@ -124,20 +122,6 @@ return {
         default_args = {
           DiffviewOpen = {},
           DiffviewFileHistory = {},
-        },
-        keymaps = {
-          view = {
-            { 'n', 'q', ':DiffviewClose<cr>', { desc = 'Close Panel' } },
-            { 'n', '<esc>', ':DiffviewClose<cr>', { desc = 'Close Panel' } },
-          },
-          file_history_panel = {
-            { 'n', 'q', ':DiffviewClose<cr>', { desc = 'Close Panel' } },
-            { 'n', '<esc>', ':DiffviewClose<cr>', { desc = 'Close Panel' } },
-          },
-          file_panel = {
-            { 'n', 'q', ':DiffviewClose<cr>', { desc = 'Close Panel' } },
-            { 'n', '<esc>', ':DiffviewClose<cr>', { desc = 'Close Panel' } },
-          },
         },
       }
     end,
