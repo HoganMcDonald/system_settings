@@ -29,19 +29,6 @@ return {
   -- lsp progress
   {
     "j-hui/fidget.nvim",
-    opts = {
-      -- options
-    },
-  },
-
-  -- lsp signature in completion
-  {
-    "ray-x/lsp_signature.nvim",
-    event = "VeryLazy",
-    opts = {},
-    config = function(_, opts)
-      require("lsp_signature").setup(opts)
-    end,
   },
 
   -- virtual text lines
