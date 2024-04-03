@@ -244,6 +244,11 @@ return {
         vim.keymap.set('n', '<BS>', api.node.navigate.parent_close, opts 'Close Directory')
         vim.keymap.set('n', 'h', api.node.navigate.parent_close, opts 'Close Directory')
       end,
+      filesystem_watchers = {
+        ignore_dirs = {
+          'node_modules',
+        },
+      },
       auto_reload_on_write = true,
       disable_netrw = true,
       hijack_cursor = true,
