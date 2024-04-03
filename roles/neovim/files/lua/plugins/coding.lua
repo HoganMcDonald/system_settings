@@ -194,15 +194,120 @@ return {
 
   -- test runner
   {
-    'vim-test/vim-test',
+    'nvim-neotest/neotest',
+    lazy = false,
+    dependencies = {
+      'nvim-neotest/nvim-nio',
+      'nvim-lua/plenary.nvim',
+      'antoinemadec/FixCursorHold.nvim',
+      'nvim-treesitter/nvim-treesitter',
+
+      -- providers
+      'olimorris/neotest-rspec',
+    },
     keys = {
-      { '<leader>tf', ':TestFile<cr>', desc = 'Run test file' },
-      { '<leader>tn', ':TestNearest<cr>', desc = 'Run nearest test' },
-      { '<leader>tl', ':TestLast<cr>', desc = 'Re-run last test' },
-      { '<leader>ta', ':TestSuite<cr>', desc = 'Run entire test suite' },
+      {
+        '<leader>tn',
+        function()
+          require('neotest').run.run()
+        end,
+        desc = '[neotest] Test nearest',
+      },
+      {
+        '<leader>tf',
+        function()
+          require('neotest').run.run(vim.fn.expand '%')
+        end,
+        desc = '[neotest] Test file',
+      },
+      {
+        '<leader>tl',
+        function()
+          require('neotest').run.run_last()
+        end,
+        desc = '[neotest] Run last test',
+      },
+      {
+        '<leader>to',
+        function()
+          require('neotest').output_panel.open()
+        end,
+        desc = '[neotest] Open test output',
+      },
+      {
+        '<leader>ts',
+        function()
+          require('neotest').summary.toggle()
+        end,
+        desc = '[neotest] Toggle test summary',
+      },
+      {
+        '<leader>twn',
+        function()
+          require('neotest').watch.toggle()
+        end,
+        desc = '[neotest] Watch nearest test',
+      },
+      {
+        '<leader>twf',
+        function()
+          require('neotest').watch.toggle { vim.fn.expand '%' }
+        end,
+        desc = '[neotest] Watch file',
+      },
+      {
+        '<leader>twa',
+        function()
+          require('neotest').watch.toggle { suite = true }
+        end,
+        desc = '[neotest] Watch all tests',
+      },
+      {
+        '<leader>twa',
+        function()
+          require('neotest').watch.stop()
+        end,
+        desc = '[neotest] Stop watching',
+      },
     },
     config = function()
-      vim.g['test#strategy'] = 'neovim'
+      require('neotest').setup {
+        log_level = 1,
+        icons = {
+          expanded = '',
+          child_prefix = '',
+          child_indent = '',
+          final_child_prefix = '',
+          non_collapsible = '',
+          collapsed = '',
+
+          passed = '',
+          running = '',
+          failed = '',
+          unknown = '',
+          skipped = '',
+        },
+        floating = {
+          border = 'single',
+          max_height = 0.8,
+          max_width = 0.9,
+        },
+        summary = {
+          mappings = {
+            attach = 'a',
+            expand = { '<CR>', '<2-LeftMouse>' },
+            expand_all = 'e',
+            jumpto = 'i',
+            output = 'o',
+            run = 'r',
+            short = 'O',
+            stop = 'u',
+          },
+        },
+        adapters = {
+          require 'neotest-rspec',
+        },
+      }
     end,
   },
 
