@@ -23,12 +23,30 @@ return {
     },
   },
 
+  {
+    'smjonas/inc-rename.nvim',
+    keys = {
+      {
+        '<leader>lr',
+        function()
+          return ':IncRename ' .. vim.fn.expand '<cword>'
+        end,
+        expr = true,
+        desc = 'Incremental Rename',
+      },
+    },
+    config = function()
+      require('inc_rename').setup()
+    end,
+  },
+
   -- ---------------------
   -- lsp ui elements
   -- ---------------------
   -- lsp progress
   {
     'j-hui/fidget.nvim',
+    opts = {},
   },
 
   -- virtual text lines
