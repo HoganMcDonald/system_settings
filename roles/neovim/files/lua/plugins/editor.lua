@@ -9,10 +9,11 @@ return {
     dependencies = { 'nvim-lua/plenary.nvim' },
     cmd = 'Telescope',
     keys = {
-      { '<leader>pf', ':Telescope find_files<cr>', desc = 'Find files' },
-      { '<leader>po', ':Telescope oldfiles<cr>', desc = 'Old files' },
-      { '<leader>fa', ':Telescope live_grep<cr>', desc = 'All files' },
-      { 'gr', ':Telescope lsp_references<CR>', desc = 'Go to references' },
+      { '<leader>pf', ':Telescope find_files<cr>', desc = '[Telescope] Find files' },
+      { '<leader>po', ':Telescope oldfiles<cr>', desc = '[Telescope] Old files' },
+      { '<leader>fa', ':Telescope live_grep<cr>', desc = '[Telescope] All files' },
+      { '<leader>bb', ':Telescope buffers<cr>', desc = '[Telescope] buffers' },
+      { 'gr', ':Telescope lsp_references<CR>', desc = '[Telescope] Go to references' },
     },
     opts = {
       defaults = {
@@ -395,8 +396,22 @@ return {
     event = 'VeryLazy',
     opts = {},
     keys = {
-      { "f", mode = { "n", "x", "o" }, function() require("flash").jump() end, desc = "Flash" },
-      { "F", mode = { "n", "x", "o" }, function() require("flash").treesitter() end, desc = "Flash Treesitter" },
+      {
+        'f',
+        mode = { 'n', 'x', 'o' },
+        function()
+          require('flash').jump()
+        end,
+        desc = 'Flash',
+      },
+      {
+        'F',
+        mode = { 'n', 'x', 'o' },
+        function()
+          require('flash').treesitter()
+        end,
+        desc = 'Flash Treesitter',
+      },
     },
     config = function(_, opts)
       require('flash').setup(opts)
