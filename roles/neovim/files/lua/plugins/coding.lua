@@ -204,6 +204,7 @@ return {
 
       -- providers
       'olimorris/neotest-rspec',
+      'nvim-neotest/neotest-vim-test',
     },
     keys = {
       {
@@ -306,6 +307,7 @@ return {
         },
         adapters = {
           require 'neotest-rspec',
+          require 'neotest-vim-test' { ignore_filetypes = { 'ruby' } },
         },
       }
     end,
@@ -316,7 +318,7 @@ return {
     'm4xshen/smartcolumn.nvim',
     event = 'BufEnter',
     opts = {
-      colorcolumn = '80',
+      colorcolumn = '120',
       disabled_filetypes = {
         'help',
         'text',
