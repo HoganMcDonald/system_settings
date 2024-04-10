@@ -395,8 +395,8 @@ return {
     event = 'VeryLazy',
     opts = {},
     keys = {
-      { "s", mode = { "n", "x", "o" }, function() require("flash").jump() end, desc = "Flash" },
-      { "S", mode = { "n", "x", "o" }, function() require("flash").treesitter() end, desc = "Flash Treesitter" },
+      { "f", mode = { "n", "x", "o" }, function() require("flash").jump() end, desc = "Flash" },
+      { "F", mode = { "n", "x", "o" }, function() require("flash").treesitter() end, desc = "Flash Treesitter" },
     },
     config = function(_, opts)
       require('flash').setup(opts)
