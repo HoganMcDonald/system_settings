@@ -2,6 +2,11 @@
   homebrew:
     name: tmux
 
+- name: Install tmuxinator
+  homebrew:
+    name: tmuxinator
+
+# tmux config
 - name: tmux - link config file
   file:
     src: "{{ dotfiles_home }}/roles/tmux/files/tmux.conf"
@@ -9,10 +14,24 @@
     state: link
     force: yes
 
-- name: Install tmuxinator
-  homebrew:
-    name: tmuxinator
+- name: Tmux - Check if config exists
+  stat: path="{{ config }}/tmux"
+  register: tmux_config_stat
 
+- name: Tmux - Back up config
+  command: "mv {{ config }}/tmux {{ config }}/tmux_old"
+  args:
+    creates: "{{ config }}/tmux_old"
+  when: tmux_config_stat.stat.exists
+
+- name: Tmux - Make sure config is up to date
+  file:
+    src: "{{ dotfiles_home }}/roles/tmux/files/tmux/"
+    dest: "{{ config }}/tmux"
+    state: link
+    force: yes
+
+# tmuxinator config
 - name: Tmuxinator - Check if config exists
   stat: path="{{ config }}/tmuxinator"
   register: tmuxinator_config_stat
