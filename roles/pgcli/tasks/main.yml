@@ -1,0 +1,13 @@
+- name: Install pgcli
+  homebrew:
+    name: pgcli
+
+- name: Create pgcli config folder if it doesn't exist
+  shell: "mkdir -p {{ config }}/pgcli/"
+
+- name: pgcli - link config file
+  file:
+    src: "{{ dotfiles_home }}/roles/pgcli/files/config"
+    dest: "{{ config }}/pgcli/config"
+    state: link
+    force: yes

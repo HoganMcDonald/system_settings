@@ -25,6 +25,9 @@
     - role: tmux
       tags:
         - tmux
+    - role: pgcli
+      tags:
+        - pgcli
     - role: neovim
       tags:
         - neovim
