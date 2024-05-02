@@ -11,6 +11,16 @@ return {
     keys = {
       { '<leader>pf', ':Telescope find_files<cr>', desc = '[Telescope] Find files' },
       { '<leader>po', ':Telescope oldfiles<cr>', desc = '[Telescope] Old files' },
+      {
+        '<leader>pm',
+        function()
+          require('telescope.builtin').find_files({
+            prompt_title = 'AI Modes',
+            search_dirs = {'~/reforge/app/services/ai/modes'}
+          })
+        end,
+        desc = '[Telescope] Find mode',
+      },
       { '<leader>fa', ':Telescope live_grep<cr>', desc = '[Telescope] All files' },
       { '<leader>bb', ':Telescope buffers<cr>', desc = '[Telescope] buffers' },
       { 'gr', ':Telescope lsp_references<CR>', desc = '[Telescope] Go to references' },
