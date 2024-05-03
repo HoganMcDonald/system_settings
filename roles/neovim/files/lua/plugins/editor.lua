@@ -398,13 +398,13 @@ return {
     end,
   },
 
+  -- Navigation
   -- Flash enhances the built-in search functionality by showing labels
   -- at the end of each match, letting you quickly jump to a specific
   -- location.
   {
     'folke/flash.nvim',
     event = 'VeryLazy',
-    opts = {},
     keys = {
       {
         'f',
@@ -421,6 +421,19 @@ return {
           require('flash').treesitter()
         end,
         desc = 'Flash Treesitter',
+      },
+    },
+    opts = {
+      search = {
+        multi_window = true, -- search in multiple windows
+      },
+      jump = {
+        jumplist = true, -- save in jumplist
+      },
+      modes = {
+        char = {
+          enabled = false, -- disable all default keymaps
+        },
       },
     },
     config = function(_, opts)
