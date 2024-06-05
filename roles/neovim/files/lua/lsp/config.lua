@@ -13,6 +13,8 @@ end
 function M.mason_lspconfig_setup()
   require('mason-lspconfig').setup {
     ensure_installed = {
+      'marksman', -- markdown
+      'typos-lsp', -- spellcheck
       'bashls',
       'cssls',
       'html',
@@ -20,6 +22,11 @@ function M.mason_lspconfig_setup()
       'solargraph',
       'sqlls',
       'lua_ls',
+      'bash-language-server',
+      'sqlls',
+      'prettierd',
+      'emmet-ls',
+      'graphql-language-service-cli',
     },
   }
 end

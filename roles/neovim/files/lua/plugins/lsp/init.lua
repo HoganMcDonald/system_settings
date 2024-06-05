@@ -52,6 +52,15 @@ return {
   -- virtual text lines
   {
     'https://git.sr.ht/~whynothugo/lsp_lines.nvim',
+    keys = {
+      {
+        '<leader>ll',
+        function()
+          require('lsp_lines').toggle()
+        end,
+        desc = '[lsp_lines] Toggle lsp_lines',
+      },
+    },
     config = function()
       require('lsp_lines').setup()
     end,
