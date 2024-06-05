@@ -193,6 +193,22 @@ return {
   },
 
   -- test runner
+  -- vim-test because rspec adapter doesn't support dap
+  {
+    'vim-test/vim-test',
+    keys = {
+      {
+        '<leader>td',
+        ':TestNearest<CR>',
+        desc = '[vim-test] debug nearest',
+      },
+    },
+    config = function()
+      vim.g['test#strategy'] = 'neovim'
+    end,
+  },
+
+  -- neotest
   {
     'nvim-neotest/neotest',
     lazy = false,
@@ -362,4 +378,6 @@ return {
       },
     },
   },
+
+  -- spell check
 }
