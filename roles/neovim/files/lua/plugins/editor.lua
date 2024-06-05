@@ -14,10 +14,10 @@ return {
       {
         '<leader>pm',
         function()
-          require('telescope.builtin').find_files({
+          require('telescope.builtin').find_files {
             prompt_title = 'AI Modes',
-            search_dirs = {'~/reforge/app/services/ai/modes'}
-          })
+            search_dirs = { '~/reforge/app/services/ai/modes' },
+          }
         end,
         desc = '[Telescope] Find mode',
       },
