@@ -621,12 +621,26 @@ return {
       require('statuscol').setup {
         relculright = true,
         segments = {
+          -- fold column
           { text = { builtin.foldfunc }, click = 'v:lua.ScFa' },
-          { text = { '%s' }, click = 'v:lua.ScSa' },
-          { text = { builtin.lnumfunc, ' ' }, click = 'v:lua.ScLa' },
+          -- number column
+          { text = { builtin.lnumfunc }, click = 'v:lua.ScLa' },
+          -- anything else
+          { sign = { name = { '.*' }, namespace = { '.*' }, maxwidth = 2, colwidth = 2 }, click = 'v:lua.ScSa' },
+          -- gitsigns
+          { sign = { namespace = { 'gitsigns' }, name = { '.*' }, maxwidth = 1, colwidth = 2, auto = false }, click = 'v:lua.ScSa', },
         },
       }
     end,
+  },
+  {
+    'kosayoda/nvim-lightbulb',
+    opts = {
+      autocmd = {
+        enabled = true,
+        updatetime = 100,
+      },
+    },
   },
 
   -- status line
