@@ -485,6 +485,7 @@ return {
     },
   },
 
+  -- Keymaps
   -- which-key helps you remember key bindings by showing a popup
   -- with the active keybindings of the command you started typing.
   {
@@ -497,7 +498,7 @@ return {
         ['z'] = { name = 'folds' },
         ['<leader>a'] = { name = 'ai assistant' },
         ['<leader>b'] = { name = 'buffer' },
-        -- ['<leader>c'] = { name = 'xxx' },
+        ['<leader>c'] = { name = 'code actions' },
         ['<leader>d'] = { name = 'debugger' },
         -- ['<leader>e'] = { name = 'xxx' },
         ['<leader>f'] = { name = 'file/find' },
@@ -515,6 +516,7 @@ return {
         ['<leader>r'] = { name = 'code runner' },
         -- ['<leader>s'] = { name = 'xxx' },
         ['<leader>t'] = { name = 'tests' },
+        ['<leader>tw'] = { name = 'watch' },
         ['<leader>u'] = { name = 'utility' },
         -- ['<leader>v'] = { name = 'xxx' },
         ['<leader>w'] = { name = 'windows' },

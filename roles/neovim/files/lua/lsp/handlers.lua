@@ -14,9 +14,10 @@ M.setup = function()
 
   vim.diagnostic.config {
     virtual_text = false,
+    virtual_lines = false, -- From lsp_lines - default off
     signs = { active = signs },
-    update_in_insert = true,
-    underline = false,
+    update_in_insert = false,
+    underline = true,
     severity_sort = true,
     float = {
       focusable = false,
