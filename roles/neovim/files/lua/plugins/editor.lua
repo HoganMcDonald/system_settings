@@ -907,11 +907,6 @@ return {
     },
   },
 
-  -- global sed
-  {
-    'nvim-pack/nvim-spectre',
-  },
-
   -- peek lines
   {
     'nacro90/numb.nvim',
