@@ -132,12 +132,93 @@ return {
     'lewis6991/gitsigns.nvim',
     event = 'BufRead',
     keys = {
-      { '<leader>hn', ':Gitsigns next_hunk<cr>', desc = 'Next' },
-      { '<leader>hp', ':Gitsigns prev_hunk<cr>', desc = 'Previous' },
-      { '<leader>hs', ':Gitsigns stage_hunk<cr>', desc = 'Stage' },
-      { '<leader>hr', ':Gitsigns reset_hunk<cr>', desc = 'Reset' },
-      { '<leader>br', ':Gitsigns reset_buffer<cr>', desc = 'Git reset' },
-      { '<leader>gb', ':Gitsigns blame_line<cr>', desc = 'Blame Line' },
+      {
+        ']h',
+        function()
+          if vim.wo.diff then
+            vim.cmd.normal { ']h', bang = true }
+          else
+            require('gitsigns').nav_hunk 'next'
+          end
+        end,
+        desc = 'Next Hunk',
+      },
+      {
+        '[h',
+        function()
+          if vim.wo.diff then
+            vim.cmd.normal { '[h', bang = true }
+          else
+            require('gitsigns').nav_hunk 'prev'
+          end
+        end,
+        desc = 'Prev Hunk',
+      },
+      {
+        '<leader>hs',
+        function()
+          require('gitsigns').stage_hunk()
+        end,
+        desc = 'Stage Hunk',
+      },
+      {
+        '<leader>hs',
+        function()
+          require('gitsigns').stage_hunk { vim.fn.line '.', vim.fn.line 'v' }
+        end,
+        mode = 'v',
+        desc = 'Stage',
+      },
+      {
+        '<leader>hS',
+        function()
+          require('gitsigns').stage_buffer()
+        end,
+        desc = 'Reset Buffer',
+      },
+      {
+        '<leader>hr',
+        function()
+          require('gitsigns').reset_hunk()
+        end,
+        desc = 'Reset Hunk',
+      },
+      {
+        '<leader>hr',
+        function()
+          require('gitsigns').reset_hunk { vim.fn.line '.', vim.fn.line 'v' }
+        end,
+        mode = 'v',
+        desc = 'Reset',
+      },
+      {
+        '<leader>hR',
+        function()
+          require('gitsigns').reset_buffer()
+        end,
+        desc = 'Reset Buffer',
+      },
+      {
+        '<leader>hu',
+        function()
+          require('gitsigns').undo_stage_hunk()
+        end,
+        desc = 'Undo Reset',
+      },
+      {
+        '<leader>hp',
+        function()
+          require('gitsigns').preview_hunk()
+        end,
+        desc = 'Preview',
+      },
+      {
+        '<leader>gb',
+        function()
+          require('gitsigns').blame_line { full = true }
+        end,
+        desc = 'Blame Line',
+      },
     },
     opts = {
       signs = {
