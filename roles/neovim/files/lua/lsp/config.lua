@@ -24,9 +24,6 @@ function M.mason_lspconfig_setup()
       'lua_ls',
       'bash-language-server',
       'sqlls',
-      'prettierd',
-      'emmet-ls',
-      'graphql-language-service-cli',
     },
   }
 end
