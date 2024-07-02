@@ -121,3 +121,6 @@ cmd + shift - s : yabai -m window --toggle split
 shift + cmd - b : open -na /Applications/Firefox Developer Edition.app
 shift + cmd - t : /Applications/kitty.app/Contents/MacOS/kitty --single-instance -d ~
 shift + cmd - m : open -na /Applications/spotify.app
+
+# toggle chatgpt into floating window
+shift + cmd - c : ~/.config/skhd/bin/toggle_app.sh

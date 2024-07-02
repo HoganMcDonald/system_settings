@@ -623,18 +623,22 @@ return {
         segments = {
           -- fold column
           { text = { builtin.foldfunc }, click = 'v:lua.ScFa' },
+          -- sign column
+          { sign = { name = { '.*' }, namespace = { '.*' }, maxwidth = 1, colwidth = 1 }, click = 'v:lua.ScSa' },
           -- number column
           { text = { builtin.lnumfunc }, click = 'v:lua.ScLa' },
-          -- anything else
-          { sign = { name = { '.*' }, namespace = { '.*' }, maxwidth = 2, colwidth = 2 }, click = 'v:lua.ScSa' },
           -- gitsigns
-          { sign = { namespace = { 'gitsigns' }, name = { '.*' }, maxwidth = 1, colwidth = 2, auto = false }, click = 'v:lua.ScSa', },
+          {
+            sign = { namespace = { 'gitsigns' }, name = { '.*' }, maxwidth = 1, colwidth = 1, auto = false },
+            click = 'v:lua.ScSa',
+          },
         },
       }
     end,
   },
   {
     'kosayoda/nvim-lightbulb',
+    event = 'LspAttach',
     opts = {
       autocmd = {
         enabled = true,
@@ -863,6 +867,13 @@ return {
           require('trouble').toggle()
         end,
         desc = 'Toggle Trouble diagnostics',
+      },
+      {
+        '<leader>xt',
+        function()
+          require('trouble').toggle 'todo'
+        end,
+        desc = 'Toggle todo',
       },
       {
         '<leader>xw',

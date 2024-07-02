@@ -28,7 +28,7 @@ local M = {}
 ---@field bg integer Background color integer
 ---@field sp integer Special color integer
 ---@field x_fg string Foreground color hex string
----@field x_bg string Bakground color hex string
+---@field x_bg string Background color hex string
 ---@field x_sp string Special color hex string
 ---@field bold boolean
 ---@field italic boolean
@@ -117,8 +117,37 @@ if HAS_NVIM_0_8 then
   }
 end
 
-vim.tbl_add_reverse_lookup(M.HlAttribute)
-vim.tbl_add_reverse_lookup(style_attrs)
+--- NOTE: deprecated in nvim core. I want to remove this file soon anyways.
+---
+--- Add the reverse lookup values to an existing table.
+--- For example:
+--- `tbl_add_reverse_lookup { A = 1 } == { [1] = 'A', A = 1 }`
+---
+--- Note that this *modifies* the input.
+---@param o table Table to add the reverse to
+---@return table o
+local function tbl_add_reverse_lookup(o)
+  --- @cast o table<any,any>
+  --- @type any[]
+  local keys = vim.tbl_keys(o)
+  for _, k in ipairs(keys) do
+    local v = o[k]
+    if o[v] then
+      error(
+        string.format(
+          'The reverse lookup found an existing value for %q while processing key %q',
+          tostring(v),
+          tostring(k)
+        )
+      )
+    end
+    o[v] = k
+  end
+  return o
+end
+
+tbl_add_reverse_lookup(M.HlAttribute)
+tbl_add_reverse_lookup(style_attrs)
 local hlattr = M.HlAttribute
 
 ---@param name string Syntax group name.

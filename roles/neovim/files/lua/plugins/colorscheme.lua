@@ -3,6 +3,16 @@ local bg = require('util.highlight').bg
 local fg = require('util.highlight').fg
 
 return {
+  -- {
+  --   'folke/tokyonight.nvim',
+  --   lazy = false,
+  --   priority = 1000,
+  --   opts = {},
+  --   config = function()
+  --     vim.cmd.colorscheme 'tokyonight'
+  --   end
+  -- },
+
   -- halcyon
   {
     'kwsp/halcyon-neovim',

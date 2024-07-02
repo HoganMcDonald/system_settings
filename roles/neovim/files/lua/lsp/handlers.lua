@@ -13,11 +13,11 @@ M.setup = function()
   end
 
   vim.diagnostic.config {
-    virtual_text = true,
-    virtual_lines = false, -- From lsp_lines - default off
-    signs = false,
+    virtual_text = false, -- virtual text
+    virtual_lines = false, -- lsp lines
+    signs = true, -- sign column
+    underline = true, -- underlines
     update_in_insert = false,
-    underline = true,
     severity_sort = true,
     float = {
       focusable = false,

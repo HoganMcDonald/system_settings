@@ -25,7 +25,7 @@ return {
     },
     opts = {
       highlight = { enable = true },
-      indent = { enable = true },
+      indent = { enable = false },
       endwise = { enable = true },
       ensure_installed = {
         'bash',
@@ -98,5 +98,12 @@ return {
     config = function()
       require('wildfire').setup()
     end,
+  },
+
+  -- markdown
+  {
+    'lukas-reineke/headlines.nvim',
+    dependencies = 'nvim-treesitter/nvim-treesitter',
+    config = true, -- or `opts = {}`
   },
 }
