@@ -24,9 +24,6 @@
   homebrew:
     name: gh
 
-- name: Install gh-dash extension
-  command: gh extension install dlvhdr/gh-dash
-
 - name: Create .bin directory
   command: "mkdir -p ~/.bin"
 
