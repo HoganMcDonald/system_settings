@@ -54,6 +54,9 @@ function M.setup()
     ['jsonls'] = function()
       lspconfig.jsonls.setup(vim.tbl_deep_extend('force', require 'lsp.settings.jsonls', defaults))
     end,
+    ["yamlls"] = function()
+      lspconfig.yamlls.setup(vim.tbl_deep_extend('force', require 'lsp.settings.yamlls', defaults))
+    end,
   }
 end
 
