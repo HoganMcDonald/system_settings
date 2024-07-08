@@ -49,7 +49,7 @@ windows:
   - sidekiq:
       root: ~/reforge/
       panes:
-        - docker-compose exec web bundle exec sidekiq -C config/sidekiq.yml
+        - bundle exec sidekiq -C config/sidekiq.yml
   - redis-server: redis-server
   - localstripe: localstripe
 

@@ -59,4 +59,5 @@ root: ~/reforge
 windows:
   - nvim: nvim
   - zsh: ~
-  - lazyDocker: lazydocker
+  - server: rails s
+  - webpack: bin/webpack-dev-server
