@@ -25,7 +25,7 @@ return {
     },
     opts = {
       highlight = { enable = true },
-      indent = { enable = true },
+      indent = { enable = false },
       endwise = { enable = true },
       ensure_installed = {
         'bash',
@@ -97,6 +97,18 @@ return {
     dependencies = { 'nvim-treesitter/nvim-treesitter' },
     config = function()
       require('wildfire').setup()
+    end,
+  },
+
+  -- markdown
+  {
+    'MeanderingProgrammer/markdown.nvim',
+    name = 'render-markdown',                                                      -- Only needed if you have another plugin named markdown.nvim
+    -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.nvim' }, -- if you use the mini.nvim suite
+    -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.icons' }, -- if you use standalone mini plugins
+    dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
+    config = function()
+      require('render-markdown').setup({})
     end,
   },
 }
