@@ -170,7 +170,7 @@ return {
         '<leader>bf',
         function()
           require('conform').format {
-            timeout_ms = 500,
+            timeout_ms = 1000,
             lsp_fallback = true,
           }
         end,
@@ -183,11 +183,17 @@ return {
         lua = { 'stylua' },
         -- Conform will run multiple formatters sequentially
         python = { 'isort', 'black' },
+        ruby = { 'rubocop', 'solargraph' },
         -- Use a sub-list to run only the first available formatter
         javascript = { 'prettier' },
         typescript = { 'prettier' },
         javascriptreact = { 'prettier' },
         typescriptreact = { 'prettier' },
+      },
+      formatters = {
+        rubocop = {
+          args = { '--server', '--auto-correct-all', '--stderr', '--force-exclusion', '--stdin', '$FILENAME' },
+        },
       },
     },
   },
@@ -379,5 +385,33 @@ return {
     },
   },
 
-  -- spell check
+  -- surround
+  {
+    'kylechui/nvim-surround',
+    version = '*', -- Use for stability; omit to use `main` branch for the latest features
+    event = 'VeryLazy',
+    config = function()
+      require('nvim-surround').setup {
+        -- Configuration here, or leave empty to use defaults
+      }
+    end,
+  },
+
+  -- todo comments
+  {
+    'folke/todo-comments.nvim',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    opts = {
+      -- your configuration comes here
+      -- or leave it empty to use the default settings
+      -- refer to the configuration section below
+    },
+  },
+
+  -- macros
+  {
+    'chrisgrieser/nvim-recorder',
+    dependencies = 'rcarriga/nvim-notify',
+    opts = {},
+  },
 }
