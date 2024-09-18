@@ -47,12 +47,12 @@ local M = {}
 
 --- deprecated
 function M.bg(group, color)
-  vim.cmd('hi ' .. group .. ' guibg=' .. color)
+  -- vim.cmd('hi ' .. group .. ' guibg=' .. color)
 end
 
 --- deprecated
 function M.fg(group, color)
-  vim.cmd('hi ' .. group .. ' guifg=' .. color)
+  -- vim.cmd('hi ' .. group .. ' guifg=' .. color)
 end
 
 local HAS_NVIM_0_8 = vim.fn.has 'nvim-0.8' == 1
