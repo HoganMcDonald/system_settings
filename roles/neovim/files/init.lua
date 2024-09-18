@@ -14,3 +14,4 @@ Neovim init file
 require('config').setup()
 require('plugins').setup()
 require('lsp').setup()
+vim.cmd('Dotenv ~/.config/nvim/.env')

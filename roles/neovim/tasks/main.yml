@@ -28,3 +28,15 @@
     dest: "{{ config }}/nvim"
     state: link
     force: yes
+
+- name: Decrypt neovim environment variables
+  ansible.builtin.include_vars:
+    file: "{{ dotfiles_home }}/vault/neovim_env_vars.yml"
+    name: env_vars
+  no_log: false  # Avoid logging sensitive information
+
+- name: Create Neovim .env file with secure tokens
+  ansible.builtin.template:
+    src: neovim_env_template.j2
+    dest: "{{ config }}/nvim/.env"
+    mode: '0600'  # Ensure only the user has access to the .env file

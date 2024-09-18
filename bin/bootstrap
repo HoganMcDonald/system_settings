@@ -2,17 +2,39 @@
 set -e
 
 tags="$1"
+vault_pass_file="$HOME/.vault_pass.txt"  # Path to the vault password file
 
-if [ -z $tags ]; then
+# Default to "all" tags if no specific tag is provided
+if [ -z "$tags" ]; then
   tags="all"
 fi
 
+# Install Ansible if not already installed
 if ! [ -x "$(command -v ansible)" ]; then
   pip3 install ansible
 fi
 
-ansible-playbook -i ~/system/hosts ~/system/dotfiles.yml --ask-become-pass --tags $tags
+# Check for the existence of the vault password file
+if [ ! -f $vault_pass_file ]; then
+  echo "Vault password file not found at $vault_pass_file."
+  echo "Creating a new vault password file."
 
+  # Create an empty file and open it in the default editor (or vim as a fallback)
+  touch $vault_pass_file
+  chmod 600 $vault_pass_file  # Secure the file
+  ${EDITOR:-vim} $vault_pass_file  # Open the file in the default editor or vim
+
+  # Check if the file is still empty after saving
+  if [ ! -s $vault_pass_file ]; then
+    echo "Vault password file is empty. Please add the vault password and try again."
+    exit 1
+  fi
+fi
+
+# Run the ansible playbook with the vault password file
+ansible-playbook -i $HOME/system/hosts $HOME/system/dotfiles.yml --vault-password-file $vault_pass_file --ask-become-pass --tags $tags
+
+# Notify when bootstrap is complete
 if command -v terminal-notifier 1>/dev/null 2>&1; then
   terminal-notifier -title "dotfiles: Bootstrap complete" -message "Successfully set up dev environment."
 fi
