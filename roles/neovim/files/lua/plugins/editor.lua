@@ -488,49 +488,49 @@ return {
   -- Keymaps
   -- which-key helps you remember key bindings by showing a popup
   -- with the active keybindings of the command you started typing.
-  {
-    'folke/which-key.nvim',
-    event = 'VeryLazy',
-    opts = {
-      plugins = { spelling = true },
-      defaults = {
-        mode = { 'n', 'v' },
-        ['z'] = { name = 'folds' },
-        ['<leader>a'] = { name = 'ai assistant' },
-        ['<leader>b'] = { name = 'buffer' },
-        ['<leader>c'] = { name = 'code actions' },
-        ['<leader>d'] = { name = 'debugger' },
-        -- ['<leader>e'] = { name = 'xxx' },
-        ['<leader>f'] = { name = 'file/find' },
-        ['<leader>g'] = { name = 'git' },
-        ['<leader>h'] = { name = 'hunks' },
-        -- ['<leader>i'] = { name = 'xxx' },
-        -- ['<leader>j'] = { name = 'xxx' },
-        -- ['<leader>k'] = { name = 'xxx' },
-        ['<leader>l'] = { name = 'lsp' },
-        -- ['<leader>m'] = { name = 'xxx' },
-        ['<leader>n'] = { name = 'notes' },
-        -- ['<leader>o'] = { name = 'xxx' },
-        ['<leader>p'] = { name = 'project' },
-        -- ['<leader>q'] = { name = 'xxx' },
-        ['<leader>r'] = { name = 'code runner' },
-        -- ['<leader>s'] = { name = 'xxx' },
-        ['<leader>t'] = { name = 'tests' },
-        ['<leader>tw'] = { name = 'watch' },
-        ['<leader>u'] = { name = 'utility' },
-        -- ['<leader>v'] = { name = 'xxx' },
-        ['<leader>w'] = { name = 'windows' },
-        ['<leader>x'] = { name = 'diagnostic' },
-        -- ['<leader>y'] = { name = 'xxx' },
-        -- ['<leader>z'] = { name = 'xxx' },
-      },
-    },
-    config = function(_, opts)
-      local wk = require 'which-key'
-      wk.setup(opts)
-      wk.register(opts.defaults)
-    end,
-  },
+  -- {
+  --   'folke/which-key.nvim',
+  --   event = 'VeryLazy',
+  --   opts = {
+  --     plugins = { spelling = true },
+  --     defaults = {
+  --       mode = { 'n', 'v' },
+  --       { '<leader>a', group = 'ai assistant' },
+  --       { '<leader>b', group = 'buffer' },
+  --       { '<leader>c', group = 'code actions' },
+  --       { '<leader>d', group = 'debugger' },
+  --       -- { '<leader>e', group = 'xxx' },
+  --       { '<leader>f', group = 'file/find' },
+  --       { '<leader>g', group = 'git' },
+  --       { '<leader>h', group = 'hunks' },
+  --       -- { '<leader>i', group = 'xxx' },
+  --       -- { '<leader>j', group = 'xxx' },
+  --       -- { '<leader>k', group = 'xxx' },
+  --       { '<leader>l', group = 'lsp' },
+  --       -- { '<leader>m', group = 'xxx' },
+  --       { '<leader>n', group = 'notes' },
+  --       -- { '<leader>o', group = 'xxx' },
+  --       { '<leader>p', group = 'project' },
+  --       -- { '<leader>q', group = 'xxx' },
+  --       { '<leader>r', group = 'code runner' },
+  --       -- { '<leader>s', group = 'xxx' },
+  --       { '<leader>t', group = 'tests' },
+  --       { '<leader>tw', group = 'watch' },
+  --       { '<leader>u', group = 'utility' },
+  --       -- { '<leader>v', group = 'xxx' },
+  --       { '<leader>w', group = 'windows' },
+  --       { '<leader>x', group = 'diagnostic' },
+  --       -- { '<leader>y', group = 'xxx' },
+  --       -- { '<leader>z', group = 'xxx' },
+  --       { 'z', group = 'folds' },
+  --     },
+  --   },
+  --   config = function(_, opts)
+  --     local wk = require 'which-key'
+  --     wk.setup(opts)
+  --     wk.register(opts.defaults)
+  --   end,
+  -- },
 
   -- folds
   {
