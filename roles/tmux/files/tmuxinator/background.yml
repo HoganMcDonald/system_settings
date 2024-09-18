@@ -45,7 +45,10 @@ root: ~/
 # attach: false
 
 windows:
-  - postgres: postgres
+  - postgres:
+      root: ~/reforge/
+      panes:
+        - postgres
   - sidekiq:
       root: ~/reforge/
       panes:
