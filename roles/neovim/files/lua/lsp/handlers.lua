@@ -2,17 +2,17 @@ local M = {}
 
 M.setup = function()
   local signs = {
-    { name = 'DiagnosticSignError', text = '' },
-    { name = 'DiagnosticSignWarn', text = '' },
-    { name = 'DiagnosticSignHint', text = '' },
-    { name = 'DiagnosticSignInfo', text = '' },
+    [vim.diagnostic.severity.ERROR] = '',
+    [vim.diagnostic.severity.WARN] = '',
+    [vim.diagnostic.severity.HINT] = '',
+    [vim.diagnostic.severity.INFO] = '',
   }
 
   vim.diagnostic.config {
     virtual_text = false, -- virtual text
     virtual_lines = false, -- lsp lines
     signs = {
-      active = signs,
+      text = signs,
     },
     underline = true, -- underlines
     update_in_insert = false,
