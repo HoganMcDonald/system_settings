@@ -4,13 +4,14 @@ local fg = require('util.highlight').fg
 
 return {
   {
-    'catppuccin/nvim',
-    name = 'catppuccin',
+    "folke/tokyonight.nvim",
+    lazy = false,
     priority = 1000,
-    config = function()
-      vim.cmd.colorscheme "catppuccin-mocha" -- catppuccin-latte, catppuccin-frappe, catppuccin-macchiato, catppuccin-mocha
+    opts = {},
+    config = function(_, opts)
+      vim.cmd.colorscheme 'tokyonight'
     end
-  },
+  }
 
   -- -- halcyon
   -- {
