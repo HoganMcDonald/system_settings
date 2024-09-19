@@ -18,7 +18,7 @@ return {
     version = false, -- set this if you want to always pull the latest change
     opts = {
       ---@alias Provider "claude" | "openai" | "azure" | "gemini" | "cohere" | "copilot" | string
-      provider = "openai",       -- Recommend using Claude
+      provider = 'claude', -- Recommend using Claude
       behaviour = {
         auto_suggestions = true, -- Experimental stage
         auto_set_highlight_group = true,
