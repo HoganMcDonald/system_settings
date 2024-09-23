@@ -18,7 +18,7 @@ return {
   -- start screen
   {
     'glepnir/dashboard-nvim',
-    dependencies = 'kwsp/halcyon-neovim',
+    dependencies = 'folke/tokyonight.nvim',
     opts = {
       theme = 'doom',
       hide = {
