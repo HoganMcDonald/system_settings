@@ -1,28 +1,43 @@
-local Colors = require 'util.colors'
-local bg = require('util.highlight').bg
-local fg = require('util.highlight').fg
-
 return {
   {
-    "folke/tokyonight.nvim",
+    'folke/tokyonight.nvim',
     lazy = false,
     priority = 1000,
-    opts = {},
+    opts = {
+      on_highlights = function(hl, c)
+        local prompt = '#2d3149'
+        hl.TelescopeNormal = {
+          bg = c.bg_dark,
+          fg = c.fg_dark,
+        }
+        hl.TelescopeBorder = {
+          bg = c.bg_dark,
+          fg = c.bg_dark,
+        }
+        hl.TelescopePromptNormal = {
+          bg = prompt,
+        }
+        hl.TelescopePromptBorder = {
+          bg = prompt,
+          fg = prompt,
+        }
+        hl.TelescopePromptTitle = {
+          bg = prompt,
+          fg = c.fg,
+        }
+        hl.TelescopePreviewTitle = {
+          bg = c.bg_dark,
+          fg = c.bg_dark,
+        }
+        hl.TelescopeResultsTitle = {
+          bg = c.bg_dark,
+          fg = c.bg_dark,
+        }
+      end,
+    },
     config = function(_, opts)
+      require("tokyonight").setup(opts)
       vim.cmd.colorscheme 'tokyonight'
-    end
-  }
-
-  -- -- halcyon
-  -- {
-  --   'kwsp/halcyon-neovim',
-  --   lazy = false,
-  --   config = function()
-  --     vim.cmd.colorscheme 'halcyon'
-  --
-  --     -- fixes issue where highlights for vertsplit seem backwards
-  --     bg('VertSplit', Colors.BACKGROUND)
-  --     fg('VertSplit', Colors.GREY)
-  --   end,
-  -- },
+    end,
+  },
 }

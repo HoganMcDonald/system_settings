@@ -67,24 +67,6 @@ return {
     },
     config = function(_, opts)
       require('telescope').setup(opts)
-      fg('TelescopeBorder', Colors.WORKBENCH)
-      bg('TelescopeBorder', Colors.WORKBENCH)
-      fg('TelescopePromptBorder', Colors.GREY)
-      bg('TelescopePromptBorder', Colors.GREY)
-      bg('TelescopePreviewTitle', Colors.WORKBENCH)
-      fg('TelescopePreviewTitle', Colors.FOREGROUND)
-      bg('TelescopePromptTitle', Colors.GREY)
-      fg('TelescopePromptTitle', Colors.FOREGROUND)
-      bg('TelescopePromptNormal', Colors.GREY)
-      fg('TelescopePromptNormal', Colors.FOREGROUND)
-      bg('TelescopePromptPrefix', Colors.GREY)
-      fg('TelescopePromptPrefix', Colors.WHITE)
-      bg('TelescopePreviewTitle', Colors.WORKBENCH)
-      fg('TelescopePreviewTitle', Colors.WORKBENCH)
-      bg('TelescopeResultsTitle', Colors.WORKBENCH)
-      fg('TelescopeResultsTitle', Colors.WORKBENCH)
-      bg('TelescopeNormal', Colors.WORKBENCH)
-      bg('TelescopeSelection', Colors.BACKGROUND)
     end,
   },
 
