@@ -184,55 +184,10 @@ return {
 
   -- winbar
   {
-    'SmiteshP/nvim-navic', -- statusline/winbar component using lsp
-    dependencies = 'neovim/nvim-lspconfig',
-    opts = {
-      highlight = true,
-      separator = ' 〉',
-      -- VScode-like icons
-      icons = {
-        File = ' ',
-        Module = ' ',
-        Namespace = ' ',
-        Package = ' ',
-        Class = ' ',
-        Method = ' ',
-        Property = ' ',
-        Field = ' ',
-        Constructor = ' ',
-        Enum = ' ',
-        Interface = ' ',
-        Function = ' ',
-        Variable = ' ',
-        Constant = ' ',
-        String = ' ',
-        Number = ' ',
-        Boolean = ' ',
-        Array = ' ',
-        Object = ' ',
-        Key = ' ',
-        Null = ' ',
-        EnumMember = ' ',
-        Struct = ' ',
-        Event = ' ',
-        Operator = ' ',
-        TypeParameter = ' ',
-      },
-    },
-  },
-
-  {
-    'utilyre/barbecue.nvim',
-    name = 'barbecue',
-    version = '*',
+    'Bekaboo/dropbar.nvim',
+    -- optional, but required for fuzzy finder support
     dependencies = {
-      'SmiteshP/nvim-navic',
-      'nvim-tree/nvim-web-devicons', -- optional dependency
-    },
-    opts = {
-      theme = {
-        normal = { bg = Colors.BLACK },
-      },
+      'nvim-telescope/telescope-fzf-native.nvim',
     },
   },
 }
