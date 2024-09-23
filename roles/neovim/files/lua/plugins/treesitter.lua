@@ -7,16 +7,7 @@ return {
     event = { 'BufReadPost', 'BufNewFile' },
     dependencies = {
       'RRethy/nvim-treesitter-endwise',
-      {
-        'nvim-treesitter/nvim-treesitter-textobjects',
-        init = function()
-          -- disable rtp plugin, as we only need its queries for mini.ai
-          -- In case other textobject modules are enabled, we will load them
-          -- once nvim-treesitter is loaded
-          require('lazy.core.loader').disable_rtp_plugin 'nvim-treesitter-textobjects'
-          load_textobjects = true
-        end,
-      },
+      'nvim-treesitter/nvim-treesitter-textobjects',
       'windwp/nvim-ts-autotag',
     },
     cmd = { 'TSUpdateSync' },
@@ -24,29 +15,26 @@ return {
       { '<c-space>', desc = 'Increment selection' },
     },
     opts = {
-      highlight = { enable = true },
-      indent = { enable = false },
-      endwise = { enable = true },
+      auto_install = true,
       ensure_installed = {
-        'bash',
-        'c',
-        'html',
         'javascript',
+        'typescript',
+        'tsx',
+
+        'html',
         'json',
         'lua',
         'luadoc',
         'luap',
         'markdown',
         'markdown_inline',
-        'python',
         'query',
         'regex',
-        'tsx',
-        'typescript',
-        'vim',
-        'vimdoc',
         'yaml',
       },
+      highlight = { enable = true },
+      indent = { enable = true },
+      endwise = { enable = true },
       incremental_selection = {
         enable = true,
         keymaps = {
@@ -56,38 +44,76 @@ return {
           node_decremental = '<bs>',
         },
       },
-      autotag = {
-        enable = true,
+      textobjects = {
+        select = {
+          enable = true,
+
+          -- Automatically jump forward to textobj, similar to targets.vim
+          lookahead = true,
+
+          keymaps = {
+            -- methods
+            ['am'] = '@function.outer',
+            ['im'] = '@function.inner',
+
+            -- classes
+            ['ac'] = '@class.outer',
+            ['ic'] = { query = '@class.inner', desc = 'Select inner part of a class region' },
+
+            -- scopes
+            ['as'] = { query = '@scope', query_group = 'locals', desc = 'Select language scope' },
+          },
+          selection_modes = {
+            ['@parameter.outer'] = 'v', -- charwise
+            ['@function.outer'] = 'V', -- linewise
+            ['@class.outer'] = '<c-v>', -- blockwise
+          },
+          include_surrounding_whitespace = true,
+        },
+        swap = {
+          enable = true,
+          swap_next = {
+            ['<leader>sp'] = '@parameter.inner',
+            ['<leader>sm'] = '@function.outer',
+          },
+          swap_previous = {
+            ['<leader>SP'] = '@parameter.inner',
+            ['<leader>SM'] = '@function.outer',
+          },
+        },
+        move = {
+          enable = true,
+          set_jumps = true, -- whether to set jumps in the jumplist
+          goto_next_start = {
+            [']m'] = '@function.outer',
+            [']c'] = { query = '@class.outer', desc = 'Next class start' },
+            [']z'] = { query = '@fold', query_group = 'folds', desc = 'Next fold' },
+          },
+          goto_next_end = {
+            [']M'] = '@function.outer',
+          },
+          goto_previous_start = {
+            ['[m'] = '@function.outer',
+            ['[c'] = '@class.outer',
+          },
+          goto_previous_end = {
+            ['[M'] = '@function.outer',
+          },
+        },
+        lsp_interop = {
+          enable = true,
+          border = 'none',
+          floating_preview_opts = {},
+          peek_definition_code = {
+            ['<leader>df'] = '@function.outer',
+            ['<leader>dF'] = '@class.outer',
+          },
+        },
       },
     },
     config = function(_, opts)
-      if type(opts.ensure_installed) == 'table' then
-        ---@type table<string, boolean>
-        local added = {}
-        opts.ensure_installed = vim.tbl_filter(function(lang)
-          if added[lang] then
-            return false
-          end
-          added[lang] = true
-          return true
-        end, opts.ensure_installed)
-      end
       require('nvim-treesitter.configs').setup(opts)
-
-      if load_textobjects then
-        -- PERF: no need to load the plugin, if we only need its queries for mini.ai
-        if opts.textobjects then
-          for _, mod in ipairs { 'move', 'select', 'swap', 'lsp_interop' } do
-            if opts.textobjects[mod] and opts.textobjects[mod].enable then
-              local Loader = require 'lazy.core.loader'
-              Loader.disabled_rtp_plugins['nvim-treesitter-textobjects'] = nil
-              local plugin = require('lazy.core.config').plugins['nvim-treesitter-textobjects']
-              require('lazy.core.loader').source_runtime(plugin.dir, 'plugin')
-              break
-            end
-          end
-        end
-      end
+      require('nvim-ts-autotag').setup()
     end,
   },
 
@@ -103,12 +129,12 @@ return {
   -- markdown
   {
     'MeanderingProgrammer/markdown.nvim',
-    name = 'render-markdown',                                                      -- Only needed if you have another plugin named markdown.nvim
+    name = 'render-markdown', -- Only needed if you have another plugin named markdown.nvim
     -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.nvim' }, -- if you use the mini.nvim suite
     -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.icons' }, -- if you use standalone mini plugins
     dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
     config = function()
-      require('render-markdown').setup({})
+      require('render-markdown').setup {}
     end,
   },
 }
