@@ -53,20 +53,19 @@ return {
 
           keymaps = {
             -- methods
-            ['am'] = '@function.outer',
-            ['im'] = '@function.inner',
+            ['m'] = '@function.outer',
+            ['mi'] = '@function.inner',
 
-            -- classes
-            ['ac'] = '@class.outer',
-            ['ic'] = { query = '@class.inner', desc = 'Select inner part of a class region' },
-
-            -- scopes
-            ['as'] = { query = '@scope', query_group = 'locals', desc = 'Select language scope' },
+            -- assignments
+            ['v'] = '@assignment.outer',
+            ['vi'] = '@assignment.inner',
+            ['vl'] = '@assignment.lhs',
+            ['vr'] = '@assignment.rhs',
           },
           selection_modes = {
-            ['@parameter.outer'] = 'v', -- charwise
-            ['@function.outer'] = 'V', -- linewise
-            ['@class.outer'] = '<c-v>', -- blockwise
+            ['@parameter.outer'] = 'v',
+            ['@function.outer'] = 'V',
+            ['@class.outer'] = '<c-v>',
           },
           include_surrounding_whitespace = true,
         },
@@ -75,10 +74,12 @@ return {
           swap_next = {
             ['<leader>sp'] = '@parameter.inner',
             ['<leader>sm'] = '@function.outer',
+            ['<leader>sv'] = '@assignment.outer',
           },
           swap_previous = {
             ['<leader>SP'] = '@parameter.inner',
             ['<leader>SM'] = '@function.outer',
+            ['<leader>SV'] = '@assignment.outer',
           },
         },
         move = {
@@ -86,18 +87,27 @@ return {
           set_jumps = true, -- whether to set jumps in the jumplist
           goto_next_start = {
             [']m'] = '@function.outer',
-            [']c'] = { query = '@class.outer', desc = 'Next class start' },
-            [']z'] = { query = '@fold', query_group = 'folds', desc = 'Next fold' },
+            [']v'] = '@assignment.outer',
+            [']c'] = '@class.outer',
+            [']z'] = '@fold',
           },
           goto_next_end = {
             [']M'] = '@function.outer',
+            [']V'] = '@assignment.outer',
+            [']C'] = '@class.outer',
+            [']Z'] = '@fold',
           },
           goto_previous_start = {
             ['[m'] = '@function.outer',
+            ['[v'] = '@assignment.outer',
             ['[c'] = '@class.outer',
+            ['[z'] = '@fold',
           },
           goto_previous_end = {
             ['[M'] = '@function.outer',
+            ['[V'] = '@assignment.outer',
+            ['[C'] = '@class.outer',
+            ['[Z'] = '@fold',
           },
         },
         lsp_interop = {
@@ -105,8 +115,8 @@ return {
           border = 'none',
           floating_preview_opts = {},
           peek_definition_code = {
-            ['<leader>df'] = '@function.outer',
-            ['<leader>dF'] = '@class.outer',
+            ['<leader>pm'] = '@function.outer',
+            ['<leader>pc'] = '@class.outer',
           },
         },
       },
