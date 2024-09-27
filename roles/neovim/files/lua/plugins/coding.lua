@@ -227,6 +227,7 @@ return {
       -- providers
       'olimorris/neotest-rspec',
       'nvim-neotest/neotest-vim-test',
+      'nvim-neotest/neotest-jest',
     },
     keys = {
       {
@@ -295,7 +296,7 @@ return {
     },
     config = function()
       require('neotest').setup {
-        log_level = 1,
+        log_level = vim.log.levels.DEBUG,
         icons = {
           expanded = '',
           child_prefix = '',
@@ -329,7 +330,10 @@ return {
         },
         adapters = {
           require 'neotest-rspec',
-          require 'neotest-vim-test' { ignore_filetypes = { 'ruby' } },
+          require 'neotest-jest',
+          require 'neotest-vim-test' {
+            ignore_filetypes = { 'ruby', 'javascript', 'typescript', 'typescriptreact', 'javascriptreact' },
+          },
         },
       }
     end,
