@@ -4,7 +4,26 @@ return {
   {
     'tpope/vim-fugitive',
     keys = {
-      { '<leader>gc', ':Git commit<cr>', desc = 'Commit' },
+      {
+        '<leader>gc',
+        function()
+          local n = 10
+
+          -- Open :Git commit in a full-width split of height n
+          vim.cmd('rightbelow ' .. n .. 'split | Git commit')
+
+          -- Autocmd to close the commit window after finishing the commit
+          vim.api.nvim_create_autocmd('BufWritePost', {
+            pattern = 'COMMIT_EDITMSG',
+            callback = function()
+              -- Close the commit window
+              vim.cmd 'quit'
+            end,
+            once = true,
+          })
+        end,
+        desc = 'Commit',
+      },
     },
     cmd = 'Git',
   },
