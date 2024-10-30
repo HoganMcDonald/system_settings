@@ -1,27 +1,10 @@
-local hi_link = require('util.highlight').hi_link
-
 return {
   {
     'tpope/vim-fugitive',
     keys = {
       {
         '<leader>gc',
-        function()
-          local n = 10
-
-          -- Open :Git commit in a full-width split of height n
-          vim.cmd('rightbelow ' .. n .. 'split | Git commit')
-
-          -- Autocmd to close the commit window after finishing the commit
-          vim.api.nvim_create_autocmd('BufWritePost', {
-            pattern = 'COMMIT_EDITMSG',
-            callback = function()
-              -- Close the commit window
-              vim.cmd 'quit'
-            end,
-            once = true,
-          })
-        end,
+        '<cmd>silent botright Git commit<cr><cmd>1<cr>i',
         desc = 'Commit',
       },
     },
@@ -241,17 +224,17 @@ return {
     },
     opts = {
       signs = {
-        add          = { text = '┃' },
-        change       = { text = '┃' },
-        delete       = { text = '_' },
-        topdelete    = { text = '‾' },
+        add = { text = '┃' },
+        change = { text = '┃' },
+        delete = { text = '_' },
+        topdelete = { text = '‾' },
         changedelete = { text = '~' },
-        untracked    = { text = '┆' },
+        untracked = { text = '┆' },
       },
-      signcolumn = true,  -- Toggle with `:Gitsigns toggle_signs`
-      numhl      = false, -- Toggle with `:Gitsigns toggle_numhl`
-      linehl     = false, -- Toggle with `:Gitsigns toggle_linehl`
-      word_diff  = false, -- Toggle with `:Gitsigns toggle_word_diff`
+      signcolumn = true, -- Toggle with `:Gitsigns toggle_signs`
+      numhl = false, -- Toggle with `:Gitsigns toggle_numhl`
+      linehl = false, -- Toggle with `:Gitsigns toggle_linehl`
+      word_diff = false, -- Toggle with `:Gitsigns toggle_word_diff`
       watch_gitdir = {
         interval = 1000,
         follow_files = true,
