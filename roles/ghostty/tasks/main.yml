@@ -1,0 +1,23 @@
+- name: Install Ghostty terminal
+  homebrew_cask:
+    name: ghostty
+
+- name: Create Ghostty config folder if it doesn't exist
+  shell: "mkdir -p {{ config }}/ghostty/"
+
+- name: Check if config exists
+  stat: path="{{ config }}/ghostty"
+  register: ghostty_config_stat
+
+- name: Back up config
+  command: "mv {{ config }}/ghostty {{ config }}/ghostty_old"
+  args:
+    creates: "{{ config }}/ghostty_old"
+  when: ghostty_config_stat.stat.exists
+
+- name: Make sure config is up to date
+  file:
+    src: "{{ dotfiles_home }}/roles/ghostty/files/"
+    dest: "{{ config }}/ghostty"
+    state: link
+    force: yes
