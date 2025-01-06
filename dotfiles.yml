@@ -42,6 +42,9 @@
     - role: kitty
       tags:
         - kitty
+    - role: ghostty
+      tags:
+        - ghostty
     - role: spotify
       tags:
         - spotify

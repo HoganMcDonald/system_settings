@@ -1,4 +1,14 @@
 font-family        = Hack Nerd Font Mono
-adjust-cell-height = 50%
+adjust-cell-height = 30%
 theme              = halcyon
 
+# keybindings
+keybind = opt+h=unbind
+keybind = opt+j=unbind
+keybind = opt+k=unbind
+keybind = opt+l=unbind
+
+keybind = ctrl+h=unbind
+keybind = ctrl+j=unbind
+keybind = ctrl+k=unbind
+keybind = ctrl+l=unbind
