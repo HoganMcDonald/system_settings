@@ -2,17 +2,39 @@ local Colors = require 'util.colors'
 local fg = require('util.highlight').fg
 
 return {
+  -- snacks
+  {
+    'folke/snacks.nvim',
+    priority = 1000,
+    lazy = false,
+    opts = {
+      bigfile = { -- improve performance on big files
+        enabled = true,
+        notify = true, -- show notification when big file detected
+        size = 1.5 * 1024 * 1024, -- 1.5MB
+      },
+      -- dashboard = { enabled = true },
+      indent = { enabled = true },
+      input = { enabled = false },
+      notifier = { enabled = true },
+      quickfile = { enabled = true },
+      scroll = { enabled = false },
+      statuscolumn = { enabled = false },
+      words = { enabled = false },
+    },
+  },
+
   -- dotenv
   {
-    "ellisonleao/dotenv.nvim",
+    'ellisonleao/dotenv.nvim',
     lazy = false,
     opts = {
       enable_on_load = true, -- will load your .env file upon loading a buffer
-      verbose = false,       -- show error notification if .env file is not found and if .env is loaded
+      verbose = false, -- show error notification if .env file is not found and if .env is loaded
     },
     config = function(_, opts)
       require('dotenv').setup(opts)
-    end
+    end,
   },
 
   -- start screen
@@ -75,44 +97,30 @@ return {
     lazy = false,
     keys = {
       {
-        '˙',
+        '<C-h>',
         function()
           require('nvim-tmux-navigation').NvimTmuxNavigateLeft()
         end,
         silent = true,
       },
       {
-        '∆',
+        '<C-j>',
         function()
           require('nvim-tmux-navigation').NvimTmuxNavigateDown()
         end,
         silent = true,
       },
       {
-        '˚',
+        '<C-k>',
         function()
           require('nvim-tmux-navigation').NvimTmuxNavigateUp()
         end,
         silent = true,
       },
       {
-        '¬',
+        '<C-l>',
         function()
           require('nvim-tmux-navigation').NvimTmuxNavigateRight()
-        end,
-        silent = true,
-      },
-      {
-        '«',
-        function()
-          require('nvim-tmux-navigation').NvimTmuxNavigateLastActive()
-        end,
-        silent = true,
-      },
-      {
-        '<M-space>',
-        function()
-          require('nvim-tmux-navigation').NvimTmuxNavigateNext()
         end,
         silent = true,
       },
