@@ -365,14 +365,6 @@ return {
     end,
   },
 
-  -- indent guides for Neovim
-  {
-    'lukas-reineke/indent-blankline.nvim',
-    main = 'ibl',
-    event = { 'BufReadPost', 'BufNewFile' },
-    opts = {},
-  },
-
   -- comments
   {
     'echasnovski/mini.comment',
