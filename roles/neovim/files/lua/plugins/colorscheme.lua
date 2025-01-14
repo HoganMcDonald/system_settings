@@ -56,91 +56,41 @@ local halcyon = {
 
 return {
   {
-    'folke/tokyonight.nvim',
+    'kwsp/halcyon-neovim',
     lazy = false,
     priority = 1000,
-    opts = {
-      on_colors = function(c)
-        -- Override Tokyonight’s palette with our Halcyon-inspired table.
-        -- Any fields not overridden will fall back to Tokyonight defaults.
-        c.bg = halcyon.bg
-        c.bg_dark = halcyon.bg_dark
-        c.bg_highlight = halcyon.bg_highlight
-        c.fg = halcyon.fg
-        c.fg_dark = halcyon.fg_dark
-        c.fg_gutter = halcyon.fg_gutter
-        c.comment = '#a2aabc' -- If you want Halcyon’s arrow color as "comment"
-
-        -- Accent
-        c.yellow = halcyon.yellow
-        c.orange = halcyon.orange
-        c.red = halcyon.red
-        c.magenta = halcyon.magenta
-        c.purple = halcyon.purple
-        c.blue = halcyon.blue
-        c.cyan = halcyon.cyan
-        c.teal = halcyon.teal
-
-        -- Dark “levels”
-        c.dark3 = halcyon.dark3
-        c.dark5 = halcyon.dark5
-
-        -- More greens, if you want them
-        c.green = halcyon.green
-        c.green1 = halcyon.green1
-        c.green2 = halcyon.green2
-
-        -- More blues
-        c.blue0 = halcyon.blue0
-        c.blue1 = halcyon.blue1
-        c.blue2 = halcyon.blue2
-        c.blue5 = halcyon.blue5
-        c.blue6 = halcyon.blue6
-        c.blue7 = halcyon.blue7
-
-        -- Additional magenta / red
-        c.magenta2 = halcyon.magenta2
-        c.red1 = halcyon.red1
-
-        -- Git
-        c.git = halcyon.git
-      end,
-      on_highlights = function(hl, c)
-        -- (Optional) Example of customizing highlight groups
-        -- for Telescope, etc. Keep or remove to your liking.
-        local prompt = '#2d3149'
-        hl.TelescopeNormal = {
-          bg = c.bg_dark,
-          fg = c.fg_dark,
-        }
-        hl.TelescopeBorder = {
-          bg = c.bg_dark,
-          fg = c.bg_dark,
-        }
-        hl.TelescopePromptNormal = {
-          bg = prompt,
-        }
-        hl.TelescopePromptBorder = {
-          bg = prompt,
-          fg = prompt,
-        }
-        hl.TelescopePromptTitle = {
-          bg = prompt,
-          fg = c.fg,
-        }
-        hl.TelescopePreviewTitle = {
-          bg = c.bg_dark,
-          fg = c.bg_dark,
-        }
-        hl.TelescopeResultsTitle = {
-          bg = c.bg_dark,
-          fg = c.bg_dark,
-        }
-      end,
-    },
     config = function(_, opts)
-      require('tokyonight').setup(opts)
-      vim.cmd.colorscheme('tokyonight')
+      vim.cmd.colorscheme('halcyon')
+
+      -- Set up custom Telescope highlights
+      local prompt = halcyon.bg_highlight
+      vim.api.nvim_set_hl(0, 'TelescopeNormal', {
+        bg = halcyon.bg_dark,
+        fg = halcyon.fg_dark,
+      })
+      vim.api.nvim_set_hl(0, 'TelescopeBorder', {
+        bg = halcyon.bg_dark,
+        fg = halcyon.bg_dark,
+      })
+      vim.api.nvim_set_hl(0, 'TelescopePromptNormal', {
+        bg = prompt,
+      })
+      vim.api.nvim_set_hl(0, 'TelescopePromptBorder', {
+        bg = prompt,
+        fg = prompt,
+      })
+      vim.api.nvim_set_hl(0, 'TelescopePromptTitle', {
+        bg = prompt,
+        fg = halcyon.fg,
+      })
+      vim.api.nvim_set_hl(0, 'TelescopePreviewTitle', {
+        bg = halcyon.bg_dark,
+        fg = halcyon.bg_dark,
+      })
+      vim.api.nvim_set_hl(0, 'TelescopeResultsTitle', {
+        bg = halcyon.bg_dark,
+        fg = halcyon.bg_dark,
+      })
     end,
   },
 }
