@@ -6,66 +6,73 @@ return {
   -- fuzzy finder
   {
     'nvim-telescope/telescope.nvim',
-    dependencies = { 'nvim-lua/plenary.nvim' },
+    dependencies = { 'nvim-lua/plenary.nvim', 'folke/trouble.nvim' },
     cmd = 'Telescope',
     keys = {
       { '<leader>pf', ':Telescope find_files<cr>', desc = '[Telescope] Find files' },
       { '<leader>po', ':Telescope oldfiles<cr>', desc = '[Telescope] Old files' },
-      {
-        '<leader>pm',
-        function()
-          require('telescope.builtin').find_files {
-            prompt_title = 'AI Modes',
-            search_dirs = { '~/reforge/app/services/ai/modes' },
-          }
-        end,
-        desc = '[Telescope] Find mode',
-      },
       { '<leader>fa', ':Telescope live_grep<cr>', desc = '[Telescope] All files' },
       { '<leader>bb', ':Telescope buffers<cr>', desc = '[Telescope] buffers' },
       { 'gr', ':Telescope lsp_references<CR>', desc = '[Telescope] Go to references' },
     },
-    opts = {
-      defaults = {
-        prompt_prefix = '   ',
-        selection_caret = '  ',
+    config = function()
+      local open_with_trouble = require('trouble.sources.telescope').open
 
-        vimgrep_arguments = {
-          'rg',
-          '--color=never',
-          '--no-heading',
-          '--with-filename',
-          '--line-number',
-          '--column',
-          '--smart-case',
-        },
-        entry_prefix = '  ',
-        initial_mode = 'insert',
-        selection_strategy = 'reset',
-        sorting_strategy = 'ascending',
-        layout_strategy = 'horizontal',
-        layout_config = {
-          horizontal = {
-            prompt_position = 'top',
-            preview_width = 0.55,
-            results_width = 0.8,
+      -- Use this to add more results without clearing the trouble list
+      local add_to_trouble = require('trouble.sources.telescope').add
+
+      local opts = {
+        defaults = {
+          mappings = {
+            i = {
+              ['<c-q>'] = open_with_trouble,
+              ['<c-a>'] = add_to_trouble,
+              ['<c-d>'] = require('telescope.actions').delete_buffer,
+            },
+            n = {
+              ['<c-q>'] = open_with_trouble,
+              ['<c-a>'] = add_to_trouble,
+              ['<c-d>'] = require('telescope.actions').delete_buffer,
+            },
           },
-          vertical = {
-            mirror = false,
+          prompt_prefix = '   ',
+          selection_caret = '  ',
+
+          vimgrep_arguments = {
+            'rg',
+            '--color=never',
+            '--no-heading',
+            '--with-filename',
+            '--line-number',
+            '--column',
+            '--smart-case',
           },
-          width = 0.87,
-          height = 0.80,
-          preview_cutoff = 120,
+          entry_prefix = '  ',
+          initial_mode = 'insert',
+          selection_strategy = 'reset',
+          sorting_strategy = 'ascending',
+          layout_strategy = 'horizontal',
+          layout_config = {
+            horizontal = {
+              prompt_position = 'top',
+              preview_width = 0.55,
+              results_width = 0.8,
+            },
+            vertical = {
+              mirror = false,
+            },
+            width = 0.87,
+            height = 0.80,
+            preview_cutoff = 120,
+          },
+          file_ignore_patterns = { 'node_modules' },
+          path_display = { 'truncate' },
+          winblend = 0,
+          border = {},
+          borderchars = { '─', '│', '─', '│', '╭', '╮', '╯', '╰' },
+          color_devicons = true,
         },
-        file_ignore_patterns = { 'node_modules' },
-        path_display = { 'truncate' },
-        winblend = 0,
-        border = {},
-        borderchars = { '─', '│', '─', '│', '╭', '╮', '╯', '╰' },
-        color_devicons = true,
-      },
-    },
-    config = function(_, opts)
+      }
       require('telescope').setup(opts)
     end,
   },
@@ -845,52 +852,33 @@ return {
     keys = {
       {
         '<leader>xx',
-        function()
-          require('trouble').toggle()
-        end,
-        desc = 'Toggle Trouble diagnostics',
+        '<cmd>Trouble diagnostics toggle<cr>',
+        desc = 'Diagnostics (Trouble)',
       },
       {
-        '<leader>xt',
-        function()
-          require('trouble').toggle 'todo'
-        end,
-        desc = 'Toggle todo',
+        '<leader>xX',
+        '<cmd>Trouble diagnostics toggle filter.buf=0<cr>',
+        desc = 'Buffer Diagnostics (Trouble)',
       },
       {
-        '<leader>xw',
-        function()
-          require('trouble').toggle 'workspace_diagnostics'
-        end,
-        desc = 'Toggle Workspace diagnostics',
+        '<leader>cs',
+        '<cmd>Trouble symbols toggle focus=false<cr>',
+        desc = 'Symbols (Trouble)',
       },
       {
-        '<leader>xd',
-        function()
-          require('trouble').toggle 'document_diagnostics'
-        end,
-        desc = 'Toggle Document diagnostics',
-      },
-      {
-        '<leader>xq',
-        function()
-          require('trouble').toggle 'quickfix'
-        end,
-        desc = 'Toggle quickfix',
+        '<leader>cl',
+        '<cmd>Trouble lsp toggle focus=false win.position=right<cr>',
+        desc = 'LSP Definitions / references / ... (Trouble)',
       },
       {
         '<leader>xl',
-        function()
-          require('trouble').toggle 'loclist'
-        end,
-        desc = 'Toggle loclist',
+        '<cmd>Trouble loclist toggle<cr>',
+        desc = 'Location List (Trouble)',
       },
       {
-        'gR',
-        function()
-          require('trouble').toggle 'lsp_references'
-        end,
-        desc = 'Toggle LSP References',
+        '<leader>xq',
+        '<cmd>Trouble qflist toggle<cr>',
+        desc = 'Quickfix List (Trouble)',
       },
     },
     opts = {
