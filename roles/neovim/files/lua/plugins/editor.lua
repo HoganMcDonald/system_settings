@@ -77,87 +77,88 @@ return {
     end,
   },
 
-  -- buffer tabs
-  -- {
-  --   "willothy/nvim-cokeline",
-  --   dependencies = {
-  --     "nvim-lua/plenary.nvim",     -- Required for v0.4.0+
-  --     "nvim-tree/nvim-web-devicons", -- If you want devicons
-  --     "stevearc/resession.nvim"    -- Optional, for persistent history
-  --   },
-  --   -- cmd = 'BufEnter',
-  --   -- keys = {
-  --   --   {
-  --   --     '<S-TAB>',
-  --   --     function ()
-  --   --       require('cokeline.mappings').pick('cokeline-focus-prev')
-  --   --     end,
-  --   --     desc = 'Previous Buffer'
-  --   --   }
-  --   -- },
-  --   config = true,
-  -- },
-
+  -- buffer management
   {
-    'akinsho/bufferline.nvim',
+    'theprimeagen/harpoon',
+    branch = 'harpoon2',
+    dependencies = { 'nvim-lua/plenary.nvim' },
     event = 'BufEnter',
-    keys = {
-      { '<leader>bp', '<Cmd>BufferLineTogglePin<CR>', desc = 'Toggle buffer pin' },
-      { '<leader>bd', '<Cmd>BufferLineGroupClose ungrouped<CR>', desc = 'Delete non-pinned buffers' },
-      { '<S-TAB>', ':BufferLineCyclePrev<cr>', desc = 'Previous buffer' },
-      { '<TAB>', ':BufferLineCycleNext<cr>', desc = 'Next buffer' },
-    },
     config = function()
-      local opts = {
-        options = {
-          offsets = { { filetype = 'NvimTree', text = '', padding = 1 } },
-          groups = {
-            items = {
-              require('bufferline.groups').builtin.pinned:with { icon = '' },
-            },
-          },
-          diagnostics = 'nvim_lsp',
-          always_show_bufferline = true,
-          modified_icon = '',
-          numbers = 'none',
-          show_close_icon = false,
-          left_trunc_marker = '',
-          right_trunc_marker = '',
-          max_name_length = 16,
-          max_prefix_length = 13,
-          tab_size = 20,
-          show_tab_indicators = true,
-          enforce_regular_tabs = false,
-          view = 'multiwindow',
-          show_buffer_close_icons = true,
-          -- separator_style = { "", "" },
-          separator_style = 'thin',
-          indicator = {
-            icon = ' ',
-            style = 'icon',
-          },
-          pinned_icon = '',
-          custom_filter = function(buf_number)
-            -- Func to filter out our managed/persistent split terms
-            local present_type, type = pcall(function()
-              return vim.api.nvim_buf_get_var(buf_number, 'term_type')
-            end)
-
-            if present_type then
-              if type == 'vert' then
-                return false
-              elseif type == 'hori' then
-                return false
-              end
-              return true
-            end
-
-            return true
-          end,
-        },
-      }
-      require('bufferline').setup(opts)
+      require('harpoon'):setup()
     end,
+    keys = {
+      {
+        '<leader>bp',
+        function()
+          require('harpoon'):list():add()
+        end,
+        desc = '[harpoon] pin buffer',
+      },
+      {
+        '<S-TAB>',
+        function()
+          require('harpoon'):list():prev()
+        end,
+        desc = '[harpoon] Previous buffer',
+      },
+      {
+        '<TAB>',
+        function()
+          require('harpoon'):list():next()
+        end,
+        desc = '[harpoon] Next buffer',
+      },
+      {
+        '<leader>bd',
+        function()
+          require('harpoon'):list():clear()
+        end,
+        desc = '[harpoon] file',
+      },
+      {
+        '<leader>mm',
+        function()
+          local harpoon = require 'harpoon'
+          harpoon.ui:toggle_quick_menu(harpoon:list())
+        end,
+        desc = '[harpoon] quick menu',
+      },
+      {
+        '<leader>1',
+        function()
+          require('harpoon'):list():select(1)
+        end,
+        desc = 'harpoon to file 1',
+      },
+      {
+        '<leader>2',
+        function()
+          require('harpoon'):list():select(2)
+        end,
+        desc = 'harpoon to file 2',
+      },
+      {
+        '<leader>3',
+        function()
+          require('harpoon'):list():select(3)
+        end,
+        desc = 'harpoon to file 3',
+      },
+      {
+        '<leader>4',
+        function()
+          require('harpoon'):list():select(4)
+        end,
+        desc = 'harpoon to file 4',
+      },
+      {
+        '<leader>5',
+        function()
+          require('harpoon'):list():select(5)
+        end,
+        desc = 'harpoon to file 5',
+      },
+    },
   },
 
   -- file explorer
@@ -496,7 +497,7 @@ return {
         -- { '<leader>j', group = 'xxx' },
         -- { '<leader>k', group = 'xxx' },
         { '<leader>l', group = 'lsp' },
-        -- { '<leader>m', group = 'xxx' },
+        { '<leader>m', group = 'harpoon' },
         { '<leader>n', group = 'notes' },
         -- { '<leader>o', group = 'xxx' },
         { '<leader>p', group = 'project' },
@@ -641,6 +642,15 @@ return {
     'nvim-lualine/lualine.nvim',
     dependencies = {
       'nvim-tree/nvim-web-devicons',
+      {
+        'letieu/harpoon-lualine',
+        dependencies = {
+          {
+            'ThePrimeagen/harpoon',
+            branch = 'harpoon2',
+          },
+        },
+      },
     },
     opts = function()
       local conditions = {
@@ -780,9 +790,10 @@ return {
 
       -- Middle Section
       ins_left {
-        function()
-          return '%='
-        end,
+        '%=',
+      }
+      ins_left {
+        'harpoon2',
       }
 
       -- file size
