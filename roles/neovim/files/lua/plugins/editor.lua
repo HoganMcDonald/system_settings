@@ -497,7 +497,7 @@ return {
         -- { '<leader>j', group = 'xxx' },
         -- { '<leader>k', group = 'xxx' },
         { '<leader>l', group = 'lsp' },
-        { '<leader>m', group = 'harpoon' },
+        -- { '<leader>m', group = 'xxx' },
         { '<leader>n', group = 'notes' },
         -- { '<leader>o', group = 'xxx' },
         { '<leader>p', group = 'project' },
@@ -625,16 +625,6 @@ return {
         },
       }
     end,
-  },
-  {
-    'kosayoda/nvim-lightbulb',
-    event = 'LspAttach',
-    opts = {
-      autocmd = {
-        enabled = true,
-        updatetime = 100,
-      },
-    },
   },
 
   -- status line
