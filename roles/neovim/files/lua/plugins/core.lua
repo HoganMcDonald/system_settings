@@ -46,7 +46,7 @@ return {
       hide = {
         tabline = true,
         winbar = true,
-        statusline = true,
+        statusline = false,
       },
       config = {
         header = {
