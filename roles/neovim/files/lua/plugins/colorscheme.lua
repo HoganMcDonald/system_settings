@@ -95,6 +95,21 @@ return {
         bg = halcyon.bg_dark,
         fg = halcyon.bg_dark,
       })
+      -- nvim-tree
+      vim.api.nvim_set_hl(0, 'NvimTreeNormal', {
+        bg = halcyon.bg_dark,
+        fg = halcyon.fg_dark,
+      })
+      vim.api.nvim_set_hl(0, 'NvimTreeEndOfBuffer', {
+        bg = halcyon.bg_dark,
+      })
+      -- Dashboard
+      vim.api.nvim_set_hl(0, 'DashboardHeader', {
+        fg = halcyon.yellow,
+      })
+      vim.api.nvim_set_hl(0, 'DashboardCenter', {
+        fg = halcyon.fg,
+      })
 
       -- Neovim UI
       -- Window separators
@@ -120,6 +135,19 @@ return {
       vim.api.nvim_set_hl(0, 'DiagnosticVirtualTextHint', {
         fg = halcyon.teal,
         bg = halcyon.teal_bg,
+      })
+      -- Floating windows
+      vim.api.nvim_set_hl(0, 'NormalFloat', {
+        bg = halcyon.bg_dark,
+        fg = halcyon.fg_dark,
+      })
+      vim.api.nvim_set_hl(0, 'FloatBorder', {
+        bg = halcyon.bg_dark,
+        fg = halcyon.bg_dark,
+      })
+      vim.api.nvim_set_hl(0, 'FloatTitle', {
+        bg = halcyon.bg_highlight,
+        fg = halcyon.fg,
       })
     end,
   },
