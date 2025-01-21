@@ -164,6 +164,41 @@ return {
               }),
             },
           },
+          sort_by = function(buffer_a, buffer_b)
+            -- Get harpoon list
+            local harpoon_list = require('harpoon'):list()
+            local items = harpoon_list.items
+
+            -- Get absolute paths for comparison
+            local abs_path_a = vim.fn.fnamemodify(buffer_a.path, ':p')
+            local abs_path_b = vim.fn.fnamemodify(buffer_b.path, ':p')
+
+            -- Find positions in harpoon list
+            local pos_a = nil
+            local pos_b = nil
+            for i, item in ipairs(items) do
+              local abs_item_path = vim.fn.fnamemodify(item.value, ':p')
+              if abs_item_path == abs_path_a then
+                pos_a = i
+              end
+              if abs_item_path == abs_path_b then
+                pos_b = i
+              end
+            end
+
+            -- Sort logic:
+            -- 1. If both are in harpoon, sort by harpoon position
+            -- 2. If only one is in harpoon, it goes first
+            -- 3. If neither are in harpoon, maintain original order
+            if pos_a and pos_b then
+              return pos_a < pos_b
+            elseif pos_a then
+              return true
+            elseif pos_b then
+              return false
+            end
+            return false
+          end,
           diagnostics = 'nvim_lsp',
           always_show_bufferline = true,
           modified_icon = '',
