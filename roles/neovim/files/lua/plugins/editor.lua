@@ -123,41 +123,6 @@ return {
         end,
         desc = '[harpoon] quick menu',
       },
-      {
-        '<leader>1',
-        function()
-          require('harpoon'):list():select(1)
-        end,
-        desc = 'harpoon to file 1',
-      },
-      {
-        '<leader>2',
-        function()
-          require('harpoon'):list():select(2)
-        end,
-        desc = 'harpoon to file 2',
-      },
-      {
-        '<leader>3',
-        function()
-          require('harpoon'):list():select(3)
-        end,
-        desc = 'harpoon to file 3',
-      },
-      {
-        '<leader>4',
-        function()
-          require('harpoon'):list():select(4)
-        end,
-        desc = 'harpoon to file 4',
-      },
-      {
-        '<leader>5',
-        function()
-          require('harpoon'):list():select(5)
-        end,
-        desc = 'harpoon to file 5',
-      },
     },
   },
 
@@ -543,9 +508,23 @@ return {
   {
     'folke/which-key.nvim',
     event = 'VeryLazy',
+    keys = {
+      {
+        '<leader>?',
+        function()
+          require('which-key').show { global = false }
+        end,
+        desc = 'Buffer Local Keymaps (which-key)',
+      },
+    },
     opts = {
       plugins = { spelling = true },
-      defaults = {
+    },
+    config = function(_, opts)
+      local wk = require 'which-key'
+
+      wk.setup(opts)
+      wk.add {
         mode = { 'n', 'v' },
         { '<leader>a', group = 'ai assistant' },
         { '<leader>b', group = 'buffer' },
@@ -559,7 +538,7 @@ return {
         -- { '<leader>j', group = 'xxx' },
         -- { '<leader>k', group = 'xxx' },
         { '<leader>l', group = 'lsp' },
-        -- { '<leader>m', group = 'xxx' },
+        { '<leader>m', group = 'marks' },
         { '<leader>n', group = 'notes' },
         -- { '<leader>o', group = 'xxx' },
         { '<leader>p', group = 'project' },
@@ -575,12 +554,7 @@ return {
         -- { '<leader>y', group = 'xxx' },
         -- { '<leader>z', group = 'xxx' },
         { 'z', group = 'folds' },
-      },
-    },
-    config = function(_, opts)
-      local wk = require 'which-key'
-      wk.setup(opts)
-      wk.register(opts.defaults)
+      }
     end,
   },
 
@@ -981,4 +955,3 @@ return {
     end,
   },
 }
-
