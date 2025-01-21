@@ -95,16 +95,16 @@ return {
         desc = '[harpoon] pin buffer',
       },
       {
-        '<S-TAB>',
+        '[b',
         function()
-          require('harpoon'):list():prev({ ui_nav_wrap = true })
+          require('harpoon'):list():prev { ui_nav_wrap = true }
         end,
         desc = '[harpoon] Previous buffer',
       },
       {
-        '<TAB>',
+        ']b',
         function()
-          require('harpoon'):list():next({ ui_nav_wrap = true})
+          require('harpoon'):list():next { ui_nav_wrap = true }
         end,
         desc = '[harpoon] Next buffer',
       },
@@ -129,6 +129,10 @@ return {
   {
     'akinsho/bufferline.nvim',
     event = 'BufEnter',
+    keys = {
+      { '<S-TAB>', ':BufferLineCyclePrev<cr>', desc = 'Previous buffer' },
+      { '<TAB>', ':BufferLineCycleNext<cr>', desc = 'Next buffer' },
+    },
     config = function()
       local opts = {
         options = {
