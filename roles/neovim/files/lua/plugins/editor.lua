@@ -129,19 +129,39 @@ return {
   {
     'akinsho/bufferline.nvim',
     event = 'BufEnter',
-    keys = {
-      { '<leader>bp', '<Cmd>BufferLineTogglePin<CR>', desc = 'Toggle buffer pin' },
-      { '<leader>bd', '<Cmd>BufferLineGroupClose ungrouped<CR>', desc = 'Delete non-pinned buffers' },
-      { '<S-TAB>', ':BufferLineCyclePrev<cr>', desc = 'Previous buffer' },
-      { '<TAB>', ':BufferLineCycleNext<cr>', desc = 'Next buffer' },
-    },
     config = function()
       local opts = {
         options = {
           offsets = { { filetype = 'NvimTree', text = '', padding = 1 } },
           groups = {
             items = {
-              require('bufferline.groups').builtin.pinned:with { icon = '' },
+              {
+                id = 'harpoon',
+                name = '󰀱',
+                icon = '',
+                auto_close = false,
+                matcher = function(buf)
+                  local bufname = vim.api.nvim_buf_get_name(buf.id)
+                  for _, item in ipairs(require('harpoon'):list().items) do
+                    -- Get the absolute path for both bufname and item.value
+                    local abs_bufname = vim.fn.fnamemodify(bufname, ':p')
+                    local abs_itemvalue = vim.fn.fnamemodify(item.value, ':p')
+                    if abs_bufname == abs_itemvalue then
+                      return true
+                    end
+                  end
+                  return false
+                end,
+                separator = { -- Optional
+                  style = require('bufferline.groups').separator.pill,
+                },
+              },
+              vim.tbl_deep_extend('force', require('bufferline.groups').builtin.ungrouped, {
+                name = 'unpinned',
+                separator = {
+                  style = require('bufferline.groups').separator.pill,
+                },
+              }),
             },
           },
           diagnostics = 'nvim_lsp',
