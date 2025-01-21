@@ -97,14 +97,14 @@ return {
       {
         '<S-TAB>',
         function()
-          require('harpoon'):list():prev()
+          require('harpoon'):list():prev({ ui_nav_wrap = true })
         end,
         desc = '[harpoon] Previous buffer',
       },
       {
         '<TAB>',
         function()
-          require('harpoon'):list():next()
+          require('harpoon'):list():next({ ui_nav_wrap = true})
         end,
         desc = '[harpoon] Next buffer',
       },
