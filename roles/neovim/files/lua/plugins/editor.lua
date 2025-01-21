@@ -161,6 +161,68 @@ return {
     },
   },
 
+  {
+    'akinsho/bufferline.nvim',
+    event = 'BufEnter',
+    keys = {
+      { '<leader>bp', '<Cmd>BufferLineTogglePin<CR>', desc = 'Toggle buffer pin' },
+      { '<leader>bd', '<Cmd>BufferLineGroupClose ungrouped<CR>', desc = 'Delete non-pinned buffers' },
+      { '<S-TAB>', ':BufferLineCyclePrev<cr>', desc = 'Previous buffer' },
+      { '<TAB>', ':BufferLineCycleNext<cr>', desc = 'Next buffer' },
+    },
+    config = function()
+      local opts = {
+        options = {
+          offsets = { { filetype = 'NvimTree', text = '', padding = 1 } },
+          groups = {
+            items = {
+              require('bufferline.groups').builtin.pinned:with { icon = '' },
+            },
+          },
+          diagnostics = 'nvim_lsp',
+          always_show_bufferline = true,
+          modified_icon = '',
+          numbers = 'none',
+          show_close_icon = false,
+          left_trunc_marker = '',
+          right_trunc_marker = '',
+          max_name_length = 16,
+          max_prefix_length = 13,
+          tab_size = 20,
+          show_tab_indicators = true,
+          enforce_regular_tabs = false,
+          view = 'multiwindow',
+          show_buffer_close_icons = true,
+          -- separator_style = { "", "" },
+          separator_style = 'slant',
+          indicator = {
+            icon = ' ',
+            style = 'icon',
+          },
+          pinned_icon = '',
+          custom_filter = function(buf_number)
+            -- Func to filter out our managed/persistent split terms
+            local present_type, type = pcall(function()
+              return vim.api.nvim_buf_get_var(buf_number, 'term_type')
+            end)
+
+            if present_type then
+              if type == 'vert' then
+                return false
+              elseif type == 'hori' then
+                return false
+              end
+              return true
+            end
+
+            return true
+          end,
+        },
+      }
+      require('bufferline').setup(opts)
+    end,
+  },
+
   -- file explorer
   {
     'kyazdani42/nvim-tree.lua',
@@ -757,12 +819,15 @@ return {
         'filename',
         cond = conditions.buffer_not_empty,
         symbols = {
-          modified = '', -- Text to show when the file is modified.
+          modified = '●', -- Text to show when the file is modified.
           readonly = '', -- Text to show when the file is non-modifiable or readonly.
           unnamed = '', -- Text to show for unnamed buffers.
           newfile = '', -- Text to show for newly created file before first write
         },
-        color = { fg = Colors.ACCENT, gui = 'bold' },
+        color = function()
+          -- Return red color for modified files, accent color otherwise
+          return { fg = vim.bo.modified and Colors.RED or Colors.ACCENT, gui = 'bold' }
+        end,
       }
 
       -- git diff
@@ -916,3 +981,4 @@ return {
     end,
   },
 }
+

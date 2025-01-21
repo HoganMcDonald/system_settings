@@ -95,6 +95,7 @@ return {
         bg = halcyon.bg_dark,
         fg = halcyon.bg_dark,
       })
+
       -- nvim-tree
       vim.api.nvim_set_hl(0, 'NvimTreeNormal', {
         bg = halcyon.bg_dark,
@@ -103,6 +104,7 @@ return {
       vim.api.nvim_set_hl(0, 'NvimTreeEndOfBuffer', {
         bg = halcyon.bg_dark,
       })
+
       -- Dashboard
       vim.api.nvim_set_hl(0, 'DashboardHeader', {
         fg = halcyon.yellow,
@@ -110,6 +112,13 @@ return {
       vim.api.nvim_set_hl(0, 'DashboardCenter', {
         fg = halcyon.fg,
       })
+
+      -- Bufferline
+      vim.api.nvim_set_hl(0, 'BufferLineFill', { fg = halcyon.yellow, bg = halcyon.bg_dark, })
+
+      vim.api.nvim_set_hl(0, 'BufferLineSeparator', { fg = halcyon.bg_dark })
+      vim.api.nvim_set_hl(0, 'BufferLineSeparatorSelected', { fg = halcyon.bg_dark })
+      vim.api.nvim_set_hl(0, 'BufferLineSeparatorVisible', { fg = halcyon.bg_dark })
 
       -- Neovim UI
       -- Window separators
@@ -119,6 +128,7 @@ return {
       vim.api.nvim_set_hl(0, 'VertSplit', {
         fg = halcyon.bg_highlight,
       })
+
       -- Diagnostics
       vim.api.nvim_set_hl(0, 'DiagnosticVirtualTextError', {
         fg = halcyon.red,
@@ -136,6 +146,7 @@ return {
         fg = halcyon.teal,
         bg = halcyon.teal_bg,
       })
+
       -- Floating windows
       vim.api.nvim_set_hl(0, 'NormalFloat', {
         bg = halcyon.bg_dark,
