@@ -9,11 +9,11 @@ return {
     dependencies = { 'nvim-lua/plenary.nvim', 'folke/trouble.nvim' },
     cmd = 'Telescope',
     keys = {
-      { '<leader>pf', ':Telescope find_files<cr>', desc = '[Telescope] Find files' },
-      { '<leader>po', ':Telescope oldfiles<cr>', desc = '[Telescope] Old files' },
-      { '<leader>fa', ':Telescope live_grep<cr>', desc = '[Telescope] All files' },
-      { '<leader>bb', ':Telescope buffers<cr>', desc = '[Telescope] buffers' },
-      { 'gr', ':Telescope lsp_references<CR>', desc = '[Telescope] Go to references' },
+      { '<leader>pf', ':Telescope find_files<cr>',     desc = '[Telescope] Find files' },
+      { '<leader>po', ':Telescope oldfiles<cr>',       desc = '[Telescope] Old files' },
+      { '<leader>fa', ':Telescope live_grep<cr>',      desc = '[Telescope] All files' },
+      { '<leader>bb', ':Telescope buffers<cr>',        desc = '[Telescope] buffers' },
+      { 'gr',         ':Telescope lsp_references<CR>', desc = '[Telescope] Go to references' },
     },
     config = function()
       local open_with_trouble = require('trouble.sources.telescope').open
@@ -95,14 +95,14 @@ return {
         desc = '[harpoon] pin buffer',
       },
       {
-        '[b',
+        '<S-TAB>',
         function()
           require('harpoon'):list():prev { ui_nav_wrap = true }
         end,
         desc = '[harpoon] Previous buffer',
       },
       {
-        ']b',
+        '<TAB>',
         function()
           require('harpoon'):list():next { ui_nav_wrap = true }
         end,
@@ -129,10 +129,6 @@ return {
   {
     'akinsho/bufferline.nvim',
     event = 'BufEnter',
-    keys = {
-      { '<S-TAB>', ':BufferLineCyclePrev<cr>', desc = 'Previous buffer' },
-      { '<TAB>', ':BufferLineCycleNext<cr>', desc = 'Next buffer' },
-    },
     config = function()
       local opts = {
         options = {
@@ -156,16 +152,10 @@ return {
                   end
                   return false
                 end,
-                separator = { -- Optional
+                separator = {   -- Optional
                   style = require('bufferline.groups').separator.pill,
                 },
               },
-              vim.tbl_deep_extend('force', require('bufferline.groups').builtin.ungrouped, {
-                name = 'unpinned',
-                separator = {
-                  style = require('bufferline.groups').separator.pill,
-                },
-              }),
             },
           },
           sort_by = function(buffer_a, buffer_b)
@@ -217,29 +207,27 @@ return {
           enforce_regular_tabs = false,
           view = 'multiwindow',
           show_buffer_close_icons = true,
-          -- separator_style = { "", "" },
           separator_style = 'slant',
           indicator = {
             icon = ' ',
             style = 'icon',
           },
-          pinned_icon = '',
+          pinned_icon = '',
           custom_filter = function(buf_number)
-            -- Func to filter out our managed/persistent split terms
-            local present_type, type = pcall(function()
-              return vim.api.nvim_buf_get_var(buf_number, 'term_type')
-            end)
+            -- Only show buffers that are in harpoon
+            local bufname = vim.api.nvim_buf_get_name(buf_number)
+            local abs_bufname = vim.fn.fnamemodify(bufname, ':p')
 
-            if present_type then
-              if type == 'vert' then
-                return false
-              elseif type == 'hori' then
-                return false
+            local harpoon_list = require('harpoon'):list()
+            local items = harpoon_list.items
+
+            for _, item in ipairs(items) do
+              local abs_itemvalue = vim.fn.fnamemodify(item.value, ':p')
+              if abs_bufname == abs_itemvalue then
+                return true
               end
-              return true
             end
-
-            return true
+            return false
           end,
         },
       }
@@ -585,34 +573,34 @@ return {
       wk.setup(opts)
       wk.add {
         mode = { 'n', 'v' },
-        { '<leader>a', group = 'ai assistant' },
-        { '<leader>b', group = 'buffer' },
-        { '<leader>c', group = 'code actions' },
-        { '<leader>d', group = 'debugger' },
+        { '<leader>a',  group = 'ai assistant' },
+        { '<leader>b',  group = 'buffer' },
+        { '<leader>c',  group = 'code actions' },
+        { '<leader>d',  group = 'debugger' },
         -- { '<leader>e', group = 'xxx' },
-        { '<leader>f', group = 'file/find' },
-        { '<leader>g', group = 'git' },
-        { '<leader>h', group = 'hunks' },
+        { '<leader>f',  group = 'file/find' },
+        { '<leader>g',  group = 'git' },
+        { '<leader>h',  group = 'hunks' },
         -- { '<leader>i', group = 'xxx' },
         -- { '<leader>j', group = 'xxx' },
         -- { '<leader>k', group = 'xxx' },
-        { '<leader>l', group = 'lsp' },
-        { '<leader>m', group = 'marks' },
-        { '<leader>n', group = 'notes' },
+        { '<leader>l',  group = 'lsp' },
+        { '<leader>m',  group = 'marks' },
+        { '<leader>n',  group = 'notes' },
         -- { '<leader>o', group = 'xxx' },
-        { '<leader>p', group = 'project' },
+        { '<leader>p',  group = 'project' },
         -- { '<leader>q', group = 'xxx' },
-        { '<leader>r', group = 'code runner' },
+        { '<leader>r',  group = 'code runner' },
         -- { '<leader>s', group = 'xxx' },
-        { '<leader>t', group = 'tests' },
+        { '<leader>t',  group = 'tests' },
         { '<leader>tw', group = 'watch' },
-        { '<leader>u', group = 'utility' },
+        { '<leader>u',  group = 'utility' },
         -- { '<leader>v', group = 'xxx' },
-        { '<leader>w', group = 'windows' },
-        { '<leader>x', group = 'diagnostic' },
+        { '<leader>w',  group = 'windows' },
+        { '<leader>x',  group = 'diagnostic' },
         -- { '<leader>y', group = 'xxx' },
         -- { '<leader>z', group = 'xxx' },
-        { 'z', group = 'folds' },
+        { 'z',          group = 'folds' },
       }
     end,
   },
@@ -707,11 +695,11 @@ return {
         relculright = true,
         segments = {
           -- fold column
-          { text = { builtin.foldfunc }, click = 'v:lua.ScFa' },
+          { text = { builtin.foldfunc },                                                  click = 'v:lua.ScFa' },
           -- sign column
           { sign = { name = { '.*' }, namespace = { '.*' }, maxwidth = 1, colwidth = 1 }, click = 'v:lua.ScSa' },
           -- number column
-          { text = { builtin.lnumfunc }, click = 'v:lua.ScLa' },
+          { text = { builtin.lnumfunc },                                                  click = 'v:lua.ScLa' },
           -- gitsigns
           {
             sign = { namespace = { 'gitsigns' }, name = { '.*' }, maxwidth = 1, colwidth = 1, auto = false },
@@ -803,7 +791,7 @@ return {
         function()
           return '▊'
         end,
-        color = { fg = Colors.BLUE }, -- Sets highlighting of component
+        color = { fg = Colors.BLUE },      -- Sets highlighting of component
         padding = { left = 0, right = 1 }, -- We don't need space before this
       }
 
