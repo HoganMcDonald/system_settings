@@ -152,11 +152,20 @@ return {
                   end
                   return false
                 end,
-                separator = {   -- Optional
+                separator = { -- Optional
                   style = require('bufferline.groups').separator.pill,
                 },
               },
             },
+          },
+          custom_areas = {
+            right = function()
+              local result = {}
+              if vim.bo.modified then
+                table.insert(result, { text = '● ', fg = Colors.ACCENT, bg = Colors.BLACK })
+              end
+              return result
+            end,
           },
           sort_by = function(buffer_a, buffer_b)
             -- Get harpoon list
