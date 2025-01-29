@@ -36,6 +36,9 @@
     # ====================
     #   Apps
     # ====================
+    - role: aerospace
+      tags:
+        - aerospace
     - role: browsers
       tags:
         - browsers

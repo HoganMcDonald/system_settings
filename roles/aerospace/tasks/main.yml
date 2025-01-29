@@ -1,0 +1,19 @@
+- name: Install Aerospace
+  homebrew_cask:
+    name: nikitabobko/tap/aerospace
+
+# Aerospace config files
+- name: Aerospace - Check if config exists
+  stat: path="{{ config }}/aerospace"
+  register: aerospace_config_stat
+- name: Aerospace - Back up config
+  command: "mv {{ config }}/aerospace {{ config }}/aerospace_old"
+  args:
+    creates: "{{ config }}/aerospace_old"
+  when: aerospace_config_stat.stat.exists
+- name: Aerospace - Make sure config is up to date
+  file:
+    src: "{{ dotfiles_home }}/roles/aerospace/files/"
+    dest: "{{ config }}/aerospace"
+    state: link
+    force: yes
