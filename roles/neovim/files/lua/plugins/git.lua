@@ -263,4 +263,24 @@ return {
       },
     },
   },
+
+  -- GitHub
+  {
+    'pwntester/octo.nvim',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'nvim-telescope/telescope.nvim',
+      'nvim-tree/nvim-web-devicons',
+    },
+    event = 'BufRead',
+    cmd = 'Octo',
+    keys = {
+      { '<leader>gp', ':Octo pr browser<cr>', desc = '[Octo] open PR in browser' },
+      { '<leader>gpp', ':Octo pr<cr>', desc = '[Octo] open PR' },
+      { '<leader>gpr', ':Octo pr reload<cr>', desc = '[Octo] refresh PR' },
+      { '<leader>gpc', ':Octo pr create<cr>', desc = '[Octo] create PR' },
+    },
+    opts = {},
+    config = true,
+  },
 }
