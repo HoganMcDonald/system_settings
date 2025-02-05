@@ -63,6 +63,13 @@ return {
         end,
         desc = '[lsp_lines] Toggle lsp_lines',
       },
+      {
+        'L',
+        function()
+          vim.diagnostic.open_float()
+        end,
+        desc = 'Diagnostic Hover',
+      },
     },
     config = function()
       require('lsp_lines').setup()
