@@ -589,6 +589,7 @@ return {
         -- { '<leader>e', group = 'xxx' },
         { '<leader>f',  group = 'file/find' },
         { '<leader>g',  group = 'git' },
+        { '<leader>gp',  group = 'gitHub' },
         { '<leader>h',  group = 'hunks' },
         -- { '<leader>i', group = 'xxx' },
         -- { '<leader>j', group = 'xxx' },

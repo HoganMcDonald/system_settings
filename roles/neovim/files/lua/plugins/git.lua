@@ -275,7 +275,7 @@ return {
     event = 'BufRead',
     cmd = 'Octo',
     keys = {
-      { '<leader>gp', ':Octo pr browser<cr>', desc = '[Octo] open PR in browser' },
+      { '<leader>gpb', ':Octo pr browser<cr>', desc = '[Octo] open PR in browser' },
       { '<leader>gpp', ':Octo pr<cr>', desc = '[Octo] open PR' },
       { '<leader>gpr', ':Octo pr reload<cr>', desc = '[Octo] refresh PR' },
       { '<leader>gpc', ':Octo pr create<cr>', desc = '[Octo] create PR' },
