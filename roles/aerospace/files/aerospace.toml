@@ -104,7 +104,7 @@ inner.horizontal = 20
 inner.vertical =   20
 outer.left =       20
 outer.bottom =     20
-outer.top =        60
+outer.top =        65
 outer.right =      20
 
 # 'main' binding mode declaration
@@ -137,39 +137,43 @@ outer.right =      20
 # end tell'
 # '''
 
-alt-ctrl-shift-f = 'fullscreen'
-alt-ctrl-f = 'layout floating tiling'
+# See: https://nikitabobko.github.io/AeroSpace/commands#focus
+cmd-h = 'focus left'
+cmd-j = 'focus down'
+cmd-k = 'focus up'
+cmd-l = 'focus right'
 
-alt-shift-left = 'join-with left'
-alt-shift-down = 'join-with down'
-alt-shift-up = 'join-with up'
-alt-shift-right = 'join-with right'
+# See: https://nikitabobko.github.io/AeroSpace/commands#move
+cmd-shift-h = 'move left'
+cmd-shift-j = 'move down'
+cmd-shift-k = 'move up'
+cmd-shift-l = 'move right'
+
+# See: https://nikitabobko.github.io/AeroSpace/commands#workspace
+cmd-1 = 'workspace 1'
+cmd-2 = 'workspace 2'
+cmd-3 = 'workspace 3'
+cmd-4 = 'workspace 4'
+
+cmd-shift-f = 'fullscreen'
+cmd-shift-space = 'layout floating tiling'
+
+# See: https://nikitabobko.github.io/AeroSpace/commands#resize
+cmd-shift-minus = 'resize smart -50'
+cmd-shift-equal = 'resize smart +50'
+alt-shift-h = 'resize width -60'
+alt-shift-j = 'resize height -60'
+alt-shift-k = 'resize height +60'
+alt-shift-l = 'resize width +60'
+
+cmd-ctrl-h = 'join-with left'
+cmd-ctrl-j = 'join-with up'
+cmd-ctrl-k = 'join-with down'
+cmd-ctrl-l = 'join-with right'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#layout
 alt-slash = 'layout tiles horizontal vertical'
 alt-comma = 'layout accordion horizontal vertical'
-
-# See: https://nikitabobko.github.io/AeroSpace/commands#focus
-alt-h = 'focus left'
-alt-j = 'focus down'
-alt-k = 'focus up'
-alt-l = 'focus right'
-
-# See: https://nikitabobko.github.io/AeroSpace/commands#move
-alt-shift-h = 'move left'
-alt-shift-j = 'move down'
-alt-shift-k = 'move up'
-alt-shift-l = 'move right'
-
-# See: https://nikitabobko.github.io/AeroSpace/commands#resize
-alt-shift-minus = 'resize smart -50'
-alt-shift-equal = 'resize smart +50'
-
-# See: https://nikitabobko.github.io/AeroSpace/commands#workspace
-alt-1 = 'workspace 1'
-alt-2 = 'workspace 2'
-alt-3 = 'workspace 3'
-alt-4 = 'workspace 4'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
 alt-shift-1 = 'move-node-to-workspace 1 --focus-follows-window'
@@ -178,28 +182,3 @@ alt-shift-3 = 'move-node-to-workspace 3 --focus-follows-window'
 alt-shift-4 = 'move-node-to-workspace 4 --focus-follows-window'
 
 alt-tab = 'workspace-back-and-forth'
-alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
-
-# See: https://nikitabobko.github.io/AeroSpace/commands#mode
-alt-shift-semicolon = 'mode service'
-alt-shift-enter = 'mode apps'
-
-alt-t = 'exec-and-forget open -a /Applications/Telegram.app'
-alt-a = 'exec-and-forget open -a /Applications/Arc.app'
-alt-o = 'exec-and-forget open -a /Applications/Obsidian.app'
-alt-g = 'exec-and-forget open -a /Applications/Ghostty.app'
-alt-s = 'exec-and-forget open -a /Applications/Safari.app'
-alt-q = 'exec-and-forget open -a /System/Applications/QuickTime Player.app'
-alt-w = 'exec-and-forget open -a /Applications/WezTerm.app'
-
-
-# 'service' binding mode declaration.
-# See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
-[mode.service.binding]
-esc = ['reload-config', 'mode main']
-r = ['flatten-workspace-tree', 'mode main'] # reset layout
-f = ['layout floating tiling', 'mode main'] # Toggle between floating and tiling layout
-backspace = ['close-all-windows-but-current', 'mode main']
-
-[mode.apps.binding]
-alt-w = ['exec-and-forget open -a /Applications/WezTerm.app', 'mode main']
