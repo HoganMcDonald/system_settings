@@ -114,14 +114,14 @@ return {
       })
 
       -- Bufferline
-      vim.api.nvim_set_hl(0, 'BufferLineFill', { fg = halcyon.yellow, bg = halcyon.bg_dark, })
+      vim.api.nvim_set_hl(0, 'BufferLineFill', { fg = halcyon.yellow, bg = halcyon.bg_dark })
 
       vim.api.nvim_set_hl(0, 'BufferLineSeparator', { fg = halcyon.bg_dark })
       vim.api.nvim_set_hl(0, 'BufferLineSeparatorSelected', { fg = halcyon.bg_dark })
       vim.api.nvim_set_hl(0, 'BufferLineSeparatorVisible', { fg = halcyon.bg_dark })
 
       vim.api.nvim_set_hl(0, 'BufferLineGroupSeparator', { fg = halcyon.yellow_bg, bg = halcyon.bg_dark })
-      vim.api.nvim_set_hl(0, 'BufferLineGroupLabel', { fg = halcyon.yellow, bg = halcyon.yellow_bg})
+      vim.api.nvim_set_hl(0, 'BufferLineGroupLabel', { fg = halcyon.yellow, bg = halcyon.yellow_bg })
 
       -- Neovim UI
       -- Window separators
