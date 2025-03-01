@@ -6,3 +6,11 @@ export PATH="/Users/hogan.mcdonald/.local/bin:$PATH"
 function print_path() {
     echo $PATH | sed $'s/:/\\\n/g'
 }
+
+# pnpm
+export PNPM_HOME="/Users/hoganmcdonald/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
