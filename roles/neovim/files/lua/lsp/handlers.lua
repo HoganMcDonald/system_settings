@@ -9,7 +9,7 @@ M.setup = function()
   }
 
   vim.diagnostic.config {
-    virtual_text = false, -- virtual text
+    virtual_text = true, -- virtual text
     virtual_lines = false, -- lsp lines
     signs = {
       text = signs,
