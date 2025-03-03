@@ -43,12 +43,8 @@ local function lsp_keymaps(bufnr)
   -- vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
   -- vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
   -- vim.keymap.set('n', '<leader>bf', vim.lsp.buf.format, opts)
-  vim.keymap.set(
-    'n',
-    '<leader>lh',
-    vim.lsp.buf.signature_help,
-    { desc = 'signature help', silent = true, remap = false, buffer = bufnr }
-  )
+  vim.keymap.set('n', 'gk', vim.lsp.buf.signature_help, { desc = 'signature help', silent = true, buffer = bufnr })
+  vim.keymap.set('i', '<C-k>', vim.lsp.buf.signature_help, { desc = 'signature help', silent = true, buffer = bufnr })
   vim.keymap.set('n', 'ge', vim.lsp.buf.rename, opts)
   vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
   vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
@@ -73,6 +69,17 @@ local capabilities = vim.tbl_deep_extend(
   {
     dynamicRegistration = false,
     lineFoldingOnly = true,
+    textDocument = {
+      signatureHelp = {
+        signatureInformation = {
+          parameterInformation = {
+            labelOffsetSupport = true,
+          },
+          activeParameterSupport = true,
+          documentationFormat = { 'markdown', 'plaintext' },
+        },
+      },
+    },
   }
 )
 

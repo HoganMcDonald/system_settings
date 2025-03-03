@@ -7,7 +7,7 @@ exec-on-workspace-change = ['/bin/bash', '-c',
 ]
 
 # Start AeroSpace at login
-start-at-login = false
+start-at-login = true
 
 # Normalizations. See: https://nikitabobko.github.io/AeroSpace/guide#normalization
 enable-normalization-flatten-containers = true
@@ -53,10 +53,6 @@ run = 'layout floating'
 
 [[on-window-detected]]
 if.app-name-regex-substring = 'finder'
-run = 'layout floating'
-
-[[on-window-detected]]
-if.app-name-regex-substring = 'safari'
 run = 'layout floating'
 
 [[on-window-detected]]

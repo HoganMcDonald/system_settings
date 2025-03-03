@@ -997,7 +997,7 @@ return {
   -- toggle rspec tests
   {
     'HoganMcDonald/rails-rspec-toggle.nvim',
-    dev = true,
+    dev = false,
     keys = {
       {
         '<leader>tt',
