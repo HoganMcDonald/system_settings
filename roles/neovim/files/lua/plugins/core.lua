@@ -17,7 +17,7 @@ return {
       indent = { enabled = true },
       input = { enabled = false },
       notifier = { enabled = true },
-      quickfile = { enabled = true },
+      quickfile = { enabled = false },
       scroll = { enabled = false },
       statuscolumn = { enabled = false },
       words = { enabled = false },
