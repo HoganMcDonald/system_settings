@@ -126,7 +126,7 @@ return {
         },
 
         sources = cmp.config.sources {
-          { name = 'codeium' },
+          { name = 'copilot' },
           { name = 'nvim_lsp' },
           { name = 'path' },
           { name = 'luasnip' },
@@ -412,15 +412,15 @@ return {
   },
 
   {
-  "rest-nvim/rest.nvim",
+    'rest-nvim/rest.nvim',
     dependencies = {
-      "nvim-treesitter/nvim-treesitter",
-      opts = function (_, opts)
+      'nvim-treesitter/nvim-treesitter',
+      opts = function(_, opts)
         opts.ensure_installed = opts.ensure_installed or {}
-        table.insert(opts.ensure_installed, "http")
+        table.insert(opts.ensure_installed, 'http')
       end,
     },
-    cmd = "Rest",
+    cmd = 'Rest',
     keys = {
       {
         '<leader>rr',
@@ -442,6 +442,6 @@ return {
         '<cmd>Rest last<cr>',
         desc = '[rest] run the most recent request',
       },
-    }
+    },
   },
 }

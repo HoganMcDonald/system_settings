@@ -885,6 +885,9 @@ return {
         'harpoon2',
       }
 
+      -- copilot
+      ins_right { 'copilot' }
+
       -- file size
       ins_right {
         -- filesize component
