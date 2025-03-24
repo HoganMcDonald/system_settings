@@ -1,11 +1,12 @@
 return {
+  -- CodeCompanion
   {
     'olimorris/codecompanion.nvim',
     dependencies = {
       'nvim-lua/plenary.nvim',
       'nvim-treesitter/nvim-treesitter',
-      'hrsh7th/nvim-cmp', -- Optional: For using slash commands and variables in the chat buffer
-      'nvim-telescope/telescope.nvim', -- Optional: For using slash commands
+      'hrsh7th/nvim-cmp',                      -- Optional: For using slash commands and variables in the chat buffer
+      'nvim-telescope/telescope.nvim',         -- Optional: For using slash commands
       { 'stevearc/dressing.nvim', opts = {} }, -- Optional: Improves `vim.ui.select`
     },
     keys = {
@@ -39,6 +40,23 @@ return {
     },
   },
 
+  {
+    "ravitemer/mcphub.nvim",
+    dependencies = {
+      "nvim-lua/plenary.nvim", -- Required for Job and HTTP requests
+    },
+    cmd = "MCPHub",
+    build = "npm install -g mcp-hub@latest",
+    config = function()
+      require("mcphub").setup({
+        -- Required options
+        port = 3000,
+        config = vim.fn.expand("~/.config/mcp-hub/config.json"),
+      })
+    end
+  },
+
+  -- Copilot
   {
     'zbirenbaum/copilot.lua',
     cmd = 'Copilot',
