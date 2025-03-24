@@ -172,9 +172,9 @@ alt-slash = 'layout tiles horizontal vertical'
 alt-comma = 'layout accordion horizontal vertical'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
-alt-shift-1 = 'move-node-to-workspace 1 --focus-follows-window'
-alt-shift-2 = 'move-node-to-workspace 2 --focus-follows-window'
-alt-shift-3 = 'move-node-to-workspace 3 --focus-follows-window'
-alt-shift-4 = 'move-node-to-workspace 4 --focus-follows-window'
+cmd-alt-1 = 'move-node-to-workspace 1 --focus-follows-window'
+cmd-alt-2 = 'move-node-to-workspace 2 --focus-follows-window'
+cmd-alt-3 = 'move-node-to-workspace 3 --focus-follows-window'
+cmd-alt-4 = 'move-node-to-workspace 4 --focus-follows-window'
 
 alt-tab = 'workspace-back-and-forth'
