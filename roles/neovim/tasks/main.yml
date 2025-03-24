@@ -12,16 +12,6 @@
 - name: Set nightly as the global neovim version
   command: asdf global neovim nightly
 
-- name: Check if config exists
-  stat: path="{{ config }}/nvim"
-  register: nvim_config_stat
-
-- name: Back up config
-  command: "mv {{ config }}/nvim {{ config }}/nvim_old"
-  args:
-    creates: "{{ config }}/nvim_old"
-  when: nvim_config_stat.stat.exists
-
 - name: Make sure config is up to date
   file:
     src: "{{ dotfiles_home }}/roles/neovim/files/"

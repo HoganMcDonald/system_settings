@@ -28,6 +28,9 @@
     - role: pgcli
       tags:
         - pgcli
+    - role: mcp-hub
+      tags:
+        - mcp-hub
     - role: neovim
       tags:
         - neovim

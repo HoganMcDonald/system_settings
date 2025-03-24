@@ -1,0 +1,11 @@
+- name: Ensure mcp-hub is installed
+  npm:
+    name: mcp-hub
+    global: yes
+
+- name: Copy mcp-hub configuration file
+  file:
+    src: "{{ dotfiles_home }}/roles/mcp-hub/files"
+    dest: "{{ config }}/mcp-hub"
+    state: link
+    force: yes
