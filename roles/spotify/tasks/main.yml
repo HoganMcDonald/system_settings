@@ -6,15 +6,27 @@
   homebrew:
     name: khanhas/tap/spicetify-cli
 
-- name: Create config folder if it doesn't already exist
-  shell: "mkdir -p {{ config }}/spicetify/Themes/"
+- name: Update Spicetify
+  command: spicetify update
 
-- name: Copy theme files
-  file:
-    src: "{{ dotfiles_home }}/roles/spotify/files/"
-    dest: "{{ config }}/spicetify/Themes/Halcyon"
-    state: link
-    force: yes
+# Theme installation
+- name: Clone Spicetify themes
+  command: git clone --depth=1 https://github.com/spicetify/spicetify-themes.git ~/tmp/spicetify-themes
+  args:
+    creates: ~/tmp/spicetify-themes
+
+- name: Ensure Spicetify themes directory exists
+  command: mkdir -p {{ config }}/spicetify/Themes
+  args:
+    creates: "{{ config }}/spicetify/Themes"
+
+- name: Copy Spicetify themes to config directory
+  command: cp -r ~/tmp/spicetify-themes/ {{ config }}/spicetify/Themes
+  args:
+    creates: "{{ config }}/spicetify/Themes/text"
+
+- name: Delete tmp directory
+  command: rm -rf ~/tmp/spicetify-themes
 
 # Configure Extensions
 - name: Keyboard Shortcuts
@@ -26,8 +38,12 @@
 - name: Bookmark
   command: spicetify config extensions bookmark.js
 
-- name: Set Theme
-  command: spicetify config current_theme Halcyon
+# Configure Theme
+- name: Set current theme to 'text'
+  command: spicetify config current_theme text
+
+- name: Set theme color scheme to 'RosePineMoon'
+  command: spicetify config color_scheme RosePineMoon
 
 - name: Ensure install is happening from a clean state
   command: spicetify restore
