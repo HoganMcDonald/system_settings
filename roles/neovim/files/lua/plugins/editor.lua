@@ -1017,4 +1017,27 @@ return {
       require('rails-rspec-toggle').setup(opts)
     end,
   },
+
+  {
+    'HoganMcDonald/pointer.nvim',
+    dev = true,
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'nvim-telescope/telescope.nvim',
+    },
+    keys = {
+      {
+        '<leader>at',
+        function()
+          require('pointer').toggle_sidepanel()
+        end,
+        desc = 'Toggle pointer',
+      },
+    },
+    opts = {
+    },
+    config = function(_, opts)
+      require('pointer').setup(opts)
+    end,
+  },
 }
