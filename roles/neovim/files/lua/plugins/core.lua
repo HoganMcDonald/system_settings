@@ -97,28 +97,28 @@ return {
     lazy = false,
     keys = {
       {
-        '<C-h>',
+        '<M-h>',
         function()
           require('nvim-tmux-navigation').NvimTmuxNavigateLeft()
         end,
         silent = true,
       },
       {
-        '<C-j>',
+        '<M-j>',
         function()
           require('nvim-tmux-navigation').NvimTmuxNavigateDown()
         end,
         silent = true,
       },
       {
-        '<C-k>',
+        '<M-k>',
         function()
           require('nvim-tmux-navigation').NvimTmuxNavigateUp()
         end,
         silent = true,
       },
       {
-        '<C-l>',
+        '<M-l>',
         function()
           require('nvim-tmux-navigation').NvimTmuxNavigateRight()
         end,
