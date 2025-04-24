@@ -8,6 +8,14 @@ keybind = opt+h=unbind
 keybind = opt+j=unbind
 keybind = opt+k=unbind
 keybind = opt+l=unbind
+keybind = opt+shift+h=unbind
+keybind = opt+shift+j=unbind
+keybind = opt+shift+k=unbind
+keybind = opt+shift+l=unbind
+keybind = ctrl+opt+h=unbind
+keybind = ctrl+opt+j=unbind
+keybind = ctrl+opt+k=unbind
+keybind = ctrl+opt+l=unbind
 
 keybind = ctrl+h=unbind
 keybind = ctrl+j=unbind

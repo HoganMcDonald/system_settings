@@ -15,11 +15,11 @@ local function setup_movement()
   map({ 'n', 'x' }, 'j', 'v:count == 0 ? \'gj\' : \'j\'', { expr = true, silent = true })
   map({ 'n', 'x' }, 'k', 'v:count == 0 ? \'gk\' : \'k\'', { expr = true, silent = true })
 
-  -- Resize window using <ctrl> arrow keys
-  map('n', '<M-C-h>', '<cmd>vertical resize -2<cr>', { desc = 'Decrease window width' })
-  map('n', '<M-C-j>', '<cmd>resize -2<cr>', { desc = 'Decrease window height' })
-  map('n', '<M-C-k>', '<cmd>resize +2<cr>', { desc = 'Increase window height' })
-  map('n', '<M-C-l>', '<cmd>vertical resize +2<cr>', { desc = 'Increase window width' })
+  -- Resize window using Ctrl+Alt+hjkl
+  map('n', '<C-M-h>', '<cmd>vertical resize -2<cr>', { desc = 'Decrease window width' })
+  map('n', '<C-M-j>', '<cmd>resize -2<cr>', { desc = 'Decrease window height' })
+  map('n', '<C-M-k>', '<cmd>resize +2<cr>', { desc = 'Increase window height' })
+  map('n', '<C-M-l>', '<cmd>vertical resize +2<cr>', { desc = 'Increase window width' })
 
   -- window creation
   map('n', '<leader>ws', ':vsp<cr>', { noremap = true, silent = true, desc = 'split' })
