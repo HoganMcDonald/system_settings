@@ -221,7 +221,7 @@ return {
 
   {
     'HoganMcDonald/pointer.nvim',
-    dev = true,
+    dev = false,
     dependencies = {
       'nvim-lua/plenary.nvim',
       'nvim-telescope/telescope.nvim',
