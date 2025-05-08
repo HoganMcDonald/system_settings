@@ -79,9 +79,8 @@ return {
     opts = function()
       vim.api.nvim_set_hl(0, 'CmpGhostText', { link = 'Comment', default = true })
       local cmp = require 'cmp'
-      local icons = require 'util.icons'.icons
+      local icons = require('util.icons').icons
       local types = require 'cmp.types'
-      local defaults = require 'cmp.config.default'()
       local auto_select = true
       local luasnip = require 'luasnip'
       require('luasnip/loaders/from_vscode').lazy_load()
@@ -449,6 +448,7 @@ return {
       'olimorris/neotest-rspec',
       'nvim-neotest/neotest-vim-test',
       'nvim-neotest/neotest-jest',
+      'marilari88/neotest-vitest',
     },
     keys = {
       {
@@ -552,6 +552,7 @@ return {
         adapters = {
           require 'neotest-rspec',
           require 'neotest-jest',
+          require("neotest-vitest"),
           require 'neotest-vim-test' {
             ignore_filetypes = { 'ruby', 'javascript', 'typescript', 'typescriptreact', 'javascriptreact' },
           },
