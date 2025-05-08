@@ -1,6 +1,7 @@
 local Colors = require 'util.colors'
 local bg = require('util.highlight').bg
 local fg = require('util.highlight').fg
+local hi = require('util.highlight').hi
 
 return {
   -- fuzzy finder
@@ -514,10 +515,9 @@ return {
     },
     config = function(_, opts)
       require('flash').setup(opts)
-      fg('FlashMatch', Colors.WHITE)
-      bg('FlashMatch', Colors.PURPLE)
-      fg('FlashLabel', Colors.BLACK)
-      bg('FlashLabel', Colors.PURPLE)
+      hi('FlashCurrent', { bg = Colors.ACCENT, fg = Colors.BLACK })
+      hi('FlashMatch', { bg = Colors.BLACK, fg = Colors.FOREGROUND })
+      hi('FlashLabel', { bg = Colors.PURPLE, fg = Colors.BLACK })
     end,
   },
 

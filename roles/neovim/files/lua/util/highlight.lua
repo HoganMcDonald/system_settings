@@ -5,17 +5,17 @@ local M = {}
 ---@alias hl.HiValue<T> T|"NONE"
 
 ---@class hl.HiSpec
----@field fg         hl.HiValue<string>
----@field bg         hl.HiValue<string>
----@field sp         hl.HiValue<string>
----@field style      hl.HiValue<string>
----@field ctermfg    hl.HiValue<integer>
----@field ctermbg    hl.HiValue<integer>
----@field cterm      hl.HiValue<string>
----@field blend      hl.HiValue<integer>
----@field default    hl.HiValue<boolean> Only set values if the hl group is cleared.
----@field link       string|-1
----@field explicit   boolean All undefined fields will be cleared from the hl group.
+---@field fg?         hl.HiValue<string>
+---@field bg?         hl.HiValue<string>
+---@field sp?         hl.HiValue<string>
+---@field style?      hl.HiValue<string>
+---@field ctermfg?    hl.HiValue<integer>
+---@field ctermbg?    hl.HiValue<integer>
+---@field cterm?      hl.HiValue<string>
+---@field blend?      hl.HiValue<integer>
+---@field default?    hl.HiValue<boolean> Only set values if the hl group is cleared.
+---@field link?       string|-1
+---@field explicit?   boolean All undefined fields will be cleared from the hl group.
 
 ---@class hl.HiLinkSpec
 ---@field force boolean
@@ -45,12 +45,12 @@ local M = {}
 
 ---@alias hl.HlAttrValue integer|boolean
 
---- deprecated
+--- @deprecated use `M.hi()` instead
 function M.bg(group, color)
   -- vim.cmd('hi ' .. group .. ' guibg=' .. color)
 end
 
---- deprecated
+--- @deprecated use `M.hi()` instead
 function M.fg(group, color)
   -- vim.cmd('hi ' .. group .. ' guifg=' .. color)
 end
