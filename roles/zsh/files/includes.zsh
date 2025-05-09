@@ -3,4 +3,4 @@
 # . $HOME/.asdf/completions/asdf.bash
 
 # java
-. ~/.asdf/plugins/java/set-java-home.zsh
+# . ~/.asdf/plugins/java/set-java-home.zsh

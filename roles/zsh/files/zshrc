@@ -105,9 +105,9 @@ source $ZSH/oh-my-zsh.sh
 # Use rg to respect .gitignore
 export FZF_DEFAULT_COMMAND='rg --hidden --ignore .git -g ""'
 
-source $HOME/system/roles/zsh/aliases.zsh
-source $HOME/system/roles/zsh/path.zsh
-source $HOME/system/roles/zsh/includes.zsh
+source $HOME/.config/zsh/aliases.zsh
+source $HOME/.config/zsh/path.zsh
+source $HOME/.config/zsh/includes.zsh
 
 eval "$(starship init zsh)"
 

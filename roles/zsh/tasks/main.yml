@@ -20,6 +20,20 @@
     repo: https://github.com/zsh-users/zsh-autosuggestions
     dest: ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
 
+# ZSH Configuration
+- name: Create config directory if it doesn't exist
+  file:
+    path: "{{ dotfiles_user_home }}/.config/zsh"
+    state: directory
+    mode: '0755'
+
+- name: Symlink ZSH config files
+  file:
+    src: "{{ dotfiles_home }}/roles/zsh/files/"
+    dest: "{{ dotfiles_user_home }}/.config/zsh"
+    state: link
+    force: yes
+
 # ZSHRC
 - name: Check for .zshrc
   stat: path="{{dotfiles_user_home}}/.zshrc"
@@ -31,12 +45,12 @@
   when: zshrc_stat.stat.exists
 - name: Link .zshrc
   file:
-    src: "{{ dotfiles_home }}/roles/zsh/files/zshrc"
+    src: "{{ dotfiles_user_home }}/.config/zsh/zshrc"
     dest: "{{dotfiles_user_home}}/.zshrc"
     state: link
 - name: Create hushlogin file
   file:
-    src: "{{ dotfiles_home }}/roles/zsh/files/hushlogin"
+    src: "{{ dotfiles_user_home }}/.config/zsh/hushlogin"
     dest: "{{ dotfiles_user_home }}/.hushlogin"
     state: link
     force: yes
