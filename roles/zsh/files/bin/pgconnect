@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+#
+# pgconnect - A tool to easily add and manage PostgreSQL connections
+# 
+# Usage: pgconnect [options] <postgres_url> <name>
+#
+# Example: pgconnect "postgres://user:password@localhost:5432/mydb" dev
+
+set -e
+
+# Display help message
+display_help() {
+  cat << EOF
+pgconnect - Easily add and manage PostgreSQL connections
+
+Usage: pgconnect [options] <postgres_url> <name>
+
+Options:
+  -h, --help     Display this help message and exit
+
+Arguments:
+  <postgres_url>  A PostgreSQL connection URL in the format:
+                  postgres://user:password@host:port/dbname
+  
+  <name>         A short name for this connection (e.g., dev, prod, staging)
+
+Examples:
+  pgconnect "postgres://user:password@localhost:5432/mydb" dev
+  pgconnect "postgres://admin:secret@prod-db.example.com:5432/production" prod
+
+Once added, you can connect using: pgcli "service=<name>"
+
+This script:
+  1. Creates/updates ~/.pgpass with proper permissions (600)
+  2. Creates/updates ~/.pg_service.conf with connection details
+  3. Allows connecting via the service name instead of connection string
+EOF
+  exit 0
+}
+
+# Parse command line arguments
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  display_help
+fi
+
+# Check if we have the required arguments
+if [ $# -ne 2 ]; then
+  echo "Error: Missing required arguments"
+  echo "Usage: pgconnect <postgres_url> <name>"
+  echo "Example: pgconnect \"postgres://user:password@localhost:5432/mydb\" dev"
+  echo "Use pgconnect --help for more information"
+  exit 1
+fi
+
+PGURL="$1"
+NAME="$2"
+
+# Extract connection details from URL
+if [[ "$PGURL" =~ postgres://(.*):(.*)@(.*):(.*)/(.*)$ ]]; then
+  USER="${BASH_REMATCH[1]}"
+  PASSWORD="${BASH_REMATCH[2]}"
+  HOST="${BASH_REMATCH[3]}"
+  PORT="${BASH_REMATCH[4]}"
+  DB="${BASH_REMATCH[5]}"
+else
+  echo "Error: Invalid PostgreSQL URL format"
+  echo "Format should be: postgres://user:password@host:port/dbname"
+  exit 1
+fi
+
+# Set up .pgpass file
+PGPASS_FILE="$HOME/.pgpass"
+
+# Create .pgpass if it doesn't exist
+if [ ! -f "$PGPASS_FILE" ]; then
+  touch "$PGPASS_FILE"
+  chmod 600 "$PGPASS_FILE"
+  echo "Created new .pgpass file with secure permissions"
+else
+  # Check permissions and fix if needed
+  PERMS=$(stat -f "%OLp" "$PGPASS_FILE")
+  if [ "$PERMS" != "600" ]; then
+    chmod 600 "$PGPASS_FILE"
+    echo "Fixed permissions on .pgpass file"
+  fi
+fi
+
+# Add entry to .pgpass if it doesn't already exist
+PGPASS_LINE="$HOST:$PORT:$DB:$USER:$PASSWORD"
+
+if grep -q "$PGPASS_LINE" "$PGPASS_FILE"; then
+  echo "Entry for $NAME already exists in .pgpass"
+else
+  echo "$PGPASS_LINE" >> "$PGPASS_FILE"
+  echo "Added entry for $NAME to .pgpass"
+fi
+
+# Set up pg_service.conf
+PG_SERVICE_DIR="$HOME/.pg_service.conf.d"
+PG_SERVICE_FILE="$HOME/.pg_service.conf"
+
+# Create pg_service.conf if it doesn't exist
+if [ ! -f "$PG_SERVICE_FILE" ]; then
+  mkdir -p "$(dirname "$PG_SERVICE_FILE")"
+  touch "$PG_SERVICE_FILE"
+  echo "Created new pg_service.conf file"
+fi
+
+# Add entry to pg_service.conf
+SERVICE_ENTRY="
+[$NAME]
+host=$HOST
+port=$PORT
+dbname=$DB
+user=$USER
+"
+
+# Check if entry already exists, and replace it if it does
+if grep -q "^\[$NAME\]" "$PG_SERVICE_FILE"; then
+  # Extract existing entry and replace it
+  sed -i '' "/^\[$NAME\]/,/^$/d" "$PG_SERVICE_FILE"
+  echo "Updated existing entry for $NAME in pg_service.conf"
+else
+  echo "Added new entry for $NAME to pg_service.conf"
+fi
+
+# Append the new service entry
+echo "$SERVICE_ENTRY" >> "$PG_SERVICE_FILE"
+
+echo "✅ Connection setup complete!"
+echo "You can now use: pgcli \"service=$NAME\""

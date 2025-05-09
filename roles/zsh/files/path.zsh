@@ -3,6 +3,7 @@ export PATH=$PATH:/$HOME/.dotfiles/bin
 # export PATH="/Users/hogan.mcdonald/.local/bin"
 export PATH="/Users/hogan.mcdonald/.local/bin:$PATH"
 export PATH="$HOME/.cargo/bin:$PATH"
+export PATH="$HOME/.config/zsh/bin:$PATH"
 
 function print_path() {
     echo $PATH | sed $'s/:/\\\n/g'
