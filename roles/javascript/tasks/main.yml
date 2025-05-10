@@ -19,3 +19,8 @@
   npm:
     name: nodemon
     global: yes
+
+- name: Install "ni" node.js package globally
+  npm:
+    name: "@antfu/ni"
+    global: yes
