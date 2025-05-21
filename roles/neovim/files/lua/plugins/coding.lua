@@ -405,10 +405,10 @@ return {
         python = { 'isort', 'black' },
         ruby = { 'rubocop', 'solargraph' },
         -- Use a sub-list to run only the first available formatter
-        javascript = { 'prettier' },
-        typescript = { 'prettier' },
-        javascriptreact = { 'prettier' },
-        typescriptreact = { 'prettier' },
+        javascript = { 'biome', 'prettier', stop_after_first = true },
+        typescript = { 'biome', 'prettier', stop_after_first = true },
+        javascriptreact = { 'biome', 'prettier', stop_after_first = true },
+        typescriptreact = { 'biome', 'prettier', stop_after_first = true },
       },
       formatters = {
         rubocop = {
