@@ -1,0 +1,43 @@
+---
+- name: Install Raycast
+  community.general.homebrew_cask:
+    name: raycast
+    state: present
+
+- name: Disable Spotlight keyboard shortcut
+  shell: |
+    /usr/libexec/PlistBuddy ~/Library/Preferences/com.apple.symbolichotkeys.plist \
+    -c "Delete :AppleSymbolicHotKeys:64" \
+    -c "Add :AppleSymbolicHotKeys:64:enabled bool false" \
+    -c "Add :AppleSymbolicHotKeys:64:value:parameters array" \
+    -c "Add :AppleSymbolicHotKeys:64:value:parameters: integer 65535" \
+    -c "Add :AppleSymbolicHotKeys:64:value:parameters: integer 49" \
+    -c "Add :AppleSymbolicHotKeys:64:value:parameters: integer 1048576" \
+    -c "Add :AppleSymbolicHotKeys:64:type string standard"
+  args:
+    creates: "~/.config/raycast_setup_complete"
+  ignore_errors: yes
+  register: spotlight_disable
+
+- name: Create flag file to prevent rerunning spotlight commands
+  file:
+    path: "~/.config/raycast_setup_complete"
+    state: touch
+  when: spotlight_disable.rc is defined and spotlight_disable.rc == 0
+
+- name: Restart Spotlight and LaunchServices
+  command: "{{ item }}"
+  with_items:
+    - killall mds
+    - killall launchservicesd
+  ignore_errors: yes
+  become: yes
+  when: spotlight_disable.changed
+
+- name: Notify user about manual steps
+  debug:
+    msg: >
+      Raycast installed successfully. You'll need to manually:
+      1. Launch Raycast and set it to start at login
+      2. Set the activation hotkey to Cmd+Space
+      3. Enable permissions during first launch

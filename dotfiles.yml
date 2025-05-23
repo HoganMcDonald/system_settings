@@ -51,6 +51,9 @@
     - role: ghostty
       tags:
         - ghostty
+    - role: raycast
+      tags:
+        - raycast
     - role: spotify
       tags:
         - spotify
