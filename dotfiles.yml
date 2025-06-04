@@ -51,12 +51,9 @@
     - role: ghostty
       tags:
         - ghostty
-    - role: raycast
+    - role: alfred
       tags:
-        - raycast
-    - role: spotify
-      tags:
-        - spotify
+        - alfred
 
 
     # ====================
@@ -73,9 +70,6 @@
     # ====================
     #   Desktop
     # ====================
-    - role: yabai
-      tags:
-        - yabai
     - role: sketchybar
       tags:
         - sketchybar
