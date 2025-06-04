@@ -552,7 +552,7 @@ return {
         adapters = {
           require 'neotest-rspec',
           require 'neotest-jest',
-          require("neotest-vitest"),
+          require 'neotest-vitest',
           require 'neotest-vim-test' {
             ignore_filetypes = { 'ruby', 'javascript', 'typescript', 'typescriptreact', 'javascriptreact' },
           },
