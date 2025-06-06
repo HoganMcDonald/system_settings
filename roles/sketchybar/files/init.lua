@@ -1,5 +1,3 @@
--- Require the sketchybar module
----@diagnostic disable-next-line: lowercase-global
 sbar = require("sketchybar")
 
 -- Load the appropriate color file
