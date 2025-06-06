@@ -1,5 +1,6 @@
 theme               = halcyon
-background-opacity  = 1.0
+background-opacity  = 0.8
+background-blur     = true
 
 # Dyslexia‑friendly font & spacing for Ghostty
 font-family         = "JetBrains Mono Nerd Font"
