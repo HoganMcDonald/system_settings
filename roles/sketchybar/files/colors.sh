@@ -1,51 +1,25 @@
-#!/usr/bin/env sh
-
-#171C28 0xff171c28
-export BLACK=0xff171c28
-#1D2433 0xff1d2433
-export BACKGROUND=0xff1d2433
-#2F3B54 0xff2f3b54
-export HIGHLIGHT=0xff2f3b54
-#6679A4 0xff6679a4
-export GREY=0xff6679a4
-#8695B7 0xff8695B7
-export LIGHT_GREY=0xff8695B7
-#A2AABC 0xffA2AABC
-export OFF_WHITE=0xffA2AABC
-#D7DCE2 0xffD7DCE2
-export WHITE=0xffD7DCE2
-#FFCC66 0xffFFCC66
-#5CCFE6 0xff5CCFE6
-export BLUE=0xff5CCFE6
-#BAE67E 0xffBAE67E
-export GREEN=0xffBAE67E
-#FFAE57 0xffFFAE57
-export ORANGE=0xffFFAE57
-#FFD580 0xffFFD580
-export YELLOW=0xffFFD580
-#C3A6FF 0xffC3A6FF
-export LAVENDER=0xffC3A6FF
-#EF6B73 0xffEF6B73
-export RED=0xffEF6B73
-
+#!/bin/bash
 
 # Color Palette
-export RED=$RED
-export GREEN=$GREEN
-export BLUE=$BLUE
-export YELLOW=$YELLOW
-export ORANGE=$ORANGE
-export MAGENTA=$LAVENDER
+export BLACK=0xff181926
+export WHITE=0xffcad3f5
+export RED=0xffed8796
+export GREEN=0xffa6da95
+export BLUE=0xff8aadf4
+export YELLOW=0xffeed49f
+export ORANGE=0xfff5a97f
+export MAGENTA=0xffc6a0f6
+export GREY=0xff939ab7
 export TRANSPARENT=0x00000000
 
 # General bar colors
-export BAR_COLOR=$BACKGROUND
-export ICON_COLOR=$WHITE # Color of all icons
-export LABEL_COLOR=$WHITE # Color of all labels
-export BACKGROUND_1=$BLACK
-export BACKGROUND_2=$HIGHLIGHT
-
-export POPUP_BACKGROUND_COLOR=$BLACK
+export BAR_COLOR=0x15000000
+export ICON_COLOR=$WHITE
+export LABEL_COLOR=$WHITE
+export BACKGROUND_1=0xff2c2e34
+export BACKGROUND_2=0xff414550
+export POPUP_BACKGROUND_COLOR=0xff1e1e2e
 export POPUP_BORDER_COLOR=$WHITE
 
-export SHADOW_COLOR=$BLACK
+export SPACE_HIGHLIGHT_COLOR=$BLUE
+export ITEM_BG_COLOR=$BACKGROUND_1

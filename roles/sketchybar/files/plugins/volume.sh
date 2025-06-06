@@ -1,23 +1,22 @@
-#!/usr/bin/env sh
+#!/bin/bash
 
-WIDTH=100
+source "$CONFIG_DIR/colors.sh"
+source "$CONFIG_DIR/icons.sh"
 
-volume_change() {
-  INITIAL_WIDTH=$(sketchybar --query $NAME | jq ".icon.width")
-  if [ "$INITIAL_WIDTH" -eq "0" ]; then
-    sketchybar --animate tanh 30 --set $NAME width=$WIDTH icon.width=$INFO 
-  else
-    sketchybar --set $NAME icon.width=$INFO width=$WIDTH
-  fi
+VOLUME=$(osascript -e "output volume of (get volume settings)")
 
-  sleep 2
-  FINAL_WIDTH=$(sketchybar --query $NAME | jq ".icon.width")
-  if [ "$FINAL_WIDTH" -eq "$INFO" ]; then
-    sketchybar --animate tanh 30 --set $NAME width=0 icon.width=0
-  fi
-}
-
-case "$SENDER" in
-  "volume_change") volume_change
+case ${VOLUME} in
+  [6-9][0-9]|100) ICON=$VOLUME_100
   ;;
+  [3-5][0-9]) ICON=$VOLUME_66
+  ;;
+  [1-2][0-9]) ICON=$VOLUME_33
+  ;;
+  [1-9]) ICON=$VOLUME_10
+  ;;
+  0) ICON=$VOLUME_0
+  ;;
+  *) ICON=$VOLUME_100
 esac
+
+sketchybar --set $NAME icon="$ICON" label="$VOLUME%"

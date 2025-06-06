@@ -1,27 +1,14 @@
-#!/usr/bin/env sh
+#!/bin/bash
 
-update() {
-  WIDTH="dynamic"
-  if [ "$SELECTED" = "true" ]; then
-    WIDTH="0"
-  fi
+source "$CONFIG_DIR/colors.sh"
 
-  sketchybar --animate tanh 20 --set $NAME icon.highlight=$SELECTED label.width=$WIDTH
-
-}
-
-mouse_clicked() {
-  if [ "$BUTTON" = "right" ]; then
-    yabai -m space --destroy $SID
-    sketchybar --trigger space_change
-  else
-    yabai -m space --focus $SID 2>/dev/null
-  fi
-}
-
-case "$SENDER" in
-  "mouse.clicked") mouse_clicked
-  ;;
-  *) update
-  ;;
-esac
+if [ "$1" = "$FOCUSED_WORKSPACE" ]; then
+  sketchybar --set $NAME background.drawing=on \
+                   background.color=$SPACE_HIGHLIGHT_COLOR \
+                   icon.color=$BLACK \
+                   label.color=$BLACK
+else
+  sketchybar --set $NAME background.drawing=off \
+                   icon.color=$WHITE \
+                   label.color=$WHITE
+fi
