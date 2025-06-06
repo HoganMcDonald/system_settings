@@ -51,9 +51,6 @@
     - role: ghostty
       tags:
         - ghostty
-    - role: alfred
-      tags:
-        - alfred
 
 
     # ====================
