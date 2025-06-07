@@ -18,7 +18,6 @@ function M.mason_lspconfig_setup()
       'cssls',
       'html',
       'jsonls',
-      'solargraph',
       'sqlls',
       'lua_ls',
       'sqlls',
