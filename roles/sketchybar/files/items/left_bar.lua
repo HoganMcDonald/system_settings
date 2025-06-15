@@ -1,30 +1,23 @@
-local sbar = require("sketchybar")
 local colors = require("colors")
 
+-- Brackets
+local left_bar = require('items.brackets.left_bar')
+
+-- Widgets
 local smenu = require("items.widgets.smenu")
 local menu_watcher = require("items.widgets.menus")
 local front_app = require("items.widgets.front_app")
 
--- Check if we're using bar-full.lua
-local is_bar_full = os.getenv("BAR_CONFIG") == "bar-full"
+local M = {}
 
--- Create the bracket and include the items
-local left_bar = sbar.add(
-    "bracket",
-    "left_bar.bracket",
-    { menu_watcher.name, front_app.name, smenu.name },
-    {
-        shadow = not is_bar_full, -- Shadow is false for bar-full.lua
-        width = "dynamic",
-        position = "left",
-        padding_left = 10,
-        padding_right = 10,
-        background = {
-            padding_left = 10,
-            padding_right = 10,
-            color = colors.bar.bg2
-        },
-    }
-)
+M.setup = function(sbar)
+  -- Setup widgets first
+  smenu(sbar)
+  menu_watcher(sbar)
+  front_app(sbar)
+  
+  -- Setup brackets
+  left_bar.setup(sbar)
+end
 
-return left_bar
+return M
