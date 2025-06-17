@@ -1,0 +1,13 @@
+- name: Install mycli
+  homebrew:
+    name: mycli
+
+- name: Create mycli config folder if it doesn't exist
+  shell: "mkdir -p {{ config }}/mycli/"
+
+- name: mycli - link config file
+  file:
+    src: "{{ dotfiles_home }}/roles/mycli/files/config"
+    dest: "{{ config }}/mycli/config"
+    state: link
+    force: yes

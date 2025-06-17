@@ -28,6 +28,9 @@
     - role: pgcli
       tags:
         - pgcli
+    - role: mycli
+      tags:
+        - mycli
     - role: mcp-hub
       tags:
         - mcp-hub

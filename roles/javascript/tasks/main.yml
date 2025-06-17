@@ -24,3 +24,8 @@
   npm:
     name: "@antfu/ni"
     global: yes
+
+- name: Install "pm2" node.js package globally
+  npm:
+    name: pm2
+    global: yes

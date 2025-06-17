@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+#
+# myconnect - A tool to easily add and manage MySQL connections
+# 
+# Usage: myconnect [options] <mysql_url> <name>
+#
+# Example: myconnect "mysql://user:password@localhost:3306/mydb" dev
+
+set -e
+
+# Display help message
+display_help() {
+  cat << EOF
+myconnect - Easily add and manage MySQL connections
+
+Usage: myconnect [options] <mysql_url> <name>
+
+Options:
+  -h, --help     Display this help message and exit
+
+Arguments:
+  <mysql_url>    A MySQL connection URL in the format:
+                 mysql://user:password@host:port/dbname
+  
+  <name>         A short name for this connection (e.g., dev, prod, staging)
+
+Examples:
+  myconnect "mysql://user:password@localhost:3306/mydb" dev
+  myconnect "mysql://admin:secret@prod-db.example.com:3306/production" prod
+
+Once added, you can connect using: mycli -d <name>
+
+This script:
+  1. Creates/updates ~/.myclirc with DSN aliases
+  2. Creates connection entries with the service name
+  3. Allows connecting via the service name instead of connection string
+EOF
+  exit 0
+}
+
+# Parse command line arguments
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  display_help
+fi
+
+# Check if we have the required arguments
+if [ $# -ne 2 ]; then
+  echo "Error: Missing required arguments"
+  echo "Usage: myconnect <mysql_url> <name>"
+  echo "Example: myconnect \"mysql://user:password@localhost:3306/mydb\" dev"
+  echo "Use myconnect --help for more information"
+  exit 1
+fi
+
+MYURL="$1"
+NAME="$2"
+
+# Extract connection details from URL
+if [[ "$MYURL" =~ mysql://(.*):(.*)@(.*):(.*)/(.*)$ ]]; then
+  USER="${BASH_REMATCH[1]}"
+  PASSWORD="${BASH_REMATCH[2]}"
+  HOST="${BASH_REMATCH[3]}"
+  PORT="${BASH_REMATCH[4]}"
+  DB="${BASH_REMATCH[5]}"
+else
+  echo "Error: Invalid MySQL URL format"
+  echo "Format should be: mysql://user:password@host:port/dbname"
+  exit 1
+fi
+
+# Set up myclirc file
+MYCLIRC_FILE="$HOME/.myclirc"
+
+# Create .myclirc if it doesn't exist
+if [ ! -f "$MYCLIRC_FILE" ]; then
+  touch "$MYCLIRC_FILE"
+  echo "Created new .myclirc file"
+fi
+
+# Check if [alias_dsn] section exists, if not create it
+if ! grep -q "^\[alias_dsn\]" "$MYCLIRC_FILE"; then
+  echo "" >> "$MYCLIRC_FILE"
+  echo "[alias_dsn]" >> "$MYCLIRC_FILE"
+  echo "Added [alias_dsn] section to .myclirc"
+fi
+
+# Create the DSN URL - URL encode the password if it contains special characters
+# For basic implementation, we'll assume passwords don't need encoding
+DSN_URL="mysql://$USER:$PASSWORD@$HOST:$PORT/$DB"
+
+# Check if entry already exists in [alias_dsn] section and replace it
+if grep -q "^$NAME = " "$MYCLIRC_FILE"; then
+  # Replace existing entry
+  sed -i '' "s|^$NAME = .*|$NAME = $DSN_URL|" "$MYCLIRC_FILE"
+  echo "Updated existing DSN alias for $NAME in .myclirc"
+else
+  # Add new entry after [alias_dsn] section
+  sed -i '' "/^\[alias_dsn\]/a\\
+$NAME = $DSN_URL
+" "$MYCLIRC_FILE"
+  echo "Added new DSN alias for $NAME to .myclirc"
+fi
+
+echo "✅ Connection setup complete!"
+echo "You can now use: mycli -d $NAME"

@@ -8,5 +8,7 @@ tools:
   - ripgrep
   - gnu-sed
   - pgcli
+  - mycli
   - lazydocker
   - lastpass-cli
+  - ngrok
