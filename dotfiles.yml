@@ -78,6 +78,9 @@
     # ====================
     #   System
     # ====================
+    - role: karabiner
+      tags:
+        - karabiner
     - role: macos
       tags:
         - macos
