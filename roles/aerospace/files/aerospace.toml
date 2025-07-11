@@ -134,46 +134,37 @@ outer.right =      20
 # '''
 
 ### --- Focus Between Panes (Directional) ---
-cmd-h = 'focus left'
-cmd-j = 'focus down'
-cmd-k = 'focus up'
-cmd-l = 'focus right'
+cmd-shift-ctrl-alt-h = 'focus left'
+cmd-shift-ctrl-alt-j = 'focus down'
+cmd-shift-ctrl-alt-k = 'focus up'
+cmd-shift-ctrl-alt-l = 'focus right'
 
 ### --- Move Windows (Directional) ---
-cmd-shift-h = 'move left'
-cmd-shift-j = 'move down'
-cmd-shift-k = 'move up'
-cmd-shift-l = 'move right'
+cmd-shift-ctrl-alt-m = 'mode move'
 
 ### --- Resize Windows ---
-alt-shift-h = 'resize width -60'
-alt-shift-j = 'resize height -60'
-alt-shift-k = 'resize height +60'
-alt-shift-l = 'resize width +60'
+cmd-shift-ctrl-alt-r = 'mode resize'
 
 # Smart resize (horizontal only)
-cmd-shift-minus = 'resize smart -50'
-cmd-shift-equal = 'resize smart +50'
+cmd-shift-ctrl-alt-minus = 'resize smart -50'
+cmd-shift-ctrl-alt-equal = 'resize smart +50'
 
 ### --- Join with Neighboring Window (Merge) ---
-cmd-ctrl-h = 'join-with left'
-cmd-ctrl-j = 'join-with up'
-cmd-ctrl-k = 'join-with down'
-cmd-ctrl-l = 'join-with right'
+cmd-shift-ctrl-alt-g = 'mode join'
 
 ### --- Layouts ---
-alt-slash = 'layout tiles horizontal vertical'
-alt-comma = 'layout accordion horizontal vertical'
-cmd-shift-space = 'layout floating tiling'
+cmd-shift-ctrl-alt-slash = 'layout tiles horizontal vertical'
+cmd-shift-ctrl-alt-comma = 'layout accordion horizontal vertical'
+cmd-shift-ctrl-alt-space = 'layout floating tiling'
 
 ### --- Fullscreen ---
-cmd-shift-f = 'fullscreen'
+cmd-shift-ctrl-alt-f = 'fullscreen'
 
 ### --- Workspace Switching ---
-cmd-1 = 'workspace 1'
-cmd-2 = 'workspace 2'
-cmd-3 = 'workspace 3'
-cmd-4 = 'workspace 4'
+cmd-shift-ctrl-alt-1 = 'workspace 1'
+cmd-shift-ctrl-alt-2 = 'workspace 2'
+cmd-shift-ctrl-alt-3 = 'workspace 3'
+cmd-shift-ctrl-alt-4 = 'workspace 4'
 ctrl-h = 'workspace prev'
 ctrl-l = 'workspace next'
 ctrl-j = 'workspace prev'
@@ -181,7 +172,33 @@ ctrl-k = 'workspace next'
 alt-tab = 'workspace-back-and-forth'
 
 ### --- Move Window to Workspace (and follow) ---
-cmd-alt-1 = 'move-node-to-workspace 1 --focus-follows-window'
-cmd-alt-2 = 'move-node-to-workspace 2 --focus-follows-window'
-cmd-alt-3 = 'move-node-to-workspace 3 --focus-follows-window'
-cmd-alt-4 = 'move-node-to-workspace 4 --focus-follows-window'
+cmd-shift-ctrl-alt-w = 'mode workspace'
+
+# Mode definitions
+[mode.move.binding]
+h = 'move left'
+j = 'move down'
+k = 'move up'
+l = 'move right'
+esc = 'mode main'
+
+[mode.resize.binding]
+h = 'resize width -60'
+j = 'resize height -60'
+k = 'resize height +60'
+l = 'resize width +60'
+esc = 'mode main'
+
+[mode.join.binding]
+h = 'join-with left'
+j = 'join-with up'
+k = 'join-with down'
+l = 'join-with right'
+esc = 'mode main'
+
+[mode.workspace.binding]
+1 = 'move-node-to-workspace 1 --focus-follows-window'
+2 = 'move-node-to-workspace 2 --focus-follows-window'
+3 = 'move-node-to-workspace 3 --focus-follows-window'
+4 = 'move-node-to-workspace 4 --focus-follows-window'
+esc = 'mode main'
