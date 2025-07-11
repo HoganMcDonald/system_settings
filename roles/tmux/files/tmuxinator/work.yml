@@ -1,7 +1,7 @@
 # /Users/hogan.mcdonald/.config/tmuxinator/work.yml
 
 name: work
-root: ~/reforge-copilot
+root: ~/monterey-ai-monorepo/
 
 # Optional tmux socket
 # socket_name: foo
@@ -58,5 +58,8 @@ root: ~/reforge-copilot
 #
 windows:
   - nvim: nvim
+  - server: nr dev
+  - workers: nr workers:dev
+  - storybook: nr storybook
+  - database: mycli -d dev
   - zsh: ~
-  - server: pnpm dev
