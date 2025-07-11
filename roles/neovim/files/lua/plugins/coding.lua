@@ -632,38 +632,4 @@ return {
     dependencies = 'rcarriga/nvim-notify',
     opts = {},
   },
-
-  {
-    'rest-nvim/rest.nvim',
-    dependencies = {
-      'nvim-treesitter/nvim-treesitter',
-      opts = function(_, opts)
-        opts.ensure_installed = opts.ensure_installed or {}
-        table.insert(opts.ensure_installed, 'http')
-      end,
-    },
-    cmd = 'Rest',
-    keys = {
-      {
-        '<leader>rr',
-        '<cmd>Rest run<cr>',
-        desc = '[rest] run current request',
-      },
-      {
-        '<leader>ro',
-        '<cmd>Rest open<cr>',
-        desc = '[rest] open request viewer',
-      },
-      {
-        '<leader>re',
-        '<cmd>Rest env select<cr>',
-        desc = '[rest] select env file',
-      },
-      {
-        '<leader>rl',
-        '<cmd>Rest last<cr>',
-        desc = '[rest] run the most recent request',
-      },
-    },
-  },
 }
