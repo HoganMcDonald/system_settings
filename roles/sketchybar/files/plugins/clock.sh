@@ -1,3 +1,3 @@
-#!/bin/bash
-
-sketchybar --set $NAME label="$(date '+%a %d %b %H:%M')"
+#\!/bin/bash
+TIME=$(date "+%a %b %-d   %-I:%M %p")
+sketchybar --set clock label="$TIME"

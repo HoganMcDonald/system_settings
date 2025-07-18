@@ -1,11 +1,13 @@
 local M = {}
 
 M.sbar = require('sbar').get()
+local lib = require('lib').init(M.sbar)
+local bar = require('bar')
 
 M.setup = function()
   M.sbar.begin_config()
 
-  ---TODO: Load your bar configuration here
+  bar.setup()
 
   M.sbar.end_config()
 

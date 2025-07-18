@@ -153,8 +153,8 @@ cmd-shift-ctrl-alt-equal = 'resize smart +50'
 cmd-shift-ctrl-alt-g = 'mode join'
 
 ### --- Layouts ---
-cmd-shift-ctrl-alt-slash = 'layout tiles horizontal vertical'
-cmd-shift-ctrl-alt-comma = 'layout accordion horizontal vertical'
+cmd-shift-ctrl-alt-t = 'layout tiles horizontal vertical'
+cmd-shift-ctrl-alt-a = 'layout accordion horizontal vertical'
 cmd-shift-ctrl-alt-space = 'layout floating tiling'
 
 ### --- Fullscreen ---

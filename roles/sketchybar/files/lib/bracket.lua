@@ -23,15 +23,15 @@ function Bracket:new(name, members, config)
   if not sbar then
     error("Bracket not initialized. Call Bracket.init(sbar) first.")
   end
-  
+
   local instance = setmetatable({}, Bracket)
   instance.name = name
   instance.members = members or {}
   instance.config = config or {}
-  
+
   -- Create the bracket in sketchybar
   instance.sbar_bracket = sbar.add("bracket", instance.name, instance.members, instance.config)
-  
+
   return instance
 end
 
@@ -42,7 +42,7 @@ function Bracket:set(properties)
   if not self.sbar_bracket then
     error("Bracket not properly initialized")
   end
-  
+
   for k, v in pairs(properties) do
     self.config[k] = v
   end
@@ -69,6 +69,14 @@ end
 --- @return Bracket
 function Bracket:bg_border_color(color)
   return self:background({ border_color = color })
+end
+
+--- Set bracket position
+--- @param position string Position ("left", "right", "center", "q", "e")
+--- @return Bracket
+function Bracket:move_to(position)
+  self.position = position
+  return self:set({ position = position })
 end
 
 --- Set background border width
@@ -131,16 +139,16 @@ function Bracket:add_members(item_names)
   if type(item_names) == "string" then
     item_names = { item_names }
   end
-  
+
   for _, name in ipairs(item_names) do
     table.insert(self.members, name)
   end
-  
+
   -- Update the bracket with new members
   if self.sbar_bracket and self.sbar_bracket.set then
     self.sbar_bracket:set({ members = self.members })
   end
-  
+
   return self
 end
 
@@ -151,7 +159,7 @@ function Bracket:remove_members(item_names)
   if type(item_names) == "string" then
     item_names = { item_names }
   end
-  
+
   for _, name_to_remove in ipairs(item_names) do
     for i, member in ipairs(self.members) do
       if member == name_to_remove then
@@ -160,12 +168,12 @@ function Bracket:remove_members(item_names)
       end
     end
   end
-  
+
   -- Update the bracket with remaining members
   if self.sbar_bracket and self.sbar_bracket.set then
     self.sbar_bracket:set({ members = self.members })
   end
-  
+
   return self
 end
 
@@ -174,11 +182,11 @@ end
 --- @return Bracket
 function Bracket:set_members(members)
   self.members = members or {}
-  
+
   if self.sbar_bracket and self.sbar_bracket.set then
     self.sbar_bracket:set({ members = self.members })
   end
-  
+
   return self
 end
 
@@ -222,7 +230,7 @@ function Bracket:query(property)
   if not self.sbar_bracket then
     error("Bracket not properly initialized")
   end
-  
+
   if property then
     return self.sbar_bracket:query(property)
   else
@@ -246,7 +254,7 @@ function Bracket:subscribe(event, callback)
   if not self.sbar_bracket then
     error("Bracket not properly initialized")
   end
-  
+
   self.sbar_bracket:subscribe(event, callback)
   return self
 end

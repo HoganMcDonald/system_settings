@@ -58,8 +58,7 @@ root: ~/monterey-ai-monorepo/
 #
 windows:
   - nvim: nvim
-  - server: nr dev
-  - workers: nr workers:dev
+  - turbo: nr dev
   - storybook: nr storybook
   - database: mycli -d dev
   - zsh: ~
