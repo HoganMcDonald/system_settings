@@ -7,7 +7,7 @@ local function wifi()
     :label_color(0xffffffff)
     :label_font('SF Pro Display', 14)
     :icon_color(0xff58d1fc)
-    :padding(10, 10)
+    :padding(5, 10)
     :script('~/.config/sketchybar/plugins/wifi.sh', 30)
 
   local wifi_container = Bracket:new('wifi', { 'wifi' })

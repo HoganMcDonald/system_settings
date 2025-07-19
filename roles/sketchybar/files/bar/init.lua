@@ -2,13 +2,10 @@
 --- This demonstrates how to use the modular component system
 
 local Bar = require('lib').Bar
-local Item = require('lib').Item
-local Event = require('lib').Event
-local Bracket = require('lib').Bracket
-local Animation = require('lib').Animation
 
 local clock = require('bar.components.clock')
 local wifi = require('bar.components.wifi')
+local battery = require('bar.components.battery')
 
 local M = {}
 
@@ -79,10 +76,10 @@ function M.setup()
   -- Configure the bar
   local bar = Bar:new()
   bar:height(32)
-    :blur_radius(20)
+    :blur_radius(30)
     :margin(20)
     :y_offset(15)
-    :corner_radius(15)
+    :corner_radius(10)
     :position("top")
     :sticky(true)
     :padding(10, 10)
@@ -91,7 +88,8 @@ function M.setup()
   -- Store references for later use
   M.components = {
     clock = clock(),
-    wifi = wifi()
+    wifi = wifi(),
+    battery = battery()
   }
 
   return M.components
