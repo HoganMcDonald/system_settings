@@ -91,7 +91,7 @@ function M.setup()
   -- Store references for later use
   M.components = {
     clock = clock(),
-    wifi = wifi()
+    -- wifi = wifi()
   }
 
   return M.components
