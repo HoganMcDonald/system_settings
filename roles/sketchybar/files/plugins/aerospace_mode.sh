@@ -41,7 +41,7 @@ case "$MODE" in
     *)
         ICON="󰧨"
         COLOR="0xff89b4fa"
-        BAR_COLOR="0x0"  # Default sketchybar background (transparent with blur)
+        BAR_COLOR="0x44000000"  # Default sketchybar background (transparent with blur)
         MODE="main"
         ;;
 esac
