@@ -6,6 +6,7 @@ local Bar = require('lib').Bar
 local clock = require('bar.components.clock')
 local wifi = require('bar.components.wifi')
 local battery = require('bar.components.battery')
+local mode_indicator = require('bar.components.mode_indicator')
 
 local M = {}
 
@@ -85,11 +86,18 @@ function M.setup()
     :padding(10, 10)
     :apply()
 
+  -- Add custom events
+  require('sbar').get().add("event", "aerospace_mode_change")
+
   -- Store references for later use
   M.components = {
+    -- left
+    mode_indicator = mode_indicator(),
+
+    -- right
     clock = clock(),
     wifi = wifi(),
-    battery = battery()
+    battery = battery(),
   }
 
   return M.components

@@ -1,0 +1,23 @@
+local Bracket = require('lib').Bracket
+local Item = require('lib').Item
+
+local function mode_indicator()
+  local mode_indicator_widget = Item:new('item', 'mode_indicator', 'left')
+  mode_indicator_widget
+    :label_string("main")
+    :label_color(0xffffffff)
+    :label_font('SF Pro Display', 14)
+    :script('~/.config/sketchybar/plugins/aerospace_mode.sh', 0)
+    :subscribe('aerospace_mode_change')
+
+  local mode_indicator_container = Bracket:new('mode', { 'mode_indicator' })
+  mode_indicator_container
+    :move_to('left')
+
+  return {
+    mode_indicator_widget,
+    mode_indicator_container
+  }
+end
+
+return mode_indicator

@@ -32,7 +32,7 @@ esac
 
 if [[ "$CHARGING" != "" ]]; then
   ICON="􀢋"
-  ICON_COLOR=0xfff9e2af
+  ICON_COLOR=0xffe2f9af
 fi
 
 # The item invoking this script (name $NAME) will get its icon and label

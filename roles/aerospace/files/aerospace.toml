@@ -140,17 +140,17 @@ cmd-shift-ctrl-alt-k = 'focus up'
 cmd-shift-ctrl-alt-l = 'focus right'
 
 ### --- Move Windows (Directional) ---
-cmd-shift-ctrl-alt-m = 'mode move'
+cmd-shift-ctrl-alt-m = ['mode move', 'exec-and-forget ~/.config/sketchybar/plugins/aerospace_mode.sh move']
 
 ### --- Resize Windows ---
-cmd-shift-ctrl-alt-r = 'mode resize'
+cmd-shift-ctrl-alt-r = ['mode resize', 'exec-and-forget ~/.config/sketchybar/plugins/aerospace_mode.sh resize']
 
 # Smart resize (horizontal only)
 cmd-shift-ctrl-alt-minus = 'resize smart -50'
 cmd-shift-ctrl-alt-equal = 'resize smart +50'
 
 ### --- Join with Neighboring Window (Merge) ---
-cmd-shift-ctrl-alt-g = 'mode join'
+cmd-shift-ctrl-alt-g = ['mode join', 'exec-and-forget ~/.config/sketchybar/plugins/aerospace_mode.sh join']
 
 ### --- Layouts ---
 cmd-shift-ctrl-alt-t = 'layout tiles horizontal vertical'
@@ -172,7 +172,7 @@ ctrl-k = 'workspace next'
 alt-tab = 'workspace-back-and-forth'
 
 ### --- Move Window to Workspace (and follow) ---
-cmd-shift-ctrl-alt-w = 'mode workspace'
+cmd-shift-ctrl-alt-w = ['mode workspace', 'exec-and-forget ~/.config/sketchybar/plugins/aerospace_mode.sh workspace']
 
 # Mode definitions
 [mode.move.binding]
@@ -180,25 +180,25 @@ h = 'move left'
 j = 'move down'
 k = 'move up'
 l = 'move right'
-esc = 'mode main'
+esc = ['mode main', 'exec-and-forget ~/.config/sketchybar/plugins/aerospace_mode.sh main']
 
 [mode.resize.binding]
 h = 'resize width -60'
 j = 'resize height -60'
 k = 'resize height +60'
 l = 'resize width +60'
-esc = 'mode main'
+esc = ['mode main', 'exec-and-forget ~/.config/sketchybar/plugins/aerospace_mode.sh main']
 
 [mode.join.binding]
 h = 'join-with left'
 j = 'join-with up'
 k = 'join-with down'
 l = 'join-with right'
-esc = 'mode main'
+esc = ['mode main', 'exec-and-forget ~/.config/sketchybar/plugins/aerospace_mode.sh main']
 
 [mode.workspace.binding]
 1 = 'move-node-to-workspace 1 --focus-follows-window'
 2 = 'move-node-to-workspace 2 --focus-follows-window'
 3 = 'move-node-to-workspace 3 --focus-follows-window'
 4 = 'move-node-to-workspace 4 --focus-follows-window'
-esc = 'mode main'
+esc = ['mode main', 'exec-and-forget ~/.config/sketchybar/plugins/aerospace_mode.sh main']
