@@ -1,12 +1,16 @@
 #!/bin/bash
 
 POPUP_OFF='sketchybar --set apple.logo popup.drawing=off'
-POPUP_CLICK_SCRIPT='sketchybar --set $NAME popup.drawing=toggle'
+POPUP_CLICK_SCRIPT='sketchybar --set apple popup.drawing=toggle'
+
+APPLE=""
+FONT="Hack Nerd Font"
+COLOR="0xffa6e3a1"
 
 apple_logo=(
   icon=$APPLE
   icon.font="$FONT:Black:16.0"
-  icon.color=$GREEN
+  icon.color=$COLOR
   padding_right=15
   label.drawing=off
   click_script="$POPUP_CLICK_SCRIPT"

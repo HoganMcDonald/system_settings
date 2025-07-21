@@ -7,6 +7,7 @@ local clock = require('bar.components.clock')
 local wifi = require('bar.components.wifi')
 local battery = require('bar.components.battery')
 local mode_indicator = require('bar.components.mode_indicator')
+local apple = require('bar.components.apple')
 
 local M = {}
 
@@ -92,6 +93,7 @@ function M.setup()
   -- Store references for later use
   M.components = {
     -- left
+    apple = apple(),
     mode_indicator = mode_indicator(),
 
     -- right

@@ -4,9 +4,10 @@ local Item = require('lib').Item
 local function mode_indicator()
   local mode_indicator_widget = Item:new('item', 'mode_indicator', 'left')
   mode_indicator_widget
-    :label_string("main")
+    :label_string("Main")
     :label_color(0xffffffff)
     :label_font('SF Pro Display', 14)
+    :padding(5, 5)
     :script('~/.config/sketchybar/plugins/aerospace_mode.sh', 0)
     :subscribe('aerospace_mode_change')
 
