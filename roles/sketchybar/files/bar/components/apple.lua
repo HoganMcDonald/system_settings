@@ -24,8 +24,7 @@ local function apple()
       click_script = "~/.config/sketchybar/plugins/apple_click.sh",
     })
 
-  -- Create popup items using helper script
-  os.execute("~/.config/sketchybar/plugins/apple_popup.sh")
+  -- Popup items are created on-demand by apple_click.sh
 
   local apple_container = Bracket:new('apple', { 'apple' })
   apple_container:move_to('left')
