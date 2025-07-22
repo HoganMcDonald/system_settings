@@ -7,6 +7,9 @@ local function clock()
     :label_color(0xffffffff)
     :label_font('SF Pro Display', 14)
     :script('~/.config/sketchybar/plugins/clock.sh', 30)
+    :set({
+      click_script = "~/.config/sketchybar/plugins/clock_click.sh"
+    })
 
   local clock_container = Bracket:new('clock', { 'clock' })
   clock_container:move_to('right')
