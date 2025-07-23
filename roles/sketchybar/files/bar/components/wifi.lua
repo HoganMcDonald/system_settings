@@ -9,6 +9,9 @@ local function wifi()
     :icon_color(0xff58d1fc)
     :padding(5, 10)
     :script('~/.config/sketchybar/plugins/wifi.sh', 30)
+    :set({
+      click_script = "open -b com.apple.SystemPreferences /System/Library/PreferencePanes/Network.prefPane"
+    })
 
   local wifi_container = Bracket:new('wifi', { 'wifi' })
   wifi_container:move_to('right')
