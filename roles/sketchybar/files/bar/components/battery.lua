@@ -11,6 +11,9 @@ local function battery()
     :padding(5, 5)
     :script('~/.config/sketchybar/plugins/battery.sh', 120)
     :subscribe('power_source_change', 'system_woke')
+    :set({
+      click_script = "~/.config/sketchybar/plugins/battery_click.sh"
+    })
 
   local battery_container = Bracket:new('battery', { 'battery' })
   battery_container:move_to('right')

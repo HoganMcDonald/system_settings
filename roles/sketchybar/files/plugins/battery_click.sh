@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Battery click handler script
+# Toggles between showing percentage and time remaining
+
+# Check current state file
+STATE_FILE="/tmp/sketchybar_battery_time"
+
 PERCENTAGE="$(pmset -g batt | grep -Eo "\d+%" | cut -d% -f1)"
 CHARGING="$(pmset -g batt | grep 'AC Power')"
 
@@ -7,6 +13,7 @@ if [ "$PERCENTAGE" = "" ]; then
   exit 0
 fi
 
+# Set icon based on battery level and charging status
 case ${PERCENTAGE} in
   [8-9][0-9] | 100)
     ICON="􀛨"
@@ -35,11 +42,15 @@ if [[ "$CHARGING" != "" ]]; then
   ICON_COLOR=0xffe2f9af
 fi
 
-# Check if we should show time instead of percentage
-STATE_FILE="/tmp/sketchybar_battery_time"
-
 if [ -f "$STATE_FILE" ]; then
-  # Show time remaining
+  # Currently showing time, switch to percentage
+  rm "$STATE_FILE"
+  LABEL="${PERCENTAGE}%"
+else
+  # Currently showing percentage, switch to time
+  touch "$STATE_FILE"
+  
+  # Get time remaining
   if [[ "$CHARGING" != "" ]]; then
     # When charging, show time until full
     TIME_INFO="$(pmset -g batt | grep -Eo "\d+:\d+ remaining to full charge" | cut -d' ' -f1)"
@@ -57,11 +68,6 @@ if [ -f "$STATE_FILE" ]; then
       LABEL="Calculating..."
     fi
   fi
-else
-  # Show percentage
-  LABEL="${PERCENTAGE}%"
 fi
 
-# The item invoking this script (name $NAME) will get its icon and label
-# updated with the current battery status
-sketchybar --set battery icon="$ICON" label="$LABEL" icon.color=${ICON_COLOR} icon.padding_right=5
+sketchybar --set "$NAME" icon="$ICON" label="$LABEL" icon.color=${ICON_COLOR} icon.padding_right=5
