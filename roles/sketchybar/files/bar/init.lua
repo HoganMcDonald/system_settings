@@ -7,6 +7,7 @@ local clock = require('bar.components.clock')
 local wifi = require('bar.components.wifi')
 local battery = require('bar.components.battery')
 local mode_indicator = require('bar.components.mode_indicator')
+local workspace_indicator = require('bar.components.workspace_indicator')
 local apple = require('bar.components.apple')
 
 local M = {}
@@ -89,12 +90,16 @@ function M.setup()
 
   -- Add custom events
   require('sbar').get().add("event", "aerospace_mode_change")
+  require('sbar').get().add("event", "aerospace_workspace_change")
 
   -- Store references for later use
   M.components = {
     -- left
     apple = apple(),
     mode_indicator = mode_indicator(),
+
+    --center
+    workspace_indicator = workspace_indicator(),
 
     -- right
     clock = clock(),
