@@ -21,13 +21,13 @@ fi
 # Update all workspace indicators
 for i in {1..4}; do
   if [ "$i" = "$CURRENT_WORKSPACE" ]; then
-    # Active workspace - make it twice as wide with animation
-    sketchybar --animate tanh 15 \
+    # Active workspace - make it twice as wide with faster animation
+    sketchybar --animate tanh 8 \
                --set workspace_$i width=24 \
                background.color=0xffffffff
   else
-    # Inactive workspace - normal width
-    sketchybar --animate tanh 15 \
+    # Inactive workspace - normal width with faster animation
+    sketchybar --animate tanh 8 \
                --set workspace_$i width=12 \
                background.color=0xffffffff
   fi
