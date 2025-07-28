@@ -46,8 +46,19 @@ local function lsp_keymaps(bufnr)
   vim.keymap.set('n', 'gk', vim.lsp.buf.signature_help, { desc = 'signature help', silent = true, buffer = bufnr })
   vim.keymap.set('i', '<C-k>', vim.lsp.buf.signature_help, { desc = 'signature help', silent = true, buffer = bufnr })
   vim.keymap.set('n', 'ge', vim.lsp.buf.rename, opts)
-  vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
-  vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, opts)
+  
+  -- Robust gd mapping with fallback
+  vim.keymap.set('n', 'gd', function()
+    local clients = vim.lsp.get_clients({ bufnr = bufnr })
+    if #clients > 0 then
+      vim.lsp.buf.definition()
+    else
+      -- Fallback to built-in tag jumping if no LSP
+      vim.cmd('normal! gd')
+    end
+  end, { desc = 'Go to definition', silent = true, buffer = bufnr })
+  
+  vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, { desc = 'Go to declaration', silent = true, buffer = bufnr })
   vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
   vim.keymap.set('n', 'gt', vim.lsp.buf.type_definition, opts)
 
@@ -56,7 +67,7 @@ local function lsp_keymaps(bufnr)
   vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, opts)
 end
 
-M.on_attach = function(_, bufnr)
+M.on_attach = function(client, bufnr)
   lsp_keymaps(bufnr)
 end
 

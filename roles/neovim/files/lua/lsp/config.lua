@@ -20,7 +20,8 @@ function M.mason_lspconfig_setup()
       'jsonls',
       'sqlls',
       'lua_ls',
-      'sqlls',
+      'rust_analyzer', -- Add rust_analyzer
+      'yamlls',
     },
   }
 end
@@ -40,23 +41,16 @@ function M.setup()
     return
   end
 
-  require('mason-lspconfig').setup {
-    function(server_name)
-      lspconfig[server_name].setup(defaults)
-    end,
-    ['lua_ls'] = function()
-      lspconfig.lua_ls.setup(vim.tbl_deep_extend('force', require 'lsp.settings.lua_ls', defaults))
-    end,
-    ['solargraph'] = function()
-      lspconfig.solargraph.setup(vim.tbl_deep_extend('force', require 'lsp.settings.solargraph', defaults))
-    end,
-    ['jsonls'] = function()
-      lspconfig.jsonls.setup(vim.tbl_deep_extend('force', require 'lsp.settings.jsonls', defaults))
-    end,
-    ["yamlls"] = function()
-      lspconfig.yamlls.setup(vim.tbl_deep_extend('force', require 'lsp.settings.yamlls', defaults))
-    end,
-  }
+  -- Setup LSP servers directly bypassing mason-lspconfig
+  lspconfig.rust_analyzer.setup(defaults)
+  lspconfig.lua_ls.setup(vim.tbl_deep_extend('force', require 'lsp.settings.lua_ls', defaults))
+  lspconfig.solargraph.setup(vim.tbl_deep_extend('force', require 'lsp.settings.solargraph', defaults))
+  lspconfig.jsonls.setup(vim.tbl_deep_extend('force', require 'lsp.settings.jsonls', defaults))
+  lspconfig.yamlls.setup(vim.tbl_deep_extend('force', require 'lsp.settings.yamlls', defaults))
+  lspconfig.bashls.setup(defaults)
+  lspconfig.cssls.setup(defaults)
+  lspconfig.html.setup(defaults)
+  lspconfig.marksman.setup(defaults)
 end
 
 return M
