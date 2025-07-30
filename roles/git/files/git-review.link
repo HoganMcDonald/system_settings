@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+#
+# git‑review  –  from your main clone, check out the branch that lives
+#               in a city worktree, bringing uncommitted changes along
+#
+#   layout assumed
+#     ~/conductor/repo/<project>/.main              ← main clone
+#     ~/conductor/repo/<project>/<city‑name>        ← city worktrees
+#     ~/<project>                                   ← your day‑to‑day clone
+#
+#   usage
+#     git review <city‑name>
+#
+set -euo pipefail
+
+die() { printf "git‑review: %s\n" "$*" >&2; exit 1; }
+
+#----- argument ---------------------------------------------------------------
+[ $# -eq 1 ] || die "usage: git review <city‑name>"
+city_name=$1
+
+#----- figure out paths -------------------------------------------------------
+repo_root=$(git -C . rev-parse --show-toplevel)           || die "not in a git repo"
+project=$(basename "$repo_root")                          # "monterey‑ai‑monorepo", etc.
+
+conductor_base="$HOME/conductor/repo/$project"
+clone_b="$conductor_base/.main"
+city_worktree="$conductor_base/$city_name"
+
+[ -d "$clone_b" ]           || die "missing main clone at $clone_b"
+[ -d "$city_worktree" ]     || die "no such city worktree: $city_name"
+
+#----- discover the branch that city worktree is on --------------------------
+branch=$(git -C "$city_worktree" symbolic-ref --short HEAD 2>/dev/null) \
+        || die "city worktree $city_name is in detached‑HEAD; commit or fix it first"
+
+#----- ensure we can fetch from main clone ------------------------------------
+remote=conductor
+if ! git remote get-url "$remote" >/dev/null 2>&1; then
+  git remote add "$remote" "$clone_b"
+fi
+
+#----- save uncommitted changes if any ----------------------------------------
+has_changes=false
+if ! git diff-index --quiet HEAD --; then
+  echo "Committing uncommitted changes as WIP..."
+  git add -A
+  git commit -m "WIP"
+  has_changes=true
+fi
+
+#----- check for uncommitted changes in worktree ------------------------------
+worktree_has_changes=false
+if ! git -C "$city_worktree" diff-index --quiet HEAD --; then
+  echo "Worktree has uncommitted changes, committing as WIP..."
+  git -C "$city_worktree" add -A
+  git -C "$city_worktree" commit -m "WIP - auto-commit for git-review"
+  worktree_has_changes=true
+fi
+
+#----- fetch & switch (idempotent) --------------------------------------------
+current_branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+
+if [ "$current_branch" = "$branch" ]; then
+  echo "Already on $branch, fetching updates..."
+  git fetch "$remote"
+  git reset --hard "$remote/$branch"
+else
+  echo "Fetching latest from $city_name worktree..."
+  git fetch "$remote" "$branch:$branch" || true   # updates (or creates) local ref
+  git switch "$branch"
+  
+  # Reset to match the worktree exactly (idempotent behavior)
+  echo "Resetting to match worktree state..."
+  git reset --hard "$remote/$branch"
+fi
+
+#----- restore worktree to original state if we made a WIP commit -------------
+if [ "$worktree_has_changes" = true ]; then
+  echo "Restoring worktree to original state..."
+  git -C "$city_worktree" reset --soft HEAD~1
+fi
+
+#----- restore uncommitted changes --------------------------------------------
+changes_msg=""
+
+# Restore local WIP changes if any
+if [ "$has_changes" = true ]; then
+  echo "Restoring local WIP changes..."
+  git reset --soft HEAD~1  # Undo the WIP commit, keeping changes staged
+  changes_msg=" with local WIP changes"
+fi
+
+# Restore worktree WIP changes if any
+if [ "$worktree_has_changes" = true ]; then
+  echo "Restoring worktree WIP changes as uncommitted..."
+  git reset --soft HEAD~1  # Undo the worktree WIP commit, keeping changes staged
+  changes_msg="${changes_msg} and worktree WIP changes"
+fi
+
+if [ -n "$changes_msg" ]; then
+  echo "✓ Now on $branch (from city: $city_name)${changes_msg}"
+else
+  echo "✓ Now on $branch (from city: $city_name)"
+fi

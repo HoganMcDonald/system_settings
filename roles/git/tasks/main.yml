@@ -32,7 +32,6 @@
   file:
     src: "{{ dotfiles_home }}/roles/git/files/git-branch-stats.link"
     dest: "{{ dotfiles_user_home }}/.bin/git-branch-stats.sh"
-    mode: a+x
     state: link
     force: yes
 
@@ -40,7 +39,6 @@
   file:
     src: "{{ dotfiles_home }}/roles/git/files/git-copy-branch.link"
     dest: "{{ dotfiles_user_home }}/.bin/git-copy-branch.sh"
-    mode: a+x
     state: link
     force: yes
 
@@ -48,6 +46,12 @@
   file:
     src: "{{ dotfiles_home }}/roles/git/files/git-delete-branches.link"
     dest: "{{ dotfiles_user_home }}/.bin/git-delete-branches.sh"
-    mode: a+x
+    state: link
+    force: yes
+
+- name: Link review script
+  file:
+    src: "{{ dotfiles_home }}/roles/git/files/git-review.link"
+    dest: "{{ dotfiles_user_home }}/.bin/git-review"
     state: link
     force: yes
