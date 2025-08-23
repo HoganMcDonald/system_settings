@@ -1,0 +1,23 @@
+- name: Install Helix editor
+  homebrew:
+    name: helix
+
+- name: Create Helix config folder if it doesn't exist
+  shell: "mkdir -p {{ config }}/helix/"
+
+- name: Check if config exists
+  stat: path="{{ config }}/helix"
+  register: helix_config_stat
+
+- name: Back up config
+  command: "mv {{ config }}/helix {{ config }}/helix_old"
+  args:
+    creates: "{{ config }}/helix_old"
+  when: helix_config_stat.stat.exists
+
+- name: Make sure config is up to date
+  file:
+    src: "{{ dotfiles_home }}/roles/helix/files/"
+    dest: "{{ config }}/helix"
+    state: link
+    force: yes

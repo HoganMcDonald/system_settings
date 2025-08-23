@@ -23,3 +23,38 @@
     src: "karabiner.json"
     dest: "{{ config }}/karabiner/karabiner.json"
     mode: '0644'
+  notify: restart karabiner
+
+- name: Ensure Karabiner Elements is running
+  command: pgrep -f "Karabiner-Elements"
+  register: karabiner_running
+  failed_when: false
+  changed_when: false
+
+- name: Start Karabiner Elements if not running
+  command: open -a "Karabiner-Elements"
+  when: karabiner_running.rc != 0
+
+- name: Verify configuration is properly loaded
+  pause:
+    seconds: 3
+    prompt: "Waiting for Karabiner to load configuration..."
+
+- name: Check if configuration matches expected content
+  shell: |
+    if ! grep -q "basic.to_if_alone_timeout_milliseconds" "{{ config }}/karabiner/karabiner.json" 2>/dev/null; then
+      echo "Configuration missing timing parameters - needs restoration"
+      exit 1
+    fi
+  register: config_check
+  failed_when: false
+  changed_when: config_check.rc != 0
+
+- name: Force configuration restoration if corrupted
+  copy:
+    src: "karabiner.json"
+    dest: "{{ config }}/karabiner/karabiner.json"
+    mode: '0644'
+    force: yes
+  notify: restart karabiner
+  when: config_check.rc != 0

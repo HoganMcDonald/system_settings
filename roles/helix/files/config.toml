@@ -1,0 +1,111 @@
+theme = "catppuccin_macchiato"
+
+[editor]
+line-number = "relative"
+mouse = false
+middle-click-paste = false
+scroll-lines = 3
+shell = ["zsh", "-c"]
+text-width = 100
+true-color = true
+rulers = [80, 120]
+bufferline = "always"
+color-modes = true
+
+[editor.statusline]
+left = ["mode", "spinner", "file-name", "file-modification-indicator"]
+center = ["version-control"]
+right = ["diagnostics", "selections", "position", "file-encoding", "file-line-ending", "file-type"]
+separator = "│"
+mode.normal = "NORMAL"
+mode.insert = "INSERT"
+mode.select = "SELECT"
+
+[editor.lsp]
+display-messages = true
+auto-signature-help = true
+display-inlay-hints = true
+display-signature-help-docs = true
+snippets = true
+
+[editor.cursor-shape]
+insert = "bar"
+normal = "block"
+select = "underline"
+
+[editor.file-picker]
+hidden = false
+follow-symlinks = true
+deduplicate-links = true
+parents = true
+ignore = true
+git-ignore = true
+git-global = true
+git-exclude = true
+
+[editor.auto-pairs]
+'(' = ')'
+'{' = '}'
+'[' = ']'
+'"' = '"'
+'`' = '`'
+'<' = '>'
+
+[editor.search]
+smart-case = true
+wrap-around = true
+
+[editor.whitespace]
+render = "all"
+characters = { space = "·", nbsp = "⍽", tab = "→", newline = "⏎" }
+
+[editor.indent-guides]
+render = true
+character = "┊"
+skip-levels = 1
+
+[keys.normal]
+# Quick save
+C-s = ":w"
+
+# Better window navigation
+C-h = "jump_view_left"
+C-j = "jump_view_down"
+C-k = "jump_view_up"
+C-l = "jump_view_right"
+
+# File picker
+C-p = "file_picker_in_current_directory"
+
+# Buffer navigation
+"A-h" = "goto_previous_buffer"
+"A-l" = "goto_next_buffer"
+
+# LSP shortcuts
+"g d" = "goto_definition"
+"g r" = "goto_references"
+"g i" = "goto_implementation"
+"g t" = "goto_type_definition"
+"K" = "hover"
+"space l a" = "code_action"
+"space l r" = "rename_symbol"
+"space l f" = "format_selections"
+
+# Diagnostics
+"[d" = "goto_prev_diag"
+"]d" = "goto_next_diag"
+"space d" = "diagnostics_picker"
+
+# Git integration
+"space g s" = ":sh git status"
+"space g l" = ":sh git log --oneline -10"
+
+[keys.insert]
+# Exit insert mode
+"j k" = "normal_mode"
+"k j" = "normal_mode"
+
+[keys.select]
+# Exit select mode
+"j k" = "normal_mode"
+"k j" = "normal_mode"

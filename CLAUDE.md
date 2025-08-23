@@ -94,8 +94,10 @@ This is a macOS system setup repository containing an Ansible playbook for autom
 ### pgcli
 - 
 
-### raycast
-- 
+### sol
+- Open-source macOS launcher installed via Homebrew cask
+- Replaces Spotlight with Cmd+Space shortcut
+- Provides fast app search, file search, emoji picker, calculator, and more
 
 ### ruby
 - 

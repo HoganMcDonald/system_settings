@@ -34,9 +34,15 @@
     - role: mcp-hub
       tags:
         - mcp-hub
+    - role: claude
+      tags:
+        - claude
     - role: neovim
       tags:
         - neovim
+    - role: helix
+      tags:
+        - helix
 
 
     # ====================
@@ -54,6 +60,9 @@
     - role: ghostty
       tags:
         - ghostty
+    - role: sol
+      tags:
+        - sol
 
 
     # ====================

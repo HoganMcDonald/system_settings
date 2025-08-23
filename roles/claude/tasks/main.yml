@@ -1,0 +1,18 @@
+- name: Install Claude Code CLI
+  npm:
+    name: "@anthropic-ai/claude-code"
+    global: yes
+
+
+- name: Create Claude config directory
+  file:
+    path: "{{ claude_config_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Symlink agents folder
+  file:
+    src: "{{ role_path }}/files/agents"
+    dest: "{{ claude_config_dir }}/agents"
+    state: link
+    force: yes

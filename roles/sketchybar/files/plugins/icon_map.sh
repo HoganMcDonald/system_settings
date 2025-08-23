@@ -266,8 +266,8 @@ __icon_map() {
     "Quill Chat")
       echo ":quill_chat:"
       ;;
-    "Raycast")
-      echo ":raycast:"
+    "Sol")
+      echo ":sol:"
       ;;
     "Reminders")
       echo ":reminders:"
