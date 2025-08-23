@@ -34,31 +34,24 @@ M.setup = function()
   vim.lsp.handlers['textDocument/signatureHelp'] = vim.lsp.with(vim.lsp.handlers.signature_help, {
     border = 'rounded',
   })
+
+  M.setup_keymaps()
 end
 
-local function lsp_keymaps(bufnr)
-  local opts = { silent = true, remap = false, buffer = bufnr }
+M.setup_keymaps = function()
+  local opts = { silent = true, remap = false }
 
   -- Generate LSP functionality
   -- vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
   -- vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
   -- vim.keymap.set('n', '<leader>bf', vim.lsp.buf.format, opts)
-  vim.keymap.set('n', 'gk', vim.lsp.buf.signature_help, { desc = 'signature help', silent = true, buffer = bufnr })
-  vim.keymap.set('i', '<C-k>', vim.lsp.buf.signature_help, { desc = 'signature help', silent = true, buffer = bufnr })
+  vim.keymap.set('n', 'gk', vim.lsp.buf.signature_help, { desc = 'signature help', silent = true })
+  vim.keymap.set('i', '<C-k>', vim.lsp.buf.signature_help, { desc = 'signature help', silent = true })
   vim.keymap.set('n', 'ge', vim.lsp.buf.rename, opts)
-  
+
   -- Robust gd mapping with fallback
-  vim.keymap.set('n', 'gd', function()
-    local clients = vim.lsp.get_clients({ bufnr = bufnr })
-    if #clients > 0 then
-      vim.lsp.buf.definition()
-    else
-      -- Fallback to built-in tag jumping if no LSP
-      vim.cmd('normal! gd')
-    end
-  end, { desc = 'Go to definition', silent = true, buffer = bufnr })
-  
-  vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, { desc = 'Go to declaration', silent = true, buffer = bufnr })
+  vim.keymap.set('n', 'gd', vim.lsp.buf.definition, { desc = 'Go to definition', silent = true })
+  vim.keymap.set('n', 'gD', vim.lsp.buf.declaration, { desc = 'Go to declaration', silent = true })
   vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
   vim.keymap.set('n', 'gt', vim.lsp.buf.type_definition, opts)
 
@@ -68,7 +61,6 @@ local function lsp_keymaps(bufnr)
 end
 
 M.on_attach = function(client, bufnr)
-  lsp_keymaps(bufnr)
 end
 
 local has_cmp, cmp_nvim_lsp = pcall(require, 'cmp_nvim_lsp')
