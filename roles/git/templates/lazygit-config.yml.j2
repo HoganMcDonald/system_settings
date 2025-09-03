@@ -1,19 +1,4 @@
-customCommands:
- - key: "<c-a>"
-   description: "Pick AI commit"
-   command: |
-     echo "{% raw %}{{.Form.Msg}}{% endraw %}" > .git/COMMIT_EDITMSG && \
-     nvim .git/COMMIT_EDITMSG && \
-     [ -s .git/COMMIT_EDITMSG ] && \
-     git commit -F .git/COMMIT_EDITMSG || \
-     echo "Commit message is empty, commit aborted."
-   context: "files"
-   subprocess: true
-   prompts:
-   - type: "menuFromCommand"
-     title: "AI Commits"
-     key: "Msg"
-     command: "PATH=$HOME/.bun/bin:$PATH npx @m7medvision/lazycommit@latest"
-     filter: '^(?P<number>\d+)\.\s(?P<message>.+)$'
-     valueFormat: "{% raw %}{{ .message }}{% endraw %}"
-     labelFormat: "{% raw %}{{ .number }}: {{ .message | green }}{% endraw %}"
+git:
+  paging:
+    colorArg: always
+    pager: delta --dark --paging=never --side-by-side

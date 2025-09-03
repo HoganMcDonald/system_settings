@@ -28,28 +28,12 @@
   homebrew:
     name: lazygit
 
-- name: Load vault variables for lazycommit
-  include_vars:
-    file: "{{ dotfiles_home }}/vault/neovim_env_vars.yml"
-    name: env_vars
-
-- name: Create lazycommit configuration file
-  template:
-    src: lazycommit.yaml.j2
-    dest: "{{ ansible_user_dir }}/.lazycommit.yaml"
-    mode: '0600'
 
 - name: Create lazygit config directory
   file:
     path: "{{ ansible_user_dir }}/.config/lazygit"
     state: directory
     mode: '0755'
-
-- name: Create lazygit configuration with lazycommit integration
-  template:
-    src: lazygit-config.yml.j2
-    dest: "{{ ansible_user_dir }}/.config/lazygit/config.yml"
-    mode: '0644'
 
 - name: Create .bin directory
   command: "mkdir -p ~/.bin"
