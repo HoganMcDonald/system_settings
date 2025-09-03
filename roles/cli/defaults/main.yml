@@ -3,7 +3,7 @@ tools:
   - bat
   - htop
   - fzf
-  - diff-so-fancy
+  - git-delta
   - tldr
   - ripgrep
   - gnu-sed

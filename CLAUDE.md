@@ -20,6 +20,7 @@ This is a macOS system setup repository containing an Ansible playbook for autom
 - **neovim** - Text editor with LSP, plugins, and custom configs
 - **kitty/ghostty** - Terminal emulators
 - **tmux** - Terminal multiplexer with tmuxinator layouts
+- **zellij** - Modern terminal workspace manager with Rust-based configuration
 - **zsh** - Shell configuration with aliases and includes
 
 ### Development Tools
@@ -122,6 +123,12 @@ This is a macOS system setup repository containing an Ansible playbook for autom
 
 ### tmux
 - 
+
+### zellij
+- Modern terminal workspace manager written in Rust
+- Configuration in KDL format with vim-like keybindings using Ctrl+g prefix
+- Features: multiple panes, tabs, sessions, scrollback buffer, and plugin system
+- Default keybindings: Ctrl+g+n (new tab), Ctrl+g+d/v (split panes), Ctrl+g+hjkl (navigation)
 
 ### zsh
 - 

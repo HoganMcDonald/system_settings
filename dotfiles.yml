@@ -43,6 +43,9 @@
     - role: helix
       tags:
         - helix
+    - role: zellij
+      tags:
+        - zellij
 
 
     # ====================
