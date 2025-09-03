@@ -1,0 +1,11 @@
+- name: Install zellij
+  homebrew:
+    name: zellij
+
+# zellij config
+- name: Make sure config is up to date
+  file:
+    src: "{{ dotfiles_home }}/roles/zellij/files/"
+    dest: "{{ config }}/zellij"
+    state: link
+    force: yes
