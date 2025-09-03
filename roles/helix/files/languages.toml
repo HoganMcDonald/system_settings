@@ -3,6 +3,9 @@ name = "rust"
 auto-format = true
 formatter = { command = "rustfmt" }
 
+[language-server.rust-analyzer]
+config = { checkOnSave = true, cargo = { allFeatures = true }}
+
 [[language]]
 name = "go"
 auto-format = true
