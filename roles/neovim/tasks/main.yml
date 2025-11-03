@@ -3,14 +3,21 @@
   register: nvim_add
   failed_when: nvim_add == 2
 
+- name: Check if nightly version is already installed
+  shell: asdf list neovim | grep -q nightly
+  register: nightly_check
+  failed_when: false
+  changed_when: false
+
 - name: Uninstall previous nightly version
   command: asdf uninstall neovim nightly
+  when: nightly_check.rc == 0
 
 - name: Install neovim nightly
   command: asdf install neovim nightly
 
 - name: Set nightly as the global neovim version
-  command: asdf set neovim nightly
+  command: asdf global neovim nightly
 
 - name: Make sure config is up to date
   file:
