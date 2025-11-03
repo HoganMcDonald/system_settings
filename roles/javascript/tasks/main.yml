@@ -9,6 +9,8 @@
 
 - name: Set global version for node to {{versions[0]}}
   command: "asdf set nodejs {{versions[0]}}"
+  args:
+    chdir: "{{ ansible_env.HOME }}"
 
 - name: Install "yarn" node.js package globally
   npm:

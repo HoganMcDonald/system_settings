@@ -17,7 +17,9 @@
   command: asdf install neovim nightly
 
 - name: Set nightly as the global neovim version
-  command: asdf global neovim nightly
+  command: asdf set neovim nightly
+  args:
+    chdir: "{{ ansible_env.HOME }}"
 
 - name: Make sure config is up to date
   file:
