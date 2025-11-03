@@ -53,7 +53,7 @@ if [ ! -f $vault_pass_file ]; then
 fi
 
 # Run the ansible playbook with the vault password file
-ansible-playbook -i $HOME/system/hosts $HOME/system/dotfiles.yml --vault-password-file $vault_pass_file --ask-become-pass --tags $tags
+ansible-playbook -i $HOME/system/hosts $HOME/system/dotfiles.yml --vault-password-file $vault_pass_file --tags $tags
 
 # Notify when bootstrap is complete
 if command -v terminal-notifier 1>/dev/null 2>&1; then

@@ -1,19 +1,8 @@
-- name: Check if Karabiner Elements is already installed
-  stat:
-    path: /Applications/Karabiner-Elements.app
-  register: karabiner_app
-
-- name: Refresh sudo timestamp
-  command: sudo -v
-  when: not karabiner_app.stat.exists
-  become: yes
-  changed_when: false
-
 - name: Install Karabiner Elements
-  shell: brew install --cask karabiner-elements
-  when: not karabiner_app.stat.exists
-  environment:
-    HOMEBREW_NO_ENV_HINTS: "1"
+  community.general.homebrew_cask:
+    name: karabiner-elements
+    state: present
+    sudo_password: "{{ become_password }}"
 
 - name: Create Karabiner config directory
   file:

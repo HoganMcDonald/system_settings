@@ -1,5 +1,11 @@
 - name: Set up local workstation
   hosts: local
+  vars_prompt:
+    - name: become_password
+      prompt: "Enter your sudo password"
+      private: yes
+  vars:
+    ansible_become_password: "{{ become_password }}"
   roles:
     # ====================
     #   Tools
