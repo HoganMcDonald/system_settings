@@ -1,6 +1,13 @@
+- name: Check if Karabiner Elements is already installed
+  stat:
+    path: /Applications/Karabiner-Elements.app
+  register: karabiner_app
+
 - name: Install Karabiner Elements
-  homebrew_cask:
-    name: karabiner-elements
+  shell: brew install --cask karabiner-elements
+  when: not karabiner_app.stat.exists
+  environment:
+    HOMEBREW_NO_ENV_HINTS: "1"
 
 - name: Create Karabiner config directory
   file:
