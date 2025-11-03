@@ -2,9 +2,16 @@
   homebrew_tap:
     name: FelixKratz/formulae
 
+- name: Check if SF-Symbols is already installed
+  stat:
+    path: /Applications/SF Symbols.app
+  register: sf_symbols_app
+
 - name: Install SF-Symbols
-  homebrew_cask:
-    name: sf-symbols
+  shell: brew install --cask sf-symbols
+  when: not sf_symbols_app.stat.exists
+  environment:
+    HOMEBREW_NO_ENV_HINTS: "1"
 
 - name: Install sketchybar
   homebrew:
