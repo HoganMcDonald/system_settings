@@ -1,0 +1,11 @@
+- name: Add lua plugin
+  command: asdf plugin add lua
+  register: lua_add
+  failed_when: lua_add == 2
+
+- name: Install lua versions
+  command: asdf install lua {{item}}
+  loop: "{{versions}}"
+
+- name: Set global version for lua to {{versions[0]}}
+  command: "asdf set lua {{versions[0]}}"
