@@ -3,12 +3,14 @@
     path: /Applications/Karabiner-Elements.app
   register: karabiner_app
 
+- name: Refresh sudo timestamp
+  command: sudo -v
+  when: not karabiner_app.stat.exists
+  become: yes
+  changed_when: false
+
 - name: Install Karabiner Elements
-  ansible.builtin.expect:
-    command: brew install --cask karabiner-elements
-    responses:
-      'Password:': "{{ ansible_become_pass }}"
-    timeout: 300
+  shell: brew install --cask karabiner-elements
   when: not karabiner_app.stat.exists
   environment:
     HOMEBREW_NO_ENV_HINTS: "1"
