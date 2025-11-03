@@ -1,0 +1,16 @@
+# Claude Code runtime and session data
+debug/
+file-history/
+history.jsonl
+projects/
+session-env/
+shell-snapshots/
+statsig/
+todos/
+powerline/
+config/
+.update.lock
+
+# Keep configuration files
+!settings.json
+!plugins/
