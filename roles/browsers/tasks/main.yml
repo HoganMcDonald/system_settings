@@ -2,14 +2,6 @@
   homebrew_cask:
     name: brave-browser
 
-- name: Arc Browser
+- name: Zen Browser
   homebrew_cask:
-    name: arc
-
-- name: Firefox Developer Edition - dependencies
-  homebrew_tap:
-    name: homebrew/cask-versions
-
-- name: Firefox Developer Edition
-  homebrew_cask:
-    name: firefox-developer-edition
+    name: zen
