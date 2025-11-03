@@ -1,4 +1,3 @@
----
 - name: Install Karabiner Elements
   homebrew_cask:
     name: karabiner-elements
@@ -7,10 +6,10 @@
   file:
     path: "{{ config }}/karabiner"
     state: directory
-    mode: '0755'
+    mode: "0755"
 
 - name: Check if existing config exists
-  stat: 
+  stat:
     path: "{{ config }}/karabiner/karabiner.json"
   register: karabiner_config_stat
 
@@ -22,7 +21,7 @@
   copy:
     src: "karabiner.json"
     dest: "{{ config }}/karabiner/karabiner.json"
-    mode: '0644'
+    mode: "0644"
   notify: restart karabiner
 
 - name: Ensure Karabiner Elements is running
@@ -54,7 +53,8 @@
   copy:
     src: "karabiner.json"
     dest: "{{ config }}/karabiner/karabiner.json"
-    mode: '0644'
+    mode: "0644"
     force: yes
   notify: restart karabiner
   when: config_check.rc != 0
+
