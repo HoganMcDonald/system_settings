@@ -2,6 +2,7 @@
 --- This demonstrates how to use the modular component system
 
 local Bar = require('lib').Bar
+local colors = require('colors')
 
 local clock = require('bar.components.clock')
 local wifi = require('bar.components.wifi')

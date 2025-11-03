@@ -1,12 +1,13 @@
 local Bracket = require('lib').Bracket
 local Item = require('lib').Item
+local colors = require('colors')
 
 local function battery()
   local battery_widget = Item:new('item', 'battery', 'right')
   battery_widget
-    :label_color(0xffffffff)
+    :label_color(colors.text)
     :label_font('SF Pro Display', 14)
-    :icon_color(0xffa6e3a1)
+    :icon_color(colors.green)
     :icon_font('SF Pro Display', 16)
     :padding(5, 5)
     :script('~/.config/sketchybar/plugins/battery.sh', 120)

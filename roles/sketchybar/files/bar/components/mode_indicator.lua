@@ -1,11 +1,12 @@
 local Bracket = require('lib').Bracket
 local Item = require('lib').Item
+local colors = require('colors')
 
 local function mode_indicator()
   local mode_indicator_widget = Item:new('item', 'mode_indicator', 'left')
   mode_indicator_widget
     :label_string("Main")
-    :label_color(0xffffffff)
+    :label_color(colors.text)
     :label_font('SF Pro Display', 14)
     :padding(5, 5)
     :script('~/.config/sketchybar/plugins/aerospace_mode.sh', 0)
@@ -17,7 +18,7 @@ local function mode_indicator()
     :set({
       background = {
         drawing = true,
-        color = 0xff2a2a3a,
+        color = colors.surface0,
         corner_radius = 16,
         height = 24,
         padding_left = 8,

@@ -1,5 +1,6 @@
 local Bracket = require('lib').Bracket
 local Item = require('lib').Item
+local colors = require('colors')
 --  󰱯    
 
 local function apple()
@@ -7,7 +8,7 @@ local function apple()
   local apple_widget = Item:new('item', 'apple', 'left')
   apple_widget
     :icon_string("")
-    :icon_color(0xffa6e3a1)
+    :icon_color(colors.green)
     :icon_font('Hack Nerd Font', 16)
     :padding(0, 5)
     :set({
@@ -15,10 +16,10 @@ local function apple()
       popup = {
         drawing = false,
         background = {
-          color = 0xff1e1e2e,
+          color = colors.base,
           corner_radius = 8,
           border_width = 1,
-          border_color = 0xffffffff
+          border_color = colors.lavender
         }
       },
       click_script = "~/.config/sketchybar/plugins/apple_click.sh",

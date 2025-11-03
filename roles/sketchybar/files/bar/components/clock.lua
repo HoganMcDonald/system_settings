@@ -1,10 +1,11 @@
 local Bracket = require('lib').Bracket
 local Item = require('lib').Item
+local colors = require('colors')
 
 local function clock()
   local clock_widget = Item:new('item', 'clock', 'right')
   clock_widget
-    :label_color(0xffffffff)
+    :label_color(colors.text)
     :label_font('SF Pro Display', 14)
     :script('~/.config/sketchybar/plugins/clock.sh', 30)
     :set({

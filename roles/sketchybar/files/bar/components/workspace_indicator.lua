@@ -1,5 +1,6 @@
 local Bracket = require('lib').Bracket
 local Item = require('lib').Item
+local colors = require('colors')
 
 local function workspace_indicator()
   local workspace_items = {}
@@ -14,7 +15,7 @@ local function workspace_indicator()
       label = { drawing = false },
       background = {
         drawing = true,
-        color = 0xffffffff,
+        color = colors.lavender,
         height = 8,
         corner_radius = 4,
         padding_left = 0,
