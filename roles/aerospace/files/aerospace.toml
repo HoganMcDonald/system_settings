@@ -165,10 +165,6 @@ cmd-shift-ctrl-alt-1 = 'workspace 1'
 cmd-shift-ctrl-alt-2 = 'workspace 2'
 cmd-shift-ctrl-alt-3 = 'workspace 3'
 cmd-shift-ctrl-alt-4 = 'workspace 4'
-ctrl-h = 'workspace prev'
-ctrl-l = 'workspace next'
-ctrl-j = 'workspace prev'
-ctrl-k = 'workspace next'
 alt-tab = 'workspace-back-and-forth'
 
 ### --- Move Window to Workspace (and follow) ---

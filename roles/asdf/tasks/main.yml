@@ -3,5 +3,11 @@
     name: asdf
     state: present
 
-- name: Source asdf for the remainder of ansible script
-  shell: . /opt/homebrew/opt/asdf/libexec/asdf.sh
+- name: Verify asdf is available
+  command: asdf --version
+  register: asdf_version
+  changed_when: false
+
+- name: Display asdf version
+  debug:
+    msg: "asdf {{ asdf_version.stdout }} is installed and available"
