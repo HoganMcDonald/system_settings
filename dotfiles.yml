@@ -16,6 +16,9 @@
     - role: asdf
       tags:
         - asdf
+    - role: JavaScript
+      tags:
+        - javascript
     - role: cli
       tags:
         - cli
@@ -69,9 +72,6 @@
     - role: ruby
       tags:
         - ruby
-    - role: JavaScript
-      tags:
-        - javascript
 
     # ====================
     #   Desktop
