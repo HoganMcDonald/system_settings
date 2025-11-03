@@ -31,7 +31,8 @@ fi
 
 # Install Ansible if not already installed
 if ! [ -x "$(command -v ansible)" ]; then
-  pip3 install ansible
+  echo "Ansible not found. Installing via Homebrew..."
+  brew install ansible
 fi
 
 # Check for the existence of the vault password file
