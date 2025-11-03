@@ -9,6 +9,26 @@ if [ -z "$tags" ]; then
   tags="all"
 fi
 
+# Ensure Homebrew is installed and in PATH
+if [ -f /opt/homebrew/bin/brew ]; then
+  # Apple Silicon Mac
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [ -f /usr/local/bin/brew ]; then
+  # Intel Mac
+  eval "$(/usr/local/bin/brew shellenv)"
+else
+  # Install Homebrew if not present
+  echo "Homebrew not found. Installing Homebrew..."
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  # Add to PATH for current session
+  if [ -f /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [ -f /usr/local/bin/brew ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+fi
+
 # Install Ansible if not already installed
 if ! [ -x "$(command -v ansible)" ]; then
   pip3 install ansible

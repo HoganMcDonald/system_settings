@@ -1,15 +1,55 @@
-- name: Ensuring Homebrew Is Installed
+- name: Check for Homebrew on Apple Silicon
+  stat:
+    path: /opt/homebrew/bin/brew
+  register: homebrew_arm_check
+
+- name: Check for Homebrew on Intel
   stat:
     path: /usr/local/bin/brew
-  register: homebrew_check
+  register: homebrew_intel_check
+
+- name: Set Homebrew path (Apple Silicon)
+  set_fact:
+    homebrew_bin: /opt/homebrew/bin/brew
+    homebrew_prefix: /opt/homebrew
+  when: homebrew_arm_check.stat.exists
+
+- name: Set Homebrew path (Intel)
+  set_fact:
+    homebrew_bin: /usr/local/bin/brew
+    homebrew_prefix: /usr/local
+  when: homebrew_intel_check.stat.exists and not homebrew_arm_check.stat.exists
 
 - name: Installing Homebrew
-  shell: /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+  shell: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   when:
-    - not homebrew_check.stat.exists
+    - not homebrew_arm_check.stat.exists
+    - not homebrew_intel_check.stat.exists
 
-- name: Add to path in current session - only an issue for initial setup
-  shell: (echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> ~/.zprofile
+- name: Determine Homebrew path after installation
+  shell: |
+    if [ -f /opt/homebrew/bin/brew ]; then
+      echo "/opt/homebrew"
+    else
+      echo "/usr/local"
+    fi
+  register: brew_prefix_result
+  changed_when: false
+  when: homebrew_prefix is not defined
 
-- name: call brew shellenv script
-  shell: eval "$(/opt/homebrew/bin/brew shellenv)"
+- name: Set Homebrew prefix after installation
+  set_fact:
+    homebrew_prefix: "{{ brew_prefix_result.stdout }}"
+    homebrew_bin: "{{ brew_prefix_result.stdout }}/bin/brew"
+  when: homebrew_prefix is not defined
+
+- name: Add Homebrew to PATH in .zprofile
+  lineinfile:
+    path: ~/.zprofile
+    line: 'eval "$({{ homebrew_prefix }}/bin/brew shellenv)"'
+    create: yes
+    state: present
+
+- name: Set Homebrew environment for current playbook
+  set_fact:
+    ansible_env: "{{ ansible_env | combine({'PATH': homebrew_prefix + '/bin:' + homebrew_prefix + '/sbin:' + ansible_env.PATH}) }}"
