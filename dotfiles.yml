@@ -31,9 +31,6 @@
     - role: mycli
       tags:
         - mycli
-    - role: mcp-hub
-      tags:
-        - mcp-hub
     - role: claude
       tags:
         - claude
@@ -46,7 +43,6 @@
     - role: zellij
       tags:
         - zellij
-
 
     # ====================
     #   Apps
@@ -67,7 +63,6 @@
       tags:
         - sol
 
-
     # ====================
     #   Languages
     # ====================
@@ -78,14 +73,12 @@
       tags:
         - javascript
 
-
     # ====================
     #   Desktop
     # ====================
     - role: sketchybar
       tags:
         - sketchybar
-
 
     # ====================
     #   System
