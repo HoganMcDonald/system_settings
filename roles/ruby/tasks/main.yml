@@ -8,4 +8,4 @@
   loop: "{{versions}}"
 
 - name: Set global version for ruby to {{versions[0]}}
-  command: "asdf global ruby {{versions[0]}}"
+  command: "asdf set ruby {{versions[0]}}"
