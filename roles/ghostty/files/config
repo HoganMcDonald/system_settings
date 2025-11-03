@@ -1,5 +1,5 @@
-theme               = halcyon
-background-opacity  = 0.9
+theme               = Catppuccin Mocha
+background-opacity  = 0.85
 background-blur     = true
 
 macos-titlebar-style = hidden

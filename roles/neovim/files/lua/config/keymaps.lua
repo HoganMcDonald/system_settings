@@ -1,54 +1,17 @@
-local M = {}
+-- Keymaps are automatically loaded on the VeryLazy event
+-- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
+-- Add any additional keymaps here
 
-local function map(mode, lhs, rhs, opts)
-  opts = opts or {}
-  opts.silent = opts.silent ~= false
-  vim.keymap.set(mode, lhs, rhs, opts)
-end
+-- Diffview keybindings (override any defaults)
+vim.keymap.set("n", "<leader>gd", function()
+  require("diffview").open()
+end, { desc = "Open Diffview" })
+vim.keymap.set("n", "<leader>gD", "<cmd>DiffviewClose<cr>", { desc = "Close Diffview" })
+vim.keymap.set("n", "<leader>gh", function()
+  vim.cmd("DiffviewFileHistory %")
+end, { desc = "File History (current)" })
+vim.keymap.set("n", "<leader>gH", "<cmd>DiffviewFileHistory<cr>", { desc = "File History (all)" })
 
-local function setup_general()
-  map('n', '<leader>ui', vim.show_pos, { desc = 'Inspect highlight group' })
-end
-
-local function setup_movement()
-  -- up/down when prefixed with count will not count wrap lines
-  map({ 'n', 'x' }, 'j', 'v:count == 0 ? \'gj\' : \'j\'', { expr = true, silent = true })
-  map({ 'n', 'x' }, 'k', 'v:count == 0 ? \'gk\' : \'k\'', { expr = true, silent = true })
-
-  -- Resize window using Ctrl+Alt+hjkl
-  map('n', '<C-M-h>', '<cmd>vertical resize -2<cr>', { desc = 'Decrease window width' })
-  map('n', '<C-M-j>', '<cmd>resize -2<cr>', { desc = 'Decrease window height' })
-  map('n', '<C-M-k>', '<cmd>resize +2<cr>', { desc = 'Increase window height' })
-  map('n', '<C-M-l>', '<cmd>vertical resize +2<cr>', { desc = 'Increase window width' })
-
-  -- window creation
-  map('n', '<leader>ws', ':vsp<cr>', { noremap = true, silent = true, desc = 'split' })
-  map('n', '<leader>wv', ':sp<cr>', { noremap = true, silent = true, desc = 'vertical split' })
-end
-
-local function setup_editor()
-  -- Clear search with <esc>
-  map({ 'i', 'n' }, '<esc>', '<cmd>noh<cr><esc>', { desc = 'Escape and clear hlsearch' })
-  map({ 'n', 'x' }, 'gw', '*N', { desc = 'Search word under cursor' })
-
-  -- highlight selection after adjusting indent
-  map('v', '<', '<gv')
-  map('v', '>', '>gv')
-
-  -- copy file path
-  map('n', '<leader>fc', function()
-    local path = vim.fn.expand '%:p'
-    vim.fn.setreg('+', path)
-    vim.notify('Copied "' .. path .. '" to the clipboard!')
-  end, {
-    desc = 'Copy current file path',
-  })
-end
-
-function M.setup()
-  setup_movement()
-  setup_editor()
-  setup_general()
-end
-
-return M
+-- Buffer navigation with Tab and Shift+Tab
+vim.keymap.set("n", "<Tab>", "<cmd>bnext<cr>", { desc = "Next buffer" })
+vim.keymap.set("n", "<S-Tab>", "<cmd>bprev<cr>", { desc = "Previous buffer" })
