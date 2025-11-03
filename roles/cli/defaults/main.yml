@@ -11,5 +11,4 @@ tools:
   - mycli
   - lazydocker
   - lastpass-cli
-  - ngrok
   - entr
