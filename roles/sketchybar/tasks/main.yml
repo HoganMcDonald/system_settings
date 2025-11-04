@@ -38,5 +38,28 @@
     state: link
     force: yes
 
-- name: Start sketchybar
-  command: brew services start sketchybar
+- name: Ensure LaunchAgents directory exists
+  file:
+    path: "{{ ansible_env.HOME }}/Library/LaunchAgents"
+    state: directory
+    mode: '0755'
+
+- name: Deploy custom plist with correct PATH
+  template:
+    src: homebrew.mxcl.sketchybar.plist.j2
+    dest: "{{ ansible_env.HOME }}/Library/LaunchAgents/homebrew.mxcl.sketchybar.plist"
+    mode: '0644'
+  register: plist_deployed
+
+- name: Stop sketchybar service if running
+  command: brew services stop sketchybar
+  when: plist_deployed.changed
+  failed_when: false
+
+- name: Unload existing plist if present
+  command: launchctl unload {{ ansible_env.HOME }}/Library/LaunchAgents/homebrew.mxcl.sketchybar.plist
+  when: plist_deployed.changed
+  failed_when: false
+
+- name: Load sketchybar service
+  command: launchctl load -w {{ ansible_env.HOME }}/Library/LaunchAgents/homebrew.mxcl.sketchybar.plist
