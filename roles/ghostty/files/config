@@ -31,3 +31,4 @@ keybind = ctrl+h=unbind
 keybind = ctrl+j=unbind
 keybind = ctrl+k=unbind
 keybind = ctrl+l=unbind
+keybind = shift+enter=text:\x1b\r
