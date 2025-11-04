@@ -48,7 +48,12 @@ This is a macOS system setup repository containing an Ansible playbook for autom
 ## Role-Specific Notes
 
 ### aerospace
-- 
+-
+
+### apps
+- Installs general GUI applications via Homebrew casks
+- Current apps: Linear, Figma, Brain.fm
+- Add new apps to `roles/apps/defaults/main.yml`
 
 ### asdf
 - 

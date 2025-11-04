@@ -56,6 +56,9 @@
     # ====================
     #   Apps
     # ====================
+    - role: apps
+      tags:
+        - apps
     - role: aerospace
       tags:
         - aerospace

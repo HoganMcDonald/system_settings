@@ -1,0 +1,6 @@
+- name: Install GUI applications
+  community.general.homebrew_cask:
+    name: "{{ item }}"
+    state: present
+    sudo_password: "{{ become_password }}"
+  loop: "{{ apps }}"
