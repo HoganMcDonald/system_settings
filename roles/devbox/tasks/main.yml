@@ -1,0 +1,38 @@
+---
+- name: Check if devbox is already installed
+  stat:
+    path: /usr/local/bin/devbox
+  register: devbox_check
+
+- name: Download devbox installer script
+  get_url:
+    url: https://get.jetify.com/devbox
+    dest: /tmp/devbox-installer.sh
+    mode: '0755'
+  when: not devbox_check.stat.exists
+
+- name: Install devbox via script
+  shell: bash /tmp/devbox-installer.sh -f
+  when: not devbox_check.stat.exists
+  become: yes
+
+- name: Clean up installer script
+  file:
+    path: /tmp/devbox-installer.sh
+    state: absent
+  when: not devbox_check.stat.exists
+
+- name: Ensure devbox binary has correct permissions
+  file:
+    path: /usr/local/bin/devbox
+    mode: '0755'
+  become: yes
+
+- name: Verify devbox installation
+  command: devbox version
+  register: devbox_version
+  changed_when: false
+
+- name: Display devbox version
+  debug:
+    msg: "devbox {{ devbox_version.stdout }} is installed"
