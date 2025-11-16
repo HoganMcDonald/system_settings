@@ -3,5 +3,6 @@
     "type": "command",
     "command": "npx -y @owloops/claude-powerline@latest --style=minimal"
   },
-  "alwaysThinkingEnabled": false
+  "alwaysThinkingEnabled": false,
+  "model": "opusplan"
 }
