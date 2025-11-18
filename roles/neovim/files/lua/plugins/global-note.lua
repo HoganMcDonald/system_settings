@@ -36,7 +36,7 @@ return {
     end,
     keys = {
       {
-        '<leader>gn',
+        '<leader>n',
         function()
           require('global-note').toggle_note()
         end,
