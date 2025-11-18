@@ -52,6 +52,22 @@ return {
         desc = 'Previous mark',
       },
       {
+        '<Tab>',
+        function()
+          require('recall').goto_next()
+        end,
+        desc = 'Next mark',
+        mode = 'n',
+      },
+      {
+        '<S-Tab>',
+        function()
+          require('recall').goto_prev()
+        end,
+        desc = 'Previous mark',
+        mode = 'n',
+      },
+      {
         '<leader>mc',
         function()
           require('recall').clear()

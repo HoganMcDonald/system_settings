@@ -11,7 +11,3 @@ vim.keymap.set("n", "<leader>gh", function()
   vim.cmd("DiffviewFileHistory %")
 end, { desc = "File History (current)" })
 vim.keymap.set("n", "<leader>gH", "<cmd>DiffviewFileHistory<cr>", { desc = "File History (all)" })
-
--- Buffer navigation with Tab and Shift+Tab
-vim.keymap.set("n", "<Tab>", "<cmd>bnext<cr>", { desc = "Next buffer" })
-vim.keymap.set("n", "<S-Tab>", "<cmd>bprev<cr>", { desc = "Previous buffer" })
