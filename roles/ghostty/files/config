@@ -6,6 +6,9 @@ macos-titlebar-style = hidden
 mouse-hide-while-typing = true
 window-save-state = always
 
+# Enable Option key as Alt for keybindings
+macos-option-as-alt = true
+
 # Dyslexia‑friendly font & spacing for Ghostty
 font-family         = "JetBrains Mono Nerd Font"
 font-size           = 12
