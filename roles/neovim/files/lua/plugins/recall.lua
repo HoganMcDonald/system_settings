@@ -28,6 +28,17 @@ return {
           },
         },
       })
+
+      -- Ensure buffers show in bufferline when navigating to marks
+      vim.api.nvim_create_autocmd('BufEnter', {
+        pattern = '*',
+        callback = function(args)
+          -- Set buffer as listed so it appears in bufferline
+          if vim.bo[args.buf].buflisted == false and vim.bo[args.buf].buftype == '' then
+            vim.bo[args.buf].buflisted = true
+          end
+        end,
+      })
     end,
     keys = {
       {
