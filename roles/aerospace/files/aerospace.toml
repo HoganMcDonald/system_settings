@@ -157,6 +157,9 @@ cmd-shift-ctrl-alt-t = 'layout tiles horizontal vertical'
 cmd-shift-ctrl-alt-a = 'layout accordion horizontal vertical'
 cmd-shift-ctrl-alt-space = 'layout floating tiling'
 
+### --- Terminal ---
+cmd-shift-ctrl-alt-n = 'exec-and-forget open -n -a Ghostty'
+
 ### --- Fullscreen ---
 cmd-shift-ctrl-alt-f = 'fullscreen'
 
