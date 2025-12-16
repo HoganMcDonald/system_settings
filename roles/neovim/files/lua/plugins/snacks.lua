@@ -13,6 +13,13 @@ return {
         end,
         desc = 'Notification History',
       },
+      -- Disable lazygit keybindings (replaced by diffview)
+      { '<leader>gg', false },
+      { '<leader>gG', false },
+      { '<leader>gf', false },
+      { '<leader>gl', false },
+      { '<leader>gL', false },
+      { '<leader>gb', false },
     },
   },
 }

@@ -2,8 +2,8 @@
 -- Default options that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
 -- Add any additional options here
 
--- Disable format on save (use <leader>cf to format manually)
-vim.g.autoformat = false
+-- Enable format on save by default (toggle with <leader>uf)
+vim.g.autoformat = true
 
 -- Ensure enough room for UI elements (dropbar + noice)
 vim.opt.cmdheight = 1 -- Command line height

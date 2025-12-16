@@ -9,11 +9,16 @@ vim.keymap.set("n", "<leader>fy", function()
   vim.notify("Copied to clipboard: " .. path, vim.log.levels.INFO)
 end, { desc = "Copy file path" })
 
--- Diffview keybindings (override any defaults)
-vim.keymap.set("n", "<leader>gd", function()
-  require("diffview").open()
-end, { desc = "Open Diffview" })
-vim.keymap.set("n", "<leader>gD", "<cmd>DiffviewClose<cr>", { desc = "Close Diffview" })
+-- Diffview keybindings (replaces lazygit)
+vim.keymap.set("n", "<leader>gg", function()
+  local lib = require("diffview.lib")
+  local view = lib.get_current_view()
+  if view then
+    vim.cmd("DiffviewClose")
+  else
+    vim.cmd("DiffviewOpen")
+  end
+end, { desc = "Toggle Diffview" })
 vim.keymap.set("n", "<leader>gh", function()
   vim.cmd("DiffviewFileHistory %")
 end, { desc = "File History (current)" })
