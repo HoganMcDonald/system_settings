@@ -120,7 +120,10 @@ function M.setup_autocmds()
 
       if vim.v.shell_error == 0 then
         vim.notify("Commit successful", vim.log.levels.INFO)
-        M.close()
+        -- Mark as not modified so :q (from :wq) closes cleanly
+        -- Don't call M.close() here - let :q close the window naturally
+        -- and WinClosed autocmd will clean up
+        vim.api.nvim_set_option_value("modified", false, { buf = buf })
       else
         vim.notify("Commit failed: " .. result, vim.log.levels.ERROR)
         -- Mark as not modified so user can quit if needed
