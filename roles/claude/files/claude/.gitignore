@@ -2,15 +2,23 @@
 debug/
 file-history/
 history.jsonl
+plans/
 projects/
 session-env/
 shell-snapshots/
+stats-cache.json
 statsig/
 todos/
 powerline/
 config/
 .update.lock
 
+# Plugin runtime data
+plugins/cache/
+plugins/installed_plugins.json
+plugins/known_marketplaces.json
+plugins/marketplaces/
+
 # Keep configuration files
 !settings.json
-!plugins/
+!plugins/config.json
