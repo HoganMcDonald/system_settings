@@ -18,6 +18,7 @@ plugins/cache/
 plugins/installed_plugins.json
 plugins/known_marketplaces.json
 plugins/marketplaces/
+plugins/install-counts-cache.json
 
 # Keep configuration files
 !settings.json
