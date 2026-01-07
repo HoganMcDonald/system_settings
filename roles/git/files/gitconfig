@@ -1,8 +1,8 @@
 [hub]
   protocol = ssh
 [user]
-  name = {{ full_name }}
-  email = {{ git_email }}
+  name = Hogan McDonald
+  email = hogan.developer@gmail.com
 [core]
 	editor = nvim
 	excludesfile = ~/.gitignore
@@ -22,7 +22,17 @@
   cp = "!sh ~/.bin/git-copy-branch.sh"
   cleanup = "!sh ~/.bin/git-delete-branches.sh"
   stats = "!sh ~/.bin/git-branch-stats.sh"
-  review = "!~/.bin/git-review"
+  append = town append
+  switch = town switch
+	down = town down
+	hack = town hack
+	delete = town delete
+	prepend = town prepend
+	propose = town propose
+	rename = town rename
+	repo = town repo
+	sync = town sync
+	up = town up
 [fetch]
   prune = true
 [pull]

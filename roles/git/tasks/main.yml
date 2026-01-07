@@ -15,10 +15,12 @@
     creates: "{{dotfiles_user_home}}/.gitconfig.bak"
   when: gitconfig_stat.stat.exists
 
-- name: Make sure gitconfig is up to date
-  template:
-    src: "gitconfig.j2"
-    dest: "{{dotfiles_user_home}}/.gitconfig"
+- name: Link gitconfig file
+  file:
+    src: "{{ dotfiles_home }}/roles/git/files/gitconfig"
+    dest: "{{ ansible_user_dir }}/.gitconfig"
+    state: link
+    force: yes
 
 - name: Install github cli
   homebrew:
@@ -28,12 +30,15 @@
   homebrew:
     name: lazygit
 
+- name: Install git-town
+  homebrew:
+    name: git-town
 
 - name: Create lazygit config directory
   file:
     path: "{{ ansible_user_dir }}/.config/lazygit"
     state: directory
-    mode: '0755'
+    mode: "0755"
 
 - name: Create .bin directory
   command: "mkdir -p ~/.bin"
@@ -57,12 +62,5 @@
   file:
     src: "{{ dotfiles_home }}/roles/git/files/git-delete-branches.link"
     dest: "{{ dotfiles_user_home }}/.bin/git-delete-branches.sh"
-    state: link
-    force: yes
-
-- name: Link review script
-  file:
-    src: "{{ dotfiles_home }}/roles/git/files/git-review.link"
-    dest: "{{ dotfiles_user_home }}/.bin/git-review"
     state: link
     force: yes
