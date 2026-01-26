@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+die() {
+  echo "error: $1" >&2
+  exit 1
+}
+
+dry_run=false
+merged_branch=""
+
+# Parse arguments
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run|-n)
+      dry_run=true
+      ;;
+    -*)
+      die "Unknown option: $arg"
+      ;;
+    *)
+      merged_branch="$arg"
+      ;;
+  esac
+done
+
+main_branch=$(git config --get git-town.main-branch 2>/dev/null || echo "main")
+
+# Default to current branch if none specified
+if [[ -z "$merged_branch" ]]; then
+  merged_branch=$(git branch --show-current)
+  [[ -z "$merged_branch" ]] && die "Not on a branch (detached HEAD)"
+fi
+
+# Fail if trying to merge the main branch
+[[ "$merged_branch" == "$main_branch" ]] && die "Cannot use this on the main branch ($main_branch)"
+
+if $dry_run; then
+  echo "[dry-run] Would process merged branch: $merged_branch"
+  echo "[dry-run] Main branch: $main_branch"
+fi
+
+# Fetch and update main branch
+current=$(git branch --show-current)
+if [[ "$current" == "$merged_branch" ]]; then
+  # Need to switch off merged branch - checkout main and pull
+  if $dry_run; then
+    echo "[dry-run] Would checkout $main_branch (currently on $merged_branch)"
+    echo "[dry-run] Would pull latest $main_branch"
+  else
+    echo "Switching to $main_branch and pulling latest..."
+    git checkout "$main_branch"
+    git pull --ff-only
+  fi
+elif [[ "$current" == "$main_branch" ]]; then
+  # Already on main, just pull
+  if $dry_run; then
+    echo "[dry-run] Would pull latest $main_branch"
+  else
+    echo "Pulling latest $main_branch..."
+    git pull --ff-only
+  fi
+else
+  # On a different branch, fetch main directly
+  if $dry_run; then
+    echo "[dry-run] Would fetch origin $main_branch:$main_branch"
+  else
+    echo "Fetching latest from origin..."
+    git fetch origin "$main_branch:$main_branch"
+  fi
+fi
+
+# Find direct children of the merged branch
+# git-town stores parent in: git-town-branch.<branch>.parent
+children=()
+while IFS= read -r branch; do
+  parent=$(git config --get "git-town-branch.$branch.parent" 2>/dev/null || true)
+  [[ "$parent" == "$merged_branch" ]] && children+=("$branch")
+done < <(git branch --format='%(refname:short)')
+
+echo "Found ${#children[@]} child branch(es): ${children[*]:-none}"
+
+# Rebase each direct child onto main
+for child in "${children[@]}"; do
+  if $dry_run; then
+    echo "[dry-run] Would rebase $child onto $main_branch: git rebase --onto $main_branch $merged_branch $child"
+    echo "[dry-run] Would update $child parent to $main_branch"
+  else
+    echo "Rebasing $child onto $main_branch..."
+    git rebase --onto "$main_branch" "$merged_branch" "$child"
+    git config "git-town-branch.$child.parent" "$main_branch"
+    echo "Updated $child parent to $main_branch"
+  fi
+done
+
+# Delete the merged branch locally
+if $dry_run; then
+  echo "[dry-run] Would delete branch: git branch -D $merged_branch"
+else
+  echo "Deleting $merged_branch locally..."
+  git branch -D "$merged_branch"
+fi
+
+# Switch to the first child (new top-level feature branch) and sync
+if [[ ${#children[@]} -gt 0 ]]; then
+  new_top="${children[0]}"
+  if $dry_run; then
+    echo "[dry-run] Would checkout $new_top"
+    echo "[dry-run] Would run: git town sync --stack"
+  else
+    echo "Switching to $new_top..."
+    git checkout "$new_top"
+    echo "Running git sync --stack..."
+    git town sync --stack
+  fi
+else
+  if $dry_run; then
+    echo "[dry-run] No child branches found. Would checkout $main_branch"
+  else
+    echo "No child branches found. Switching to $main_branch."
+    git checkout "$main_branch"
+  fi
+fi
+
+echo "Done!"

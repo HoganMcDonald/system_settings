@@ -26,6 +26,11 @@
   homebrew:
     name: gh
 
+- name: Install gh-dash extension
+  command: gh extension install dlvhdr/gh-dash
+  args:
+    creates: "{{ ansible_user_dir }}/.local/share/gh/extensions/gh-dash"
+
 - name: Install lazygit
   homebrew:
     name: lazygit
@@ -62,5 +67,12 @@
   file:
     src: "{{ dotfiles_home }}/roles/git/files/git-delete-branches.link"
     dest: "{{ dotfiles_user_home }}/.bin/git-delete-branches.sh"
+    state: link
+    force: yes
+
+- name: Link merged script
+  file:
+    src: "{{ dotfiles_home }}/roles/git/files/git-merged.link"
+    dest: "{{ dotfiles_user_home }}/.bin/git-merged.sh"
     state: link
     force: yes
