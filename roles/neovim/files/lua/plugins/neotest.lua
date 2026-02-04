@@ -5,6 +5,7 @@ return {
     config = function()
       require("neotest").setup({
         adapters = {
+          require("rustaceanvim.neotest"),
           require("neotest-jest")({
             jestConfigFile = function(file)
               if file:find("/packages/") then
