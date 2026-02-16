@@ -13,6 +13,12 @@ powerline/
 config/
 .update.lock
 
+# Cache directories
+cache/
+paste-cache/
+tasks/
+telemetry/
+
 # Plugin runtime data
 plugins/cache/
 plugins/installed_plugins.json
@@ -23,3 +29,5 @@ plugins/install-counts-cache.json
 # Keep configuration files
 !settings.json
 !plugins/config.json
+!commands/
+!agents/

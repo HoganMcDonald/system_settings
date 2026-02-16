@@ -1,8 +1,0 @@
-# OpenCode runtime data (if any gets generated)
-debug/
-history.jsonl
-projects/
-session-env/
-
-# Keep configuration
-!opencode.json

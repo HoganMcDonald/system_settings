@@ -1,0 +1,49 @@
+- name: Install Claude Code CLI
+  npm:
+    name: "@anthropic-ai/claude-code"
+    global: yes
+
+# TODO: Add Codex CLI installation when package name is known
+# - name: Install Codex CLI
+#   npm:
+#     name: "codex-cli"
+#     global: yes
+
+- name: Install cmux (git worktree manager for Claude)
+  shell: curl -fsSL https://github.com/craigsc/cmux/releases/latest/download/install.sh | sh
+  args:
+    creates: /usr/local/bin/cmux
+
+- name: Check if Claude config exists
+  stat: path="{{ claude_config_dir }}"
+  register: claude_config_stat
+
+- name: Back up Claude config
+  command: "mv {{ claude_config_dir }} {{ claude_config_dir }}_old"
+  args:
+    creates: "{{ claude_config_dir }}_old"
+  when: claude_config_stat.stat.exists
+
+- name: Symlink Claude config
+  file:
+    src: "{{ dotfiles_home }}/roles/agents/files/claude"
+    dest: "{{ claude_config_dir }}"
+    state: link
+    force: yes
+
+- name: Check if Codex config exists
+  stat: path="{{ codex_config_dir }}"
+  register: codex_config_stat
+
+- name: Back up Codex config
+  command: "mv {{ codex_config_dir }} {{ codex_config_dir }}_old"
+  args:
+    creates: "{{ codex_config_dir }}_old"
+  when: codex_config_stat.stat.exists
+
+- name: Symlink Codex config
+  file:
+    src: "{{ dotfiles_home }}/roles/agents/files/codex"
+    dest: "{{ codex_config_dir }}"
+    state: link
+    force: yes

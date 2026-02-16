@@ -43,9 +43,9 @@
     - role: mycli
       tags:
         - mycli
-    - role: claude
+    - role: agents
       tags:
-        - claude
+        - agents
     - role: neovim
       tags:
         - neovim
