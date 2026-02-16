@@ -21,7 +21,7 @@
   cp = "!sh ~/.bin/git-copy-branch.sh"
   cleanup = "!sh ~/.bin/git-delete-branches.sh"
   stats = "!sh ~/.bin/git-branch-stats.sh"
-  merged = "!sh ~/.bin/git-merged.sh"
+  merged = "!bash ~/.bin/git-merged.sh"
   append = town append
   br = town switch
 	down = town down
