@@ -1,33 +1,24 @@
-# Claude Code runtime and session data
-debug/
-file-history/
-history.jsonl
-plans/
-projects/
-session-env/
-shell-snapshots/
-stats-cache.json
-statsig/
-todos/
-powerline/
-config/
-.update.lock
-
-# Cache directories
-cache/
-paste-cache/
-tasks/
-telemetry/
-
-# Plugin runtime data
-plugins/cache/
-plugins/installed_plugins.json
-plugins/known_marketplaces.json
-plugins/marketplaces/
-plugins/install-counts-cache.json
+# Ignore everything by default
+*
 
 # Keep configuration files
+!.gitignore
+!CLAUDE.md
 !settings.json
-!plugins/config.json
-!commands/
+!keybindings.json
+
+# Keep rules
+!rules/
+!rules/**
+
+# Keep agents
 !agents/
+!agents/**
+
+# Keep skills
+!skills/
+!skills/**
+
+# Keep plugin config (not runtime data)
+!plugins/
+!plugins/config.json
