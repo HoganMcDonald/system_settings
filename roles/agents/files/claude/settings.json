@@ -1,11 +1,27 @@
 {
   "model": "opus",
+  "alwaysThinkingEnabled": true,
   "statusLine": {
     "type": "command",
     "command": "npx -y @owloops/claude-powerline@latest --style=minimal"
   },
   "enabledPlugins": {
-    "rust-analyzer-lsp@claude-plugins-official": true
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "lua-lsp@claude-plugins-official": true
   },
-  "alwaysThinkingEnabled": true
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "terminal-notifier -title 'Claude Code' -message '$CLAUDE_NOTIFICATION_MESSAGE' -sound default 2>/dev/null || true",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
 }
