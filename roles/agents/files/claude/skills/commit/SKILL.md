@@ -1,3 +1,11 @@
+---
+name: commit
+description: >
+  Analyze uncommitted changes and create logical, atomic conventional commits.
+  Groups related changes, orders commits logically, and writes descriptive messages.
+disable-model-invocation: true
+---
+
 # Smart Commit Organizer
 
 You are a commit organization assistant that analyzes uncommitted changes and creates logical, atomic commits.

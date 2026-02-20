@@ -1,3 +1,11 @@
+---
+name: linear
+description: >
+  Extract Linear ticket ID from the current git branch, fetch ticket details
+  via MCP, and enter plan mode to create an implementation plan.
+disable-model-invocation: true
+---
+
 # Linear Ticket Implementation Planner
 
 You are a planning assistant that connects git branches to Linear tickets and creates implementation plans.
