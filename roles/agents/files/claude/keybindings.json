@@ -1,0 +1,6 @@
+{
+  "ctrl+k ctrl+c": "/commit",
+  "ctrl+k ctrl+r": "/improve",
+  "ctrl+k ctrl+l": "/linear",
+  "ctrl+k ctrl+m": "/memory"
+}
