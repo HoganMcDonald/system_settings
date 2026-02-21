@@ -1,13 +1,11 @@
 - name: Install Claude Code CLI
-  npm:
-    name: "@anthropic-ai/claude-code"
-    global: yes
+  homebrew_cask:
+    name: claude-code
 
-# TODO: Add Codex CLI installation when package name is known
-# - name: Install Codex CLI
-#   npm:
-#     name: "codex-cli"
-#     global: yes
+- name: Install Codex CLI
+  npm:
+    name: "@openai/codex"
+    global: yes
 
 - name: Install cmux (git worktree manager for Claude)
   shell: curl -fsSL https://github.com/craigsc/cmux/releases/latest/download/install.sh | sh
