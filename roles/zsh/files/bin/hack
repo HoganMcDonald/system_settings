@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+#
+# hack - Set up a stacked branch worktree with a full tmux session
+#
+# Usage: hack <branch-name>
+
+set -e
+
+# --- Help -------------------------------------------------------------------
+
+display_help() {
+  cat << 'EOF'
+hack - Set up a stacked branch worktree with a full tmux session
+
+Usage: hack [options] <branch-name>
+
+Options:
+  -h, --help     Display this help message and exit
+
+Creates a stacked branch (via git-town append), a worktree, and a tmux
+session with three windows: nvim, claude, and zsh.
+
+The tmux session gets a random adjective-animal name. The summary printed
+before attaching maps the session name back to the branch.
+
+Example:
+  hack feat/add-auth
+  hack fix/null-pointer
+EOF
+  exit 0
+}
+
+# --- Arg parsing -------------------------------------------------------------
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  display_help
+fi
+
+if [ $# -ne 1 ]; then
+  echo "Error: expected exactly one argument: <branch-name>"
+  echo "Usage: hack <branch-name>"
+  exit 1
+fi
+
+BRANCH="$1"
+
+# --- Prereq checks ----------------------------------------------------------
+
+if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+  echo "Error: not inside a git repository"
+  exit 1
+fi
+
+if ! command -v git-town &>/dev/null; then
+  echo "Error: git-town is not installed (brew install git-town)"
+  exit 1
+fi
+
+if ! command -v tmux &>/dev/null; then
+  echo "Error: tmux is not installed (brew install tmux)"
+  exit 1
+fi
+
+# --- Name generation ---------------------------------------------------------
+
+ADJECTIVES=(
+  amber bold bright calm clever cool cosmic crisp dark deft
+  eager fast fierce gentle golden grand hazy keen light lunar
+  mellow misty noble pale plain prime quick quiet rapid raw
+  sharp silent sleek slim smooth solar steady stout swift tall
+  terse tidy vivid warm wild young agile blunt brisk clean
+  clear dense dusty fresh ivory jade lucid nifty opal radiant
+)
+
+ANIMALS=(
+  badger bear cat crane crow deer dolphin eagle elk falcon
+  ferret finch fox gecko goat hawk heron horse ibis jackal
+  jay kite lemur lion lynx moose newt otter owl parrot
+  puma quail raven robin seal shark shrike snake sparrow spider
+  squid stork swan tern tiger toad viper walrus wren yak
+  ant bat cod crab drake egret frog grouse gull hare
+)
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+generate_name() {
+  local adj="${ADJECTIVES[$((RANDOM % ${#ADJECTIVES[@]}))]}"
+  local animal="${ANIMALS[$((RANDOM % ${#ANIMALS[@]}))]}"
+  echo "${adj}-${animal}"
+}
+
+WORKTREE_NAME=""
+for _ in $(seq 1 10); do
+  CANDIDATE=$(generate_name)
+  if [ ! -d "$REPO_ROOT/.worktrees/$CANDIDATE" ]; then
+    WORKTREE_NAME="$CANDIDATE"
+    break
+  fi
+done
+
+if [ -z "$WORKTREE_NAME" ]; then
+  echo "Error: failed to generate a unique worktree name after 10 attempts"
+  exit 1
+fi
+
+# --- Branch + worktree creation ----------------------------------------------
+
+CURRENT=$(git branch --show-current)
+
+git town append "$BRANCH"
+git checkout "$CURRENT"
+
+mkdir -p "$REPO_ROOT/.worktrees"
+git worktree add "$REPO_ROOT/.worktrees/$WORKTREE_NAME" "$BRANCH"
+
+WORKTREE_PATH="$REPO_ROOT/.worktrees/$WORKTREE_NAME"
+
+# Symlink .claude so the worktree inherits permissions and settings
+if [ -d "$REPO_ROOT/.claude" ]; then
+  ln -s "$REPO_ROOT/.claude" "$WORKTREE_PATH/.claude"
+fi
+
+# --- Tmux session ------------------------------------------------------------
+
+if [ -n "$TMUX" ]; then
+  PARENT_SESSION=$(tmux display-message -p '#S')
+  SESSION="${PARENT_SESSION}:${WORKTREE_NAME}"
+else
+  SESSION="$WORKTREE_NAME"
+fi
+
+tmux new-session -d -s "$SESSION" -n "nvim" -c "$WORKTREE_PATH"
+tmux send-keys -t "$SESSION:nvim" "nvim" Enter
+
+tmux new-window -t "$SESSION" -n "claude" -c "$WORKTREE_PATH"
+tmux send-keys -t "$SESSION:claude" "claude --permission-mode plan '/hack'" Enter
+
+tmux new-window -t "$SESSION" -n "zsh" -c "$WORKTREE_PATH"
+
+tmux select-window -t "$SESSION:nvim"
+
+# --- Summary -----------------------------------------------------------------
+
+echo ""
+echo "  Branch:   $BRANCH (stacked on $CURRENT)"
+echo "  Worktree: .worktrees/$WORKTREE_NAME"
+echo "  Session:  $SESSION"
+echo ""
+
+# --- Attach ------------------------------------------------------------------
+
+if [ -n "$TMUX" ]; then
+  tmux switch-client -t "$SESSION"
+else
+  tmux attach-session -t "$SESSION"
+fi
