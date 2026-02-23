@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+#
+# rehack - Restore tmux sessions for orphaned worktrees
+#
+# Usage: rehack
+
+set -e
+
+# --- Help -------------------------------------------------------------------
+
+display_help() {
+  cat << 'EOF'
+rehack - Restore tmux sessions for orphaned worktrees
+
+Usage: rehack [options]
+
+Options:
+  -h, --help     Display this help message and exit
+
+Scans all worktrees under $REPO_ROOT/.worktrees/ and creates tmux sessions
+for any that don't already have one. Primary use case: restoring sessions
+after a computer restart.
+
+Each restored session gets three windows: nvim, claude, and zsh — matching
+the layout created by `hack`.
+
+Example:
+  rehack
+EOF
+  exit 0
+}
+
+# --- Arg parsing -------------------------------------------------------------
+
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help)
+      display_help
+      ;;
+    -*)
+      echo "Error: unknown option: $arg"
+      exit 1
+      ;;
+    *)
+      echo "Error: rehack takes no positional arguments"
+      exit 1
+      ;;
+  esac
+done
+
+# --- Prereq checks ----------------------------------------------------------
+
+if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+  echo "Error: not inside a git repository"
+  exit 1
+fi
+
+if ! command -v tmux &>/dev/null; then
+  echo "Error: tmux is not installed (brew install tmux)"
+  exit 1
+fi
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+WORKTREES_DIR="$REPO_ROOT/.worktrees"
+
+if [ ! -d "$WORKTREES_DIR" ]; then
+  echo "No worktrees directory found at $WORKTREES_DIR"
+  exit 0
+fi
+
+# --- Helpers ----------------------------------------------------------------
+
+find_branch_for_worktree() {
+  local target_path="$1"
+  local wt_path=""
+
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*)
+        wt_path="${line#worktree }"
+        ;;
+      "branch refs/heads/"*)
+        if [ "$wt_path" = "$target_path" ]; then
+          echo "${line#branch refs/heads/}"
+          return 0
+        fi
+        ;;
+      "")
+        wt_path=""
+        ;;
+    esac
+  done < <(git worktree list --porcelain)
+
+  return 1
+}
+
+find_sessions_for_worktree() {
+  local wt_path="$1"
+
+  if ! tmux list-panes -a -F '#{session_name} #{pane_current_path}' 2>/dev/null | while IFS=' ' read -r session pane_path; do
+    case "$pane_path" in
+      "$wt_path"|"$wt_path"/*)
+        echo "$session"
+        ;;
+    esac
+  done | sort -u; then
+    return 0
+  fi
+}
+
+# --- Scan worktrees ----------------------------------------------------------
+
+RESTORED=0
+SKIPPED=0
+TOTAL=0
+
+for wt_dir in "$WORKTREES_DIR"/*/; do
+  # Strip trailing slash
+  wt_dir="${wt_dir%/}"
+
+  # Skip if not a directory
+  [ -d "$wt_dir" ] || continue
+
+  TOTAL=$((TOTAL + 1))
+
+  WORKTREE_NAME=$(basename "$wt_dir")
+  BRANCH=$(find_branch_for_worktree "$wt_dir" || true)
+
+  if [ -z "$BRANCH" ]; then
+    echo "Warning: could not determine branch for $wt_dir, skipping"
+    SKIPPED=$((SKIPPED + 1))
+    continue
+  fi
+
+  # Check if a tmux session already exists for this worktree
+  EXISTING=$(find_sessions_for_worktree "$wt_dir")
+  if [ -n "$EXISTING" ]; then
+    echo "Skip: $WORKTREE_NAME ($BRANCH) — session already exists: $EXISTING"
+    SKIPPED=$((SKIPPED + 1))
+    continue
+  fi
+
+  # Ensure .claude symlink exists
+  if [ -d "$REPO_ROOT/.claude" ] && [ ! -e "$wt_dir/.claude" ]; then
+    ln -s "$REPO_ROOT/.claude" "$wt_dir/.claude"
+    echo "Restored .claude symlink for $WORKTREE_NAME"
+  fi
+
+  # Create tmux session with same 3-window pattern as hack
+  SESSION="$WORKTREE_NAME"
+
+  tmux new-session -d -s "$SESSION" -n "nvim" -c "$wt_dir"
+  tmux send-keys -t "$SESSION:nvim" "nvim" Enter
+
+  tmux new-window -t "$SESSION" -n "claude" -c "$wt_dir"
+  tmux send-keys -t "$SESSION:claude" "claude" Enter
+
+  tmux new-window -t "$SESSION" -n "zsh" -c "$wt_dir"
+
+  tmux select-window -t "$SESSION:nvim"
+
+  echo "Restored: $WORKTREE_NAME ($BRANCH) — session: $SESSION"
+  RESTORED=$((RESTORED + 1))
+done
+
+# --- Summary -----------------------------------------------------------------
+
+echo ""
+if [ "$TOTAL" -eq 0 ]; then
+  echo "No worktrees found under $WORKTREES_DIR"
+elif [ "$RESTORED" -eq 0 ]; then
+  echo "All $TOTAL worktree(s) already have sessions."
+else
+  echo "Restored $RESTORED session(s), skipped $SKIPPED."
+fi

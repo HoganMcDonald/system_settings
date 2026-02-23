@@ -1,0 +1,205 @@
+#!/usr/bin/env bash
+#
+# unhack - Clean up a hack session (tmux + worktree + branch)
+#
+# Usage: unhack <branch-name> [-n|--dry-run]
+
+set -e
+
+# --- Help -------------------------------------------------------------------
+
+display_help() {
+  cat << 'EOF'
+unhack - Clean up a hack session (tmux + worktree + branch)
+
+Usage: unhack [options] <branch-name>
+
+Options:
+  -n, --dry-run  Show what would be done without doing it
+  -h, --help     Display this help message and exit
+
+Tears down the tmux session and worktree associated with a branch, then
+delegates to `git merged` for branch cleanup (rebase children onto main,
+delete the merged branch).
+
+Run this after a branch has been squash-merged on GitHub.
+
+Example:
+  unhack feat/add-auth
+  unhack feat/add-auth --dry-run
+EOF
+  exit 0
+}
+
+# --- Arg parsing -------------------------------------------------------------
+
+DRY_RUN=false
+BRANCH=""
+
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help)
+      display_help
+      ;;
+    -n|--dry-run)
+      DRY_RUN=true
+      ;;
+    -*)
+      echo "Error: unknown option: $arg"
+      exit 1
+      ;;
+    *)
+      if [ -n "$BRANCH" ]; then
+        echo "Error: unexpected argument: $arg"
+        exit 1
+      fi
+      BRANCH="$arg"
+      ;;
+  esac
+done
+
+if [ -z "$BRANCH" ]; then
+  echo "Error: expected a branch name"
+  echo "Usage: unhack <branch-name> [-n|--dry-run]"
+  exit 1
+fi
+
+# --- Prereq checks ----------------------------------------------------------
+
+if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+  echo "Error: not inside a git repository"
+  exit 1
+fi
+
+if ! command -v tmux &>/dev/null; then
+  echo "Error: tmux is not installed (brew install tmux)"
+  exit 1
+fi
+
+if ! git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+  echo "Error: branch '$BRANCH' does not exist locally"
+  exit 1
+fi
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+# --- Helpers ----------------------------------------------------------------
+
+find_worktree_for_branch() {
+  local target_branch="$1"
+  local wt_path=""
+  local wt_branch=""
+
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*)
+        wt_path="${line#worktree }"
+        ;;
+      "branch refs/heads/$target_branch")
+        echo "$wt_path"
+        return 0
+        ;;
+      "")
+        wt_path=""
+        wt_branch=""
+        ;;
+    esac
+  done < <(git worktree list --porcelain)
+
+  return 1
+}
+
+find_sessions_for_worktree() {
+  local wt_path="$1"
+
+  if ! tmux list-panes -a -F '#{session_name} #{pane_current_path}' 2>/dev/null | while IFS=' ' read -r session pane_path; do
+    # Check if pane cwd is the worktree or a subdirectory of it
+    case "$pane_path" in
+      "$wt_path"|"$wt_path"/*)
+        echo "$session"
+        ;;
+    esac
+  done | sort -u; then
+    return 0
+  fi
+}
+
+# --- Find worktree ----------------------------------------------------------
+
+WORKTREE_PATH=$(find_worktree_for_branch "$BRANCH" || true)
+
+if [ -z "$WORKTREE_PATH" ]; then
+  echo "No worktree found for branch '$BRANCH', skipping worktree/tmux cleanup."
+else
+  echo "Worktree: $WORKTREE_PATH"
+
+  # --- Find and kill tmux sessions ------------------------------------------
+
+  SESSIONS=$(find_sessions_for_worktree "$WORKTREE_PATH")
+
+  if [ -n "$SESSIONS" ]; then
+    while IFS= read -r session; do
+      if $DRY_RUN; then
+        echo "[dry-run] Would kill tmux session: $session"
+      else
+        # If we're inside the target session, switch away first
+        if [ -n "$TMUX" ]; then
+          CURRENT_SESSION=$(tmux display-message -p '#S')
+          if [ "$CURRENT_SESSION" = "$session" ]; then
+            # Find another session to switch to
+            OTHER=$(tmux list-sessions -F '#S' | grep -v "^${session}$" | head -1 || true)
+            if [ -z "$OTHER" ]; then
+              echo "Error: cannot kill session '$session' — it is the only tmux session"
+              echo "Run unhack from a different tmux session."
+              exit 1
+            fi
+            echo "Switching to session '$OTHER' before killing '$session'..."
+            tmux switch-client -t "$OTHER"
+          fi
+        fi
+        echo "Killing tmux session: $session"
+        tmux kill-session -t "$session"
+      fi
+    done <<< "$SESSIONS"
+  else
+    echo "No tmux sessions found for this worktree."
+  fi
+
+  # --- Remove worktree ------------------------------------------------------
+
+  # Ensure we're not inside the worktree being removed
+  if [ "$(pwd)" != "$REPO_ROOT" ]; then
+    case "$(pwd)" in
+      "$WORKTREE_PATH"|"$WORKTREE_PATH"/*)
+        if $DRY_RUN; then
+          echo "[dry-run] Would cd to $REPO_ROOT"
+        else
+          cd "$REPO_ROOT"
+        fi
+        ;;
+    esac
+  fi
+
+  if $DRY_RUN; then
+    echo "[dry-run] Would remove worktree: git worktree remove $WORKTREE_PATH"
+  else
+    echo "Removing worktree: $WORKTREE_PATH"
+    git worktree remove "$WORKTREE_PATH"
+  fi
+fi
+
+# --- Branch cleanup via git merged ------------------------------------------
+
+echo ""
+if $DRY_RUN; then
+  echo "Running: git merged --dry-run $BRANCH"
+  git merged --dry-run "$BRANCH"
+else
+  echo "Running: git merged $BRANCH"
+  git merged "$BRANCH"
+fi
+
+# --- Summary -----------------------------------------------------------------
+
+echo ""
+echo "unhack complete for '$BRANCH'."
