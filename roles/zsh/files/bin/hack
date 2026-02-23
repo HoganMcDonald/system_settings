@@ -124,7 +124,7 @@ fi
 
 if [ -n "$TMUX" ]; then
   PARENT_SESSION=$(tmux display-message -p '#S')
-  SESSION="${PARENT_SESSION}:${WORKTREE_NAME}"
+  SESSION="${PARENT_SESSION}/${WORKTREE_NAME}"
 else
   SESSION="$WORKTREE_NAME"
 fi

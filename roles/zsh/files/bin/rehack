@@ -147,7 +147,12 @@ for wt_dir in "$WORKTREES_DIR"/*/; do
   fi
 
   # Create tmux session with same 3-window pattern as hack
-  SESSION="$WORKTREE_NAME"
+  if [ -n "$TMUX" ]; then
+    PARENT_SESSION=$(tmux display-message -p '#S')
+    SESSION="${PARENT_SESSION}/${WORKTREE_NAME}"
+  else
+    SESSION="$WORKTREE_NAME"
+  fi
 
   tmux new-session -d -s "$SESSION" -n "nvim" -c "$wt_dir"
   tmux send-keys -t "$SESSION:nvim" "nvim" Enter
