@@ -7,11 +7,6 @@
     name: "@openai/codex"
     global: yes
 
-- name: Install cmux (git worktree manager for Claude)
-  shell: curl -fsSL https://github.com/craigsc/cmux/releases/latest/download/install.sh | sh
-  args:
-    creates: /usr/local/bin/cmux
-
 - name: Check if Claude config exists
   stat: path="{{ claude_config_dir }}"
   register: claude_config_stat

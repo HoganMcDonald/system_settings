@@ -32,7 +32,6 @@
 
 - Conventional commits: type(scope): description
 - git-town for branch management (append, sync, propose)
-- cmux for git worktree management
 - Linear for project management (ticket IDs in branch names)
 - Always push with --force-with-lease, never --force
 

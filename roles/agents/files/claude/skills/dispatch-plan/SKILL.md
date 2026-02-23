@@ -34,15 +34,7 @@ mkdir -p .worktrees
 git worktree add .worktrees/<branch-name> <branch-name>
 ```
 
-### 3. Run setup hook
-
-```bash
-(cd .worktrees/<branch-name> && [ -x .cmux/setup ] && ./.cmux/setup)
-```
-
-If no `.cmux/setup` exists, suggest the user run `/cmux` to generate one.
-
-### 4. Write the plan
+### 3. Write the plan
 
 Write the full approved plan to `.worktrees/<branch-name>/.claude-plan.md`. The file must be completely self-contained — the receiving Claude session has no prior conversation history.
 
@@ -71,7 +63,7 @@ The plan file MUST include:
 After all steps are complete and verified, delete this plan file.
 ```
 
-### 5. Launch Claude in a tmux window
+### 4. Launch Claude in a tmux window
 
 ```bash
 WORKTREE_PATH="$(pwd)/.worktrees/<branch-name>"
@@ -81,7 +73,7 @@ tmux new-window -n "agent:<branch-name>" -c "$WORKTREE_PATH" \
 
 The tmux window name MUST be prefixed with `agent:` (e.g., `agent:add-user-authentication`).
 
-### 6. Confirm to the user
+### 5. Confirm to the user
 
 ```
 Plan dispatched to agent:<branch-name>
@@ -96,9 +88,8 @@ Switch to the tmux window to monitor progress, or continue working here.
 ## Error Handling
 
 - **git-town not installed**: Tell the user to run `brew install git-town`
-- **Branch already exists**: Suggest resuming with `cmux start <branch>` or pick a different name
+- **Branch already exists**: Pick a different name or delete the existing branch first
 - **Dirty working tree**: Advise committing or stashing before creating new branches
-- **No .cmux/setup found**: Suggest running `/cmux` to generate one
 - **git town append fails**: Show the error and suggest checking `git town status`
 - **Not in tmux**: Tell the user to start a tmux session first
 
@@ -108,15 +99,18 @@ When a dispatched plan's work is complete:
 
 **Merged via PR (squash-merged on GitHub):**
 ```
-git merged <branch-name>
-cmux rm <branch-name>
+git town sync
+git worktree remove .worktrees/<branch-name>
+git branch -d <branch-name>
 ```
 
 **Local merge:**
 ```
-cmux merge <branch-name> --squash
+git checkout <parent-branch>
+git merge --squash <branch-name>
 git commit
-cmux rm <branch-name>
+git worktree remove .worktrees/<branch-name>
+git branch -d <branch-name>
 ```
 
 ## Rules
@@ -126,5 +120,4 @@ cmux rm <branch-name>
 - ALWAYS prefix tmux window names with `agent:`
 - ALWAYS include enough context in the plan for a fresh agent with no conversation history
 - NEVER execute an approved plan in the current session — always dispatch to a worktree
-- NEVER run `cmux new` — it conflicts with pre-created git-town branches
-- Create worktrees in `.worktrees/<branch-name>` so cmux commands (`ls`, `rm`, `start`) work
+- Create worktrees in `.worktrees/<branch-name>` for consistent organization
