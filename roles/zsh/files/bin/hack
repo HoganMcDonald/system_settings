@@ -61,66 +61,139 @@ if ! command -v tmux &>/dev/null; then
   exit 1
 fi
 
-# --- Name generation ---------------------------------------------------------
-
-ADJECTIVES=(
-  amber bold bright calm clever cool cosmic crisp dark deft
-  eager fast fierce gentle golden grand hazy keen light lunar
-  mellow misty noble pale plain prime quick quiet rapid raw
-  sharp silent sleek slim smooth solar steady stout swift tall
-  terse tidy vivid warm wild young agile blunt brisk clean
-  clear dense dusty fresh ivory jade lucid nifty opal radiant
-)
-
-ANIMALS=(
-  badger bear cat crane crow deer dolphin eagle elk falcon
-  ferret finch fox gecko goat hawk heron horse ibis jackal
-  jay kite lemur lion lynx moose newt otter owl parrot
-  puma quail raven robin seal shark shrike snake sparrow spider
-  squid stork swan tern tiger toad viper walrus wren yak
-  ant bat cod crab drake egret frog grouse gull hare
-)
+# --- Helpers -----------------------------------------------------------------
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 
-generate_name() {
-  local adj="${ADJECTIVES[$((RANDOM % ${#ADJECTIVES[@]}))]}"
-  local animal="${ANIMALS[$((RANDOM % ${#ANIMALS[@]}))]}"
-  echo "${adj}-${animal}"
+find_worktree_for_branch() {
+  local target_branch="$1"
+  local wt_path=""
+
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*)
+        wt_path="${line#worktree }"
+        ;;
+      "branch refs/heads/$target_branch")
+        # Only match worktrees under .worktrees/, not the main worktree
+        case "$wt_path" in
+          "$REPO_ROOT/.worktrees/"*)
+            echo "$wt_path"
+            return 0
+            ;;
+        esac
+        ;;
+      "")
+        wt_path=""
+        ;;
+    esac
+  done < <(git worktree list --porcelain)
+
+  return 1
 }
 
-WORKTREE_NAME=""
-for _ in $(seq 1 10); do
-  CANDIDATE=$(generate_name)
-  if [ ! -d "$REPO_ROOT/.worktrees/$CANDIDATE" ]; then
-    WORKTREE_NAME="$CANDIDATE"
-    break
-  fi
-done
+find_session_for_worktree() {
+  local wt_path="$1"
 
-if [ -z "$WORKTREE_NAME" ]; then
-  echo "Error: failed to generate a unique worktree name after 10 attempts"
-  exit 1
-fi
+  tmux list-panes -a -F '#{session_name} #{pane_current_path}' 2>/dev/null | while IFS=' ' read -r session pane_path; do
+    case "$pane_path" in
+      "$wt_path"|"$wt_path"/*)
+        echo "$session"
+        return 0
+        ;;
+    esac
+  done
+}
 
-# --- Branch + worktree creation ----------------------------------------------
+# --- Branch ------------------------------------------------------------------
 
 CURRENT=$(git branch --show-current)
 
-git town append "$BRANCH"
-git checkout "$CURRENT"
+if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+  echo "Branch '$BRANCH' already exists, reusing."
+else
+  git town append "$BRANCH"
+  git checkout "$CURRENT"
+fi
 
-mkdir -p "$REPO_ROOT/.worktrees"
-git worktree add "$REPO_ROOT/.worktrees/$WORKTREE_NAME" "$BRANCH"
+# --- Worktree ----------------------------------------------------------------
 
-WORKTREE_PATH="$REPO_ROOT/.worktrees/$WORKTREE_NAME"
+WORKTREE_PATH=$(find_worktree_for_branch "$BRANCH" || true)
 
-# Symlink .claude so the worktree inherits permissions and settings
-if [ -d "$REPO_ROOT/.claude" ]; then
-  ln -s "$REPO_ROOT/.claude" "$WORKTREE_PATH/.claude"
+if [ -n "$WORKTREE_PATH" ]; then
+  WORKTREE_NAME=$(basename "$WORKTREE_PATH")
+  echo "Worktree already exists at .worktrees/$WORKTREE_NAME, reusing."
+else
+  # --- Name generation -------------------------------------------------------
+
+  ADJECTIVES=(
+    amber bold bright calm clever cool cosmic crisp dark deft
+    eager fast fierce gentle golden grand hazy keen light lunar
+    mellow misty noble pale plain prime quick quiet rapid raw
+    sharp silent sleek slim smooth solar steady stout swift tall
+    terse tidy vivid warm wild young agile blunt brisk clean
+    clear dense dusty fresh ivory jade lucid nifty opal radiant
+  )
+
+  ANIMALS=(
+    badger bear cat crane crow deer dolphin eagle elk falcon
+    ferret finch fox gecko goat hawk heron horse ibis jackal
+    jay kite lemur lion lynx moose newt otter owl parrot
+    puma quail raven robin seal shark shrike snake sparrow spider
+    squid stork swan tern tiger toad viper walrus wren yak
+    ant bat cod crab drake egret frog grouse gull hare
+  )
+
+  generate_name() {
+    local adj="${ADJECTIVES[$((RANDOM % ${#ADJECTIVES[@]}))]}"
+    local animal="${ANIMALS[$((RANDOM % ${#ANIMALS[@]}))]}"
+    echo "${adj}-${animal}"
+  }
+
+  WORKTREE_NAME=""
+  for _ in $(seq 1 10); do
+    CANDIDATE=$(generate_name)
+    if [ ! -d "$REPO_ROOT/.worktrees/$CANDIDATE" ]; then
+      WORKTREE_NAME="$CANDIDATE"
+      break
+    fi
+  done
+
+  if [ -z "$WORKTREE_NAME" ]; then
+    echo "Error: failed to generate a unique worktree name after 10 attempts"
+    exit 1
+  fi
+
+  mkdir -p "$REPO_ROOT/.worktrees"
+  git worktree add "$REPO_ROOT/.worktrees/$WORKTREE_NAME" "$BRANCH"
+
+  WORKTREE_PATH="$REPO_ROOT/.worktrees/$WORKTREE_NAME"
+
+  # Symlink .claude so the worktree inherits permissions and settings
+  if [ -d "$REPO_ROOT/.claude" ] && [ ! -e "$WORKTREE_PATH/.claude" ]; then
+    ln -s "$REPO_ROOT/.claude" "$WORKTREE_PATH/.claude"
+  fi
 fi
 
 # --- Tmux session ------------------------------------------------------------
+
+EXISTING_SESSION=$(find_session_for_worktree "$WORKTREE_PATH" || true)
+
+if [ -n "$EXISTING_SESSION" ]; then
+  echo "Session '$EXISTING_SESSION' already exists, switching."
+  echo ""
+  echo "  Branch:   $BRANCH"
+  echo "  Worktree: .worktrees/$WORKTREE_NAME"
+  echo "  Session:  $EXISTING_SESSION"
+  echo ""
+
+  if [ -n "$TMUX" ]; then
+    tmux switch-client -t "$EXISTING_SESSION"
+  else
+    tmux attach-session -t "$EXISTING_SESSION"
+  fi
+  exit 0
+fi
 
 if [ -n "$TMUX" ]; then
   PARENT_SESSION=$(tmux display-message -p '#S')
