@@ -83,6 +83,18 @@ fi
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 
+# --- Swap guard --------------------------------------------------------------
+
+SWAP_STATE="$REPO_ROOT/.worktrees/.swap-state"
+if [ -f "$SWAP_STATE" ]; then
+  source "$SWAP_STATE"
+  if [ "$SWAP_BRANCH" = "$BRANCH" ]; then
+    echo "Error: branch '$BRANCH' is currently swapped into the main directory."
+    echo "Run 'unswap' before running 'unhack'."
+    exit 1
+  fi
+fi
+
 # --- Helpers ----------------------------------------------------------------
 
 find_worktree_for_branch() {

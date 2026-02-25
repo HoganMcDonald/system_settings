@@ -1,0 +1,194 @@
+#!/usr/bin/env bash
+#
+# unswap - Restore main directory and worktree after a swap
+#
+# Usage: unswap [--force]
+
+set -e
+
+# --- Help -------------------------------------------------------------------
+
+display_help() {
+  cat << 'EOF'
+unswap - Restore main directory and worktree after a swap
+
+Usage: unswap [options]
+
+Options:
+  -f, --force    Skip branch verification check
+  -h, --help     Display this help message and exit
+
+Reverses a `swap` operation: restores the main branch in the main
+directory and reattaches the feature branch to its worktree. Any work
+done on the feature branch in the main directory is transferred back
+to the worktree.
+
+Example:
+  unswap
+  unswap --force
+EOF
+  exit 0
+}
+
+# --- Arg parsing -------------------------------------------------------------
+
+FORCE=false
+
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help)
+      display_help
+      ;;
+    -f|--force)
+      FORCE=true
+      ;;
+    -*)
+      echo "Error: unknown option: $arg"
+      exit 1
+      ;;
+    *)
+      echo "Error: unswap takes no positional arguments"
+      exit 1
+      ;;
+  esac
+done
+
+# --- Prereq checks ----------------------------------------------------------
+
+if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+  echo "Error: not inside a git repository"
+  exit 1
+fi
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+case "$(pwd)" in
+  "$REPO_ROOT/.worktrees/"*)
+    echo "Error: run unswap from the main working directory, not a worktree"
+    exit 1
+    ;;
+esac
+
+SWAP_STATE="$REPO_ROOT/.worktrees/.swap-state"
+
+if [ ! -f "$SWAP_STATE" ]; then
+  echo "Error: no active swap found (.worktrees/.swap-state does not exist)"
+  exit 1
+fi
+
+# --- Load state --------------------------------------------------------------
+
+source "$SWAP_STATE"
+
+# --- Verify branch -----------------------------------------------------------
+
+CURRENT_BRANCH=$(git branch --show-current)
+
+if [ "$CURRENT_BRANCH" != "$SWAP_BRANCH" ] && ! $FORCE; then
+  echo "Error: expected branch '$SWAP_BRANCH' but on '$CURRENT_BRANCH'"
+  echo "If you changed branches manually, use 'unswap --force' to proceed."
+  exit 1
+fi
+
+# --- Helpers -----------------------------------------------------------------
+
+# Find a stash entry by SHA and return its ref (e.g., stash@{2})
+find_stash_by_sha() {
+  local target_sha="$1"
+  local stash_dir="${2:-}"
+
+  local git_cmd=(git)
+  if [ -n "$stash_dir" ]; then
+    git_cmd=(git -C "$stash_dir")
+  fi
+
+  "${git_cmd[@]}" stash list --pretty='%H %gd' 2>/dev/null | while IFS=' ' read -r sha ref; do
+    if [ "$sha" = "$target_sha" ]; then
+      echo "$ref"
+      break
+    fi
+  done
+}
+
+# --- Stash feature work done in main ----------------------------------------
+
+FEATURE_WORK_SHA=""
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "Stashing feature work done in main..."
+  git stash push -m "unswap: feature work from main for $SWAP_BRANCH"
+  FEATURE_WORK_SHA=$(git rev-parse stash@{0})
+fi
+
+# --- Restore main branch ----------------------------------------------------
+
+echo "Restoring main branch '$SWAP_MAIN_BRANCH'..."
+git checkout "$SWAP_MAIN_BRANCH"
+
+# --- Restore main stash -----------------------------------------------------
+
+if [ -n "$SWAP_MAIN_STASH_SHA" ]; then
+  MAIN_STASH_REF=$(find_stash_by_sha "$SWAP_MAIN_STASH_SHA")
+  if [ -n "$MAIN_STASH_REF" ]; then
+    echo "Restoring stashed main changes..."
+    if ! git stash pop "$MAIN_STASH_REF"; then
+      echo ""
+      echo "Warning: stash pop had conflicts. Resolve them manually."
+      echo "The stash ref was: $MAIN_STASH_REF"
+    fi
+  else
+    echo "Warning: could not find main stash (SHA: ${SWAP_MAIN_STASH_SHA:0:7}), skipping."
+  fi
+fi
+
+# --- Reattach worktree -------------------------------------------------------
+
+echo "Reattaching '$SWAP_BRANCH' to worktree..."
+git -C "$SWAP_WORKTREE_PATH" checkout "$SWAP_BRANCH"
+
+# --- Restore worktree stash --------------------------------------------------
+
+if [ -n "$SWAP_WORKTREE_STASH_SHA" ]; then
+  WT_STASH_REF=$(find_stash_by_sha "$SWAP_WORKTREE_STASH_SHA" "$SWAP_WORKTREE_PATH")
+  if [ -n "$WT_STASH_REF" ]; then
+    echo "Restoring stashed worktree changes..."
+    if ! git -C "$SWAP_WORKTREE_PATH" stash pop "$WT_STASH_REF"; then
+      echo ""
+      echo "Warning: stash pop had conflicts in worktree. Resolve them manually."
+      echo "The stash ref was: $WT_STASH_REF"
+    fi
+  else
+    echo "Warning: could not find worktree stash (SHA: ${SWAP_WORKTREE_STASH_SHA:0:7}), skipping."
+  fi
+fi
+
+# --- Transfer feature work to worktree --------------------------------------
+
+if [ -n "$FEATURE_WORK_SHA" ]; then
+  FEATURE_STASH_REF=$(find_stash_by_sha "$FEATURE_WORK_SHA" "$SWAP_WORKTREE_PATH")
+  if [ -n "$FEATURE_STASH_REF" ]; then
+    echo "Transferring feature work to worktree..."
+    if ! git -C "$SWAP_WORKTREE_PATH" stash pop "$FEATURE_STASH_REF"; then
+      echo ""
+      echo "Warning: stash pop had conflicts in worktree. Resolve them manually."
+      echo "The stash ref was: $FEATURE_STASH_REF"
+    fi
+  else
+    echo "Warning: could not find feature work stash (SHA: ${FEATURE_WORK_SHA:0:7}), skipping."
+  fi
+fi
+
+# --- Clean up ----------------------------------------------------------------
+
+rm "$SWAP_STATE"
+
+# --- Summary -----------------------------------------------------------------
+
+echo ""
+echo "  Restored:   $SWAP_MAIN_BRANCH in main directory"
+echo "  Worktree:   .worktrees/$SWAP_WORKTREE_NAME ($SWAP_BRANCH)"
+if [ -n "$FEATURE_WORK_SHA" ]; then
+  echo "  Transferred feature work to worktree"
+fi
+echo ""
+echo "Unswap complete."

@@ -1,0 +1,199 @@
+#!/usr/bin/env bash
+#
+# swap - Move a feature branch from its worktree into the main directory
+#
+# Usage: swap <branch-name>
+
+set -e
+
+# --- Help -------------------------------------------------------------------
+
+display_help() {
+  cat << 'EOF'
+swap - Move a feature branch from its worktree into the main directory
+
+Usage: swap [options] <branch-name>
+
+Options:
+  -h, --help     Display this help message and exit
+
+Temporarily checks out a worktree's branch in the main working directory
+so you can run/test apps that don't support multiple instances. The
+worktree is detached and any uncommitted changes are stashed.
+
+Use `unswap` to restore everything.
+
+Example:
+  swap feat/add-auth
+EOF
+  exit 0
+}
+
+# --- Arg parsing -------------------------------------------------------------
+
+BRANCH=""
+
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help)
+      display_help
+      ;;
+    -*)
+      echo "Error: unknown option: $arg"
+      exit 1
+      ;;
+    *)
+      if [ -n "$BRANCH" ]; then
+        echo "Error: unexpected argument: $arg"
+        exit 1
+      fi
+      BRANCH="$arg"
+      ;;
+  esac
+done
+
+if [ -z "$BRANCH" ]; then
+  echo "Error: expected a branch name"
+  echo "Usage: swap <branch-name>"
+  exit 1
+fi
+
+# --- Prereq checks ----------------------------------------------------------
+
+if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+  echo "Error: not inside a git repository"
+  exit 1
+fi
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+# Must be in the main worktree, not inside .worktrees/
+case "$(pwd)" in
+  "$REPO_ROOT/.worktrees/"*)
+    echo "Error: run swap from the main working directory, not a worktree"
+    exit 1
+    ;;
+esac
+
+if ! git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+  echo "Error: branch '$BRANCH' does not exist locally"
+  exit 1
+fi
+
+# --- Check for active swap --------------------------------------------------
+
+SWAP_STATE="$REPO_ROOT/.worktrees/.swap-state"
+
+if [ -f "$SWAP_STATE" ]; then
+  source "$SWAP_STATE"
+  echo "Error: branch '$SWAP_BRANCH' is already swapped into the main directory."
+  echo "Run 'unswap' first."
+  exit 1
+fi
+
+# --- Helpers -----------------------------------------------------------------
+
+find_worktree_for_branch() {
+  local target_branch="$1"
+  local wt_path=""
+
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*)
+        wt_path="${line#worktree }"
+        ;;
+      "branch refs/heads/$target_branch")
+        case "$wt_path" in
+          "$REPO_ROOT/.worktrees/"*)
+            echo "$wt_path"
+            return 0
+            ;;
+        esac
+        ;;
+      "")
+        wt_path=""
+        ;;
+    esac
+  done < <(git worktree list --porcelain)
+
+  return 1
+}
+
+# --- Find worktree ----------------------------------------------------------
+
+WORKTREE_PATH=$(find_worktree_for_branch "$BRANCH" || true)
+
+if [ -z "$WORKTREE_PATH" ]; then
+  echo "Error: no worktree found for branch '$BRANCH'"
+  echo "Run 'hack $BRANCH' first to create one."
+  exit 1
+fi
+
+WORKTREE_NAME=$(basename "$WORKTREE_PATH")
+
+# --- Check current branch ----------------------------------------------------
+
+MAIN_BRANCH=$(git branch --show-current)
+
+if [ "$MAIN_BRANCH" = "$BRANCH" ]; then
+  echo "Error: already on branch '$BRANCH' in the main directory"
+  exit 1
+fi
+
+# --- Stash main changes -----------------------------------------------------
+
+MAIN_STASH_SHA=""
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "Stashing uncommitted changes in main..."
+  git stash push -m "swap: auto-stash for $MAIN_BRANCH"
+  MAIN_STASH_SHA=$(git rev-parse stash@{0})
+fi
+
+# --- Stash worktree changes -------------------------------------------------
+
+WORKTREE_STASH_SHA=""
+
+if ! git -C "$WORKTREE_PATH" diff --quiet || ! git -C "$WORKTREE_PATH" diff --cached --quiet; then
+  echo "Stashing uncommitted changes in worktree..."
+  git -C "$WORKTREE_PATH" stash push -m "swap: auto-stash for $BRANCH"
+  WORKTREE_STASH_SHA=$(git -C "$WORKTREE_PATH" rev-parse stash@{0})
+fi
+
+# --- Detach worktree HEAD ---------------------------------------------------
+
+echo "Detaching worktree HEAD..."
+git -C "$WORKTREE_PATH" checkout --detach
+
+# --- Checkout branch in main ------------------------------------------------
+
+echo "Checking out '$BRANCH' in main directory..."
+git checkout "$BRANCH"
+
+# --- Write state file --------------------------------------------------------
+
+mkdir -p "$REPO_ROOT/.worktrees"
+
+cat > "$SWAP_STATE" << EOF
+SWAP_BRANCH=$BRANCH
+SWAP_WORKTREE_PATH=$WORKTREE_PATH
+SWAP_WORKTREE_NAME=$WORKTREE_NAME
+SWAP_MAIN_BRANCH=$MAIN_BRANCH
+SWAP_MAIN_STASH_SHA=$MAIN_STASH_SHA
+SWAP_WORKTREE_STASH_SHA=$WORKTREE_STASH_SHA
+EOF
+
+# --- Summary -----------------------------------------------------------------
+
+echo ""
+echo "  Swapped:    $BRANCH -> main directory"
+echo "  Worktree:   .worktrees/$WORKTREE_NAME (detached)"
+echo "  Was on:     $MAIN_BRANCH"
+if [ -n "$WORKTREE_STASH_SHA" ]; then
+  echo "  WT stash:   ${WORKTREE_STASH_SHA:0:7}"
+fi
+if [ -n "$MAIN_STASH_SHA" ]; then
+  echo "  Main stash: ${MAIN_STASH_SHA:0:7}"
+fi
+echo ""
+echo "Run 'unswap' when done to restore everything."
