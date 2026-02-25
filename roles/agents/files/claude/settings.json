@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "terminal-notifier -title 'Claude Code' -message '$CLAUDE_NOTIFICATION_MESSAGE' -sound default 2>/dev/null || true",
+            "command": "printf '\\a' > /dev/tty 2>/dev/null; terminal-notifier -title 'Claude Code' -message '$CLAUDE_NOTIFICATION_MESSAGE' -sound default 2>/dev/null || true",
             "timeout": 5
           }
         ]
