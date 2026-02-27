@@ -204,11 +204,18 @@ fi
 
 echo ""
 if $DRY_RUN; then
+  echo "[dry-run] Would prompt to run: git merged $BRANCH"
   echo "Running: git merged --dry-run $BRANCH"
   git merged --dry-run "$BRANCH"
 else
-  echo "Running: git merged $BRANCH"
-  git merged "$BRANCH"
+  read -rp "Run 'git merged $BRANCH'? (cleans up branch and rebases children) [Y/n] " answer
+  answer="${answer:-Y}"
+  if [[ "$answer" =~ ^[Yy]$ ]]; then
+    echo "Running: git merged $BRANCH"
+    git merged "$BRANCH"
+  else
+    echo "Skipping branch cleanup. Branch '$BRANCH' kept."
+  fi
 fi
 
 # --- Summary -----------------------------------------------------------------
