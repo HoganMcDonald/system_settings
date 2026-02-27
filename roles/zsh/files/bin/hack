@@ -20,8 +20,8 @@ Options:
 Creates a stacked branch (via git-town append), a worktree, and a tmux
 session with three windows: nvim, claude, and zsh.
 
-The tmux session gets a random adjective-animal name. The summary printed
-before attaching maps the session name back to the branch.
+The tmux session is named <parent_session>/<branch> (or just <branch> if
+not inside tmux). The worktree gets a random adjective-animal directory name.
 
 Example:
   hack feat/add-auth
@@ -197,9 +197,9 @@ fi
 
 if [ -n "$TMUX" ]; then
   PARENT_SESSION=$(tmux display-message -p '#S')
-  SESSION="${PARENT_SESSION}/${WORKTREE_NAME}"
+  SESSION="${PARENT_SESSION}/${BRANCH}"
 else
-  SESSION="$WORKTREE_NAME"
+  SESSION="$BRANCH"
 fi
 
 tmux new-session -d -s "$SESSION" -n "nvim" -c "$WORKTREE_PATH"
