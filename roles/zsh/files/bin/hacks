@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+#
+# hacks - List all active hack worktrees
+#
+# Usage: hacks
+
+set -e
+
+# --- Help -------------------------------------------------------------------
+
+display_help() {
+  cat << 'EOF'
+hacks - List all active hack worktrees
+
+Usage: hacks [options]
+
+Options:
+  -h, --help     Display this help message and exit
+
+Lists all worktrees under .worktrees/ with their branch, directory name,
+tmux session, and status (active / no session / swapped).
+
+Example:
+  hacks
+EOF
+  exit 0
+}
+
+# --- Arg parsing -------------------------------------------------------------
+
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help)
+      display_help
+      ;;
+    -*)
+      echo "Error: unknown option: $arg"
+      exit 1
+      ;;
+    *)
+      echo "Error: hacks takes no positional arguments"
+      exit 1
+      ;;
+  esac
+done
+
+# --- Prereq checks ----------------------------------------------------------
+
+if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+  echo "Error: not inside a git repository"
+  exit 1
+fi
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+WORKTREES_DIR="$REPO_ROOT/.worktrees"
+
+if [ ! -d "$WORKTREES_DIR" ]; then
+  echo "No worktrees found."
+  exit 0
+fi
+
+# --- Helpers ----------------------------------------------------------------
+
+find_branch_for_worktree() {
+  local target_path="$1"
+  local wt_path=""
+
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*)
+        wt_path="${line#worktree }"
+        ;;
+      "branch refs/heads/"*)
+        if [ "$wt_path" = "$target_path" ]; then
+          echo "${line#branch refs/heads/}"
+          return 0
+        fi
+        ;;
+      "")
+        wt_path=""
+        ;;
+    esac
+  done < <(git worktree list --porcelain)
+
+  return 1
+}
+
+find_session_for_worktree() {
+  local wt_path="$1"
+
+  tmux list-panes -a -F '#{session_name} #{pane_current_path}' 2>/dev/null \
+    | while IFS=' ' read -r session pane_path; do
+        case "$pane_path" in
+          "$wt_path"|"$wt_path"/*) echo "$session" ;;
+        esac
+      done \
+    | sort -u | head -1
+}
+
+# --- Load swap state ---------------------------------------------------------
+
+SWAP_STATE="$WORKTREES_DIR/.swap-state"
+SWAP_BRANCH=""
+if [ -f "$SWAP_STATE" ]; then
+  source "$SWAP_STATE"
+fi
+
+# --- Collect worktree data ---------------------------------------------------
+
+ROWS=()
+HAS_WORKTREES=false
+
+for wt_dir in "$WORKTREES_DIR"/*/; do
+  wt_dir="${wt_dir%/}"
+  [ -d "$wt_dir" ] || continue
+
+  HAS_WORKTREES=true
+
+  WORKTREE_NAME=$(basename "$wt_dir")
+  BRANCH=$(find_branch_for_worktree "$wt_dir" || true)
+
+  if [ -z "$BRANCH" ]; then
+    BRANCH="(detached)"
+  fi
+
+  SESSION=$(find_session_for_worktree "$wt_dir" || true)
+
+  if [ -n "$SWAP_BRANCH" ] && [ "$SWAP_BRANCH" = "$BRANCH" ]; then
+    STATUS="swapped"
+    SESSION_DISPLAY="${SESSION:--}"
+  elif [ -n "$SESSION" ]; then
+    STATUS="active"
+    SESSION_DISPLAY="$SESSION"
+  else
+    STATUS="no session"
+    SESSION_DISPLAY="-"
+  fi
+
+  # tab-separated: branch, worktree, session, status
+  ROWS+=("$BRANCH	$WORKTREE_NAME	$SESSION_DISPLAY	$STATUS")
+done
+
+if ! $HAS_WORKTREES; then
+  echo "No worktrees found."
+  exit 0
+fi
+
+# --- Print table -------------------------------------------------------------
+
+printf "%-24s %-18s %-30s %s\n" "Branch" "Worktree" "Session" "Status"
+printf "%-24s %-18s %-30s %s\n" "------" "--------" "-------" "------"
+
+for row in "${ROWS[@]}"; do
+  IFS=$'\t' read -r branch wt session status <<< "$row"
+  printf "%-24s %-18s %-30s %s\n" "$branch" "$wt" "$session" "$status"
+done
