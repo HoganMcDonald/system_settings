@@ -1,0 +1,8 @@
+#compdef hacks
+
+_hacks() {
+  _arguments \
+    '(-h --help)'{-h,--help}'[Display help message]'
+}
+
+_hacks "$@"

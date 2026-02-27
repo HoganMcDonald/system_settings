@@ -1,0 +1,35 @@
+#compdef swap
+
+_swap() {
+  _arguments \
+    '(-h --help)'{-h,--help}'[Display help message]' \
+    '1:branch:__swap_worktree_branches'
+}
+
+__swap_worktree_branches() {
+  local repo_root
+  repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || return
+
+  local -a branches
+  local wt_path=""
+
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*)
+        wt_path="${line#worktree }"
+        ;;
+      "branch refs/heads/"*)
+        if [[ "$wt_path" = "$repo_root/.worktrees/"* ]]; then
+          branches+=("${line#branch refs/heads/}")
+        fi
+        ;;
+      "")
+        wt_path=""
+        ;;
+    esac
+  done < <(git worktree list --porcelain 2>/dev/null)
+
+  _describe 'worktree branch' branches
+}
+
+_swap "$@"

@@ -1,0 +1,9 @@
+#compdef unswap
+
+_unswap() {
+  _arguments \
+    '(-h --help)'{-h,--help}'[Display help message]' \
+    '(-f --force)'{-f,--force}'[Skip branch verification check]'
+}
+
+_unswap "$@"

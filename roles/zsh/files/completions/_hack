@@ -1,0 +1,15 @@
+#compdef hack
+
+_hack() {
+  _arguments \
+    '(-h --help)'{-h,--help}'[Display help message]' \
+    '1:branch:__hack_branch_names'
+}
+
+__hack_branch_names() {
+  local -a branches
+  branches=(${${(f)"$(git branch --format='%(refname:short)' 2>/dev/null)"}})
+  _describe 'branch' branches
+}
+
+_hack "$@"
