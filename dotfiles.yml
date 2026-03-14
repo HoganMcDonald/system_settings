@@ -84,6 +84,9 @@
     - role: ruby
       tags:
         - ruby
+    - role: rust
+      tags:
+        - rust
 
     # ====================
     #   Desktop

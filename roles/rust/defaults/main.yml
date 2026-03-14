@@ -1,0 +1,8 @@
+versions:
+  - latest
+
+components:
+  - rust-analyzer
+  - clippy
+  - rustfmt
+  - rust-src
