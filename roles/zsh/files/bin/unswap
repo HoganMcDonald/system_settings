@@ -60,7 +60,8 @@ if ! git rev-parse --is-inside-work-tree &>/dev/null; then
   exit 1
 fi
 
-REPO_ROOT=$(git rev-parse --show-toplevel)
+# Resolve to the main worktree root, not a linked worktree
+REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
 
 case "$(pwd)" in
   "$REPO_ROOT/.worktrees/"*)
@@ -145,22 +146,6 @@ fi
 
 echo "Reattaching '$SWAP_BRANCH' to worktree..."
 git -C "$SWAP_WORKTREE_PATH" checkout "$SWAP_BRANCH"
-
-# --- Restore worktree stash --------------------------------------------------
-
-if [ -n "$SWAP_WORKTREE_STASH_SHA" ]; then
-  WT_STASH_REF=$(find_stash_by_sha "$SWAP_WORKTREE_STASH_SHA" "$SWAP_WORKTREE_PATH")
-  if [ -n "$WT_STASH_REF" ]; then
-    echo "Restoring stashed worktree changes..."
-    if ! git -C "$SWAP_WORKTREE_PATH" stash pop "$WT_STASH_REF"; then
-      echo ""
-      echo "Warning: stash pop had conflicts in worktree. Resolve them manually."
-      echo "The stash ref was: $WT_STASH_REF"
-    fi
-  else
-    echo "Warning: could not find worktree stash (SHA: ${SWAP_WORKTREE_STASH_SHA:0:7}), skipping."
-  fi
-fi
 
 # --- Transfer feature work to worktree --------------------------------------
 

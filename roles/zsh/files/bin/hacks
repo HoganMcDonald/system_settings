@@ -51,7 +51,8 @@ if ! git rev-parse --is-inside-work-tree &>/dev/null; then
   exit 1
 fi
 
-REPO_ROOT=$(git rev-parse --show-toplevel)
+# Resolve to the main worktree root, not a linked worktree
+REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
 WORKTREES_DIR="$REPO_ROOT/.worktrees"
 
 if [ ! -d "$WORKTREES_DIR" ]; then

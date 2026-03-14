@@ -60,7 +60,8 @@ if ! command -v tmux &>/dev/null; then
   exit 1
 fi
 
-REPO_ROOT=$(git rev-parse --show-toplevel)
+# Resolve to the main worktree root, not a linked worktree
+REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
 WORKTREES_DIR="$REPO_ROOT/.worktrees"
 
 if [ ! -d "$WORKTREES_DIR" ]; then
@@ -144,6 +145,15 @@ for wt_dir in "$WORKTREES_DIR"/*/; do
   if [ -d "$REPO_ROOT/.claude" ] && [ ! -e "$wt_dir/.claude" ]; then
     ln -s "$REPO_ROOT/.claude" "$wt_dir/.claude"
     echo "Restored .claude symlink for $WORKTREE_NAME"
+  fi
+
+  # Ensure ~/.claude/projects/ symlink exists so worktree shares approval state
+  CLAUDE_PROJECTS_DIR="$HOME/.claude/projects"
+  MAIN_PROJECT_KEY=$(echo "$REPO_ROOT" | tr '/' '-')
+  WT_PROJECT_KEY=$(echo "$wt_dir" | tr '/' '-')
+  if [ -d "$CLAUDE_PROJECTS_DIR/$MAIN_PROJECT_KEY" ] && [ ! -e "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY" ]; then
+    ln -s "$CLAUDE_PROJECTS_DIR/$MAIN_PROJECT_KEY" "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY"
+    echo "Restored .claude/projects symlink for $WORKTREE_NAME"
   fi
 
   # Create tmux session with same 3-window pattern as hack

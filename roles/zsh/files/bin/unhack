@@ -81,7 +81,8 @@ if ! git show-ref --verify --quiet "refs/heads/$BRANCH"; then
   exit 1
 fi
 
-REPO_ROOT=$(git rev-parse --show-toplevel)
+# Resolve to the main worktree root, not a linked worktree
+REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
 
 # --- Swap guard --------------------------------------------------------------
 
@@ -190,6 +191,17 @@ else
         fi
         ;;
     esac
+  fi
+
+  # Clean up ~/.claude/projects/ symlink for this worktree
+  CLAUDE_PROJECTS_DIR="$HOME/.claude/projects"
+  WT_PROJECT_KEY=$(echo "$WORKTREE_PATH" | tr '/' '-')
+  if [ -L "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY" ]; then
+    if $DRY_RUN; then
+      echo "[dry-run] Would remove claude projects symlink: $CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY"
+    else
+      rm "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY"
+    fi
   fi
 
   if $DRY_RUN; then

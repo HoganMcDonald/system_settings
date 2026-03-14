@@ -19,7 +19,7 @@ Options:
 
 Temporarily checks out a worktree's branch in the main working directory
 so you can run/test apps that don't support multiple instances. The
-worktree is detached and any uncommitted changes are stashed.
+worktree is detached and any uncommitted changes carry over to main.
 
 Use `unswap` to restore everything.
 
@@ -65,7 +65,8 @@ if ! git rev-parse --is-inside-work-tree &>/dev/null; then
   exit 1
 fi
 
-REPO_ROOT=$(git rev-parse --show-toplevel)
+# Resolve to the main worktree root, not a linked worktree
+REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
 
 # Must be in the main worktree, not inside .worktrees/
 case "$(pwd)" in
@@ -92,6 +93,18 @@ if [ -f "$SWAP_STATE" ]; then
 fi
 
 # --- Helpers -----------------------------------------------------------------
+
+# Find a stash entry by SHA and return its ref (e.g., stash@{2})
+find_stash_by_sha() {
+  local target_sha="$1"
+
+  git stash list --pretty='%H %gd' 2>/dev/null | while IFS=' ' read -r sha ref; do
+    if [ "$sha" = "$target_sha" ]; then
+      echo "$ref"
+      break
+    fi
+  done
+}
 
 find_worktree_for_branch() {
   local target_branch="$1"
@@ -170,6 +183,22 @@ git -C "$WORKTREE_PATH" checkout --detach
 echo "Checking out '$BRANCH' in main directory..."
 git checkout "$BRANCH"
 
+# --- Restore worktree changes into main -------------------------------------
+
+if [ -n "$WORKTREE_STASH_SHA" ]; then
+  STASH_REF=$(find_stash_by_sha "$WORKTREE_STASH_SHA")
+  if [ -n "$STASH_REF" ]; then
+    echo "Restoring worktree changes into main..."
+    if ! git stash pop "$STASH_REF"; then
+      echo ""
+      echo "Warning: stash pop had conflicts. Resolve them manually."
+      echo "The stash ref was: $STASH_REF"
+    fi
+  else
+    echo "Warning: could not find worktree stash (SHA: ${WORKTREE_STASH_SHA:0:7}), skipping."
+  fi
+fi
+
 # --- Write state file --------------------------------------------------------
 
 mkdir -p "$REPO_ROOT/.worktrees"
@@ -180,7 +209,6 @@ SWAP_WORKTREE_PATH=$WORKTREE_PATH
 SWAP_WORKTREE_NAME=$WORKTREE_NAME
 SWAP_MAIN_BRANCH=$MAIN_BRANCH
 SWAP_MAIN_STASH_SHA=$MAIN_STASH_SHA
-SWAP_WORKTREE_STASH_SHA=$WORKTREE_STASH_SHA
 EOF
 
 # --- Summary -----------------------------------------------------------------

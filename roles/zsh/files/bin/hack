@@ -63,7 +63,8 @@ fi
 
 # --- Helpers -----------------------------------------------------------------
 
-REPO_ROOT=$(git rev-parse --show-toplevel)
+# Resolve to the main worktree root, not a linked worktree
+REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
 
 find_worktree_for_branch() {
   local target_branch="$1"
@@ -172,6 +173,14 @@ else
   # Symlink .claude so the worktree inherits permissions and settings
   if [ -d "$REPO_ROOT/.claude" ] && [ ! -e "$WORKTREE_PATH/.claude" ]; then
     ln -s "$REPO_ROOT/.claude" "$WORKTREE_PATH/.claude"
+  fi
+
+  # Symlink ~/.claude/projects/ entry so worktree shares approval state with main repo
+  CLAUDE_PROJECTS_DIR="$HOME/.claude/projects"
+  MAIN_PROJECT_KEY=$(echo "$REPO_ROOT" | tr '/' '-')
+  WT_PROJECT_KEY=$(echo "$WORKTREE_PATH" | tr '/' '-')
+  if [ -d "$CLAUDE_PROJECTS_DIR/$MAIN_PROJECT_KEY" ] && [ ! -e "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY" ]; then
+    ln -s "$CLAUDE_PROJECTS_DIR/$MAIN_PROJECT_KEY" "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY"
   fi
 fi
 
