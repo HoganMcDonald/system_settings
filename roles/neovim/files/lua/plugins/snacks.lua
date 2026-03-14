@@ -1,6 +1,8 @@
 return {
   {
     'folke/snacks.nvim',
+    lazy = false,
+    priority = 1000,
     opts = {},
     keys = {
       -- Disable the default <leader>n notification history keymap
