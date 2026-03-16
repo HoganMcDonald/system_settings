@@ -10,6 +10,13 @@
 - name: Set global version for rust to {{versions[0]}}
   command: "asdf set rust {{versions[0]}}"
 
-- name: Install rustup components
+- name: Install rustup components on default toolchain
   command: rustup component add {{item}}
+  loop: "{{components}}"
+
+- name: Install rustup components on all installed toolchains
+  shell: |
+    for toolchain in $(rustup toolchain list | awk '{print $1}'); do
+      rustup component add {{item}} --toolchain "$toolchain" 2>/dev/null || true
+    done
   loop: "{{components}}"
