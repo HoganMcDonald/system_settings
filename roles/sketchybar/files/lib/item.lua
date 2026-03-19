@@ -2,6 +2,8 @@
 --- Handles creation, configuration and management of bar items
 --- @class Item
 
+local utils = require('lib.utils')
+
 local Item = {}
 Item.__index = Item
 
@@ -89,16 +91,17 @@ function Item:script(script_path, update_freq)
   return self:set(script_config)
 end
 
---- Subscribe to events
---- @param event string Event name
---- @param callback function Callback function
+--- Subscribe to one or more events (shell script set via :script() handles them)
+--- @param ... string Event names
 --- @return Item
-function Item:subscribe(event, callback)
+function Item:subscribe(...)
   if not self.sbar_item then
     error("Item not properly initialized")
   end
-  
-  self.sbar_item:subscribe(event, callback)
+
+  for _, event in ipairs({...}) do
+    self.sbar_item:subscribe(event)
+  end
   return self
 end
 
@@ -267,18 +270,7 @@ end
 --- Get current item configuration
 --- @return table Current configuration
 function Item:get_config()
-  local config_copy = {}
-  for k, v in pairs(self.config) do
-    if type(v) == "table" then
-      config_copy[k] = {}
-      for k2, v2 in pairs(v) do
-        config_copy[k][k2] = v2
-      end
-    else
-      config_copy[k] = v
-    end
-  end
-  return config_copy
+  return utils.shallow_copy(self.config)
 end
 
 --- Get item name
