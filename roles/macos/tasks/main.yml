@@ -1,8 +1,7 @@
-- { include_tasks: keyboard.yml,  tags: "keyboard" }
-- { include_tasks: screen.yml,  tags: "screen" }
-- { include_tasks: dock.yml,  tags: "dock" }
-- { include_tasks: finder.yml,  tags: "finder" }
-- { include_tasks: energy-saver.yml,  tags: "energy-saver" }
-- { include_tasks: hot-corners.yml,  tags: "hot-corners" }
-- { include_tasks: trackpad.yml,  tags: "trackpad" }
-- { include_tasks: desktop-screen-saver.yml,  tags: "desktop-screen-saver" }
+- { include_tasks: keyboard.yml, tags: "keyboard" }
+- { include_tasks: screen.yml, tags: "screen" }
+- { include_tasks: dock.yml, tags: "dock" }
+- { include_tasks: finder.yml, tags: "finder" }
+- { include_tasks: energy-saver.yml, tags: "energy-saver" }
+- { include_tasks: hot-corners.yml, tags: "hot-corners" }
+- { include_tasks: trackpad.yml, tags: "trackpad" }
