@@ -2,6 +2,7 @@
 --- This demonstrates how to use the modular component system
 
 local Bar = require('lib').Bar
+local Event = require('lib').Event
 local colors = require('colors')
 
 local clock = require('bar.components.clock')
@@ -89,9 +90,9 @@ function M.setup()
     :padding(10, 10)
     :apply()
 
-  -- Add custom events
-  require('sbar').get().add("event", "aerospace_mode_change")
-  require('sbar').get().add("event", "aerospace_workspace_change")
+  -- Register custom events
+  Event:new("aerospace_mode_change")
+  Event:new("aerospace_workspace_change")
 
   -- Store references for later use
   M.components = {

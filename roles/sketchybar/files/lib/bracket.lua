@@ -2,6 +2,8 @@
 --- Handles creation and management of item brackets/groups
 --- @class Bracket
 
+local utils = require('lib.utils')
+
 local Bracket = {}
 Bracket.__index = Bracket
 
@@ -209,18 +211,7 @@ end
 --- Get current bracket configuration
 --- @return table Current configuration
 function Bracket:get_config()
-  local config_copy = {}
-  for k, v in pairs(self.config) do
-    if type(v) == "table" then
-      config_copy[k] = {}
-      for k2, v2 in pairs(v) do
-        config_copy[k][k2] = v2
-      end
-    else
-      config_copy[k] = v
-    end
-  end
-  return config_copy
+  return utils.shallow_copy(self.config)
 end
 
 --- Query bracket properties from sketchybar

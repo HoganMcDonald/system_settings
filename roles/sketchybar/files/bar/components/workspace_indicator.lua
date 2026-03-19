@@ -2,12 +2,19 @@ local Bracket = require('lib').Bracket
 local Item = require('lib').Item
 local colors = require('colors')
 
+local WORKSPACE_COUNT  = 4
+local ACTIVE_WIDTH     = 24
+local INACTIVE_WIDTH   = 12
+local SPACER_WIDTH     = 6
+local OVAL_HEIGHT      = 8
+local OVAL_RADIUS      = 4
+
 local function workspace_indicator()
   local workspace_items = {}
   local all_item_names = {}
 
-  -- Create 4 workspace oval indicators with spacers
-  for i = 1, 4 do
+  -- Create workspace oval indicators with spacers
+  for i = 1, WORKSPACE_COUNT do
     local workspace_item = Item:new('item', 'workspace_' .. i, 'center')
     workspace_item:set {
       position = 'center',
@@ -16,13 +23,13 @@ local function workspace_indicator()
       background = {
         drawing = true,
         color = colors.lavender,
-        height = 8,
-        corner_radius = 4,
+        height = OVAL_HEIGHT,
+        corner_radius = OVAL_RADIUS,
         padding_left = 0,
         padding_right = 0,
         y_offset = 0,
       },
-      width = i == 1 and 24 or 12, -- Default to workspace 1 being active
+      width = i == 1 and ACTIVE_WIDTH or INACTIVE_WIDTH,
       padding_left = 0,
       padding_right = 0,
     }
@@ -31,14 +38,14 @@ local function workspace_indicator()
     table.insert(all_item_names, 'workspace_' .. i)
 
     -- Add spacer between ovals (except after the last one)
-    if i < 4 then
+    if i < WORKSPACE_COUNT then
       local spacer = Item:new('item', 'workspace_spacer_' .. i, 'center')
       spacer:set {
         position = 'center',
         icon = { drawing = false },
         label = { drawing = false },
         background = { drawing = false },
-        width = 6,
+        width = SPACER_WIDTH,
         padding_left = 0,
         padding_right = 0,
       }

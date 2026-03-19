@@ -2,6 +2,8 @@
 --- Handles global bar properties and configuration
 --- @class Bar
 
+local utils = require('lib.utils')
+
 local Bar = {}
 Bar.__index = Bar
 
@@ -34,7 +36,6 @@ function Bar:configure(config)
   for k, v in pairs(config) do
     self.config[k] = v
   end
-  sbar.bar(self.config)
   return self
 end
 
@@ -157,18 +158,7 @@ end
 --- Get current bar configuration
 --- @return table Current configuration
 function Bar:get_config()
-  local config_copy = {}
-  for k, v in pairs(self.config) do
-    if type(v) == "table" then
-      config_copy[k] = {}
-      for k2, v2 in pairs(v) do
-        config_copy[k][k2] = v2
-      end
-    else
-      config_copy[k] = v
-    end
-  end
-  return config_copy
+  return utils.shallow_copy(self.config)
 end
 
 --- Reset bar configuration to defaults
