@@ -7,6 +7,12 @@
     name: tmuxinator
 
 # tmux config
+- name: Install TPM (Tmux Plugin Manager)
+  git:
+    repo: https://github.com/tmux-plugins/tpm
+    dest: ~/.tmux/plugins/tpm
+    depth: 1
+
 - name: tmux - link config file
   file:
     src: "{{ dotfiles_home }}/roles/tmux/files/tmux.conf"
