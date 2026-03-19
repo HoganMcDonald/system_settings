@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+set -e
+
+DOTFILES_REPO="$(cd "$(dirname "$0")/.." && pwd)"
+DOTFILES_STATE="$HOME/.dotfiles"
+LOCK_FILE="$DOTFILES_STATE/lock.json"
+
+# ── helpers ──────────────────────────────────────────────────────────────────
+
+_ensure_state_dir() {
+  mkdir -p "$DOTFILES_STATE"
+}
+
+_require_jq() {
+  if ! command -v jq &>/dev/null; then
+    echo "error: jq is required but not installed (brew install jq)" >&2
+    exit 1
+  fi
+}
+
+_list_roles() {
+  find "$DOTFILES_REPO/roles" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort
+}
+
+_role_hash() {
+  local role="$1"
+  git -C "$DOTFILES_REPO" log -1 --format="%H" -- "roles/$role/" 2>/dev/null
+}
+
+_locked_hash() {
+  local role="$1"
+  if [ ! -f "$LOCK_FILE" ]; then
+    echo ""
+    return
+  fi
+  jq -r ".roles[\"$role\"] // empty" "$LOCK_FILE" 2>/dev/null
+}
+
+_locked_timestamp() {
+  if [ ! -f "$LOCK_FILE" ]; then
+    echo "never"
+    return
+  fi
+  jq -r '.timestamp // "never"' "$LOCK_FILE" 2>/dev/null
+}
+
+# ── commands ─────────────────────────────────────────────────────────────────
+
+cmd_status() {
+  _require_jq
+  local timestamp
+  timestamp=$(_locked_timestamp)
+  local last_run
+  if [ "$timestamp" = "never" ]; then
+    last_run="never"
+  else
+    last_run=$(echo "$timestamp" | cut -dT -f1)
+  fi
+
+  echo "Roles vs lockfile (last applied: $last_run):"
+  echo ""
+
+  local all_ok=true
+  while IFS= read -r role; do
+    local current locked label
+    current=$(_role_hash "$role")
+    locked=$(_locked_hash "$role")
+
+    if [ -z "$current" ]; then
+      # Role dir exists locally but has no commits touching it yet
+      label="[NO COMMITS]"
+    elif [ -z "$locked" ]; then
+      label="[NEW]      "
+      all_ok=false
+    elif [ "$current" = "$locked" ]; then
+      label="[OK]       "
+    else
+      label="[CHANGED]  "
+      all_ok=false
+    fi
+
+    printf "  %-20s %s\n" "$role" "$label"
+  done < <(_list_roles)
+
+  echo ""
+  if $all_ok; then
+    echo "All roles are up to date."
+  else
+    echo "Run 'dotfiles apply' to apply pending changes."
+  fi
+}
+
+cmd_lock() {
+  _require_jq
+  _ensure_state_dir
+
+  local timestamp
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+  local roles_json="{}"
+  while IFS= read -r role; do
+    local hash
+    hash=$(_role_hash "$role")
+    if [ -n "$hash" ]; then
+      roles_json=$(echo "$roles_json" | jq --arg role "$role" --arg hash "$hash" '.[$role] = $hash')
+    fi
+  done < <(_list_roles)
+
+  jq -n \
+    --arg ts "$timestamp" \
+    --argjson roles "$roles_json" \
+    '{"timestamp": $ts, "roles": $roles}' \
+    > "$LOCK_FILE"
+
+  echo "Lockfile updated: $LOCK_FILE ($(echo "$roles_json" | jq 'length') roles recorded)"
+}
+
+cmd_apply() {
+  local tag="${1:-}"
+
+  echo "==> Pulling latest changes..."
+  git -C "$DOTFILES_REPO" pull
+
+  echo ""
+  cmd_status
+
+  echo ""
+  echo "==> Running playbook${tag:+ (tag: $tag)}..."
+  if [ -n "$tag" ]; then
+    "$DOTFILES_REPO/bin/bootstrap" "$tag"
+  else
+    "$DOTFILES_REPO/bin/bootstrap"
+  fi
+
+  echo ""
+  echo "==> Updating lockfile..."
+  cmd_lock
+}
+
+cmd_sync() {
+  echo "==> Pulling..."
+  git -C "$DOTFILES_REPO" pull
+
+  echo "==> Pushing..."
+  git -C "$DOTFILES_REPO" push
+
+  echo "Done."
+}
+
+cmd_help() {
+  cat <<EOF
+Usage: dotfiles <command> [args]
+
+Commands:
+  apply [role]   Pull latest, run ansible playbook, update lockfile.
+                 Optionally pass a role tag to apply a single role.
+  sync           Pull then push the dotfiles repo (no ansible run).
+  status         Show which roles have changed since last apply.
+  lock           Write current role hashes to lockfile manually.
+  help           Show this help message.
+
+State directory: ~/.dotfiles/
+  lock.json      Stores role hashes and timestamp of last apply.
+EOF
+}
+
+# ── dispatch ─────────────────────────────────────────────────────────────────
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  apply)  cmd_apply "$@" ;;
+  sync)   cmd_sync ;;
+  status) cmd_status ;;
+  lock)   cmd_lock ;;
+  help|--help|-h) cmd_help ;;
+  *)
+    echo "error: unknown command '$cmd'" >&2
+    echo ""
+    cmd_help
+    exit 1
+    ;;
+esac
