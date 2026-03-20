@@ -1,0 +1,15 @@
+# Nanobot secret variables
+# Copy to vault/nanobot_vars.yml, fill in values, then encrypt:
+#   ansible-vault encrypt vault/nanobot_vars.yml
+#
+# Anthropic API key — https://console.anthropic.com/
+anthropic_api_key: "sk-ant-..."
+
+# Slack bot OAuth token (xoxb-...) from your Slack app
+# Create at https://api.slack.com/apps → OAuth & Permissions → Bot Token Scopes:
+#   chat:write, im:history, im:read, im:write
+slack_bot_token: "xoxb-..."
+
+# Your Slack user ID (e.g. U01ABCDEF) — controls who the bot responds to
+# Find it in Slack: click your name → View profile → More → Copy member ID
+slack_user_id: "U..."

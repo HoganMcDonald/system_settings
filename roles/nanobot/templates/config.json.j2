@@ -1,0 +1,22 @@
+{
+  "providers": {
+    "anthropic": {
+      "apiKey": "{{ anthropic_api_key }}"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": "claude-opus-4-5",
+      "provider": "anthropic"
+    }
+  },
+  "channels": {
+    "slack": {
+      "token": "{{ slack_bot_token }}",
+      "allowFrom": ["{{ slack_user_id }}"]
+    }
+  },
+  "workspace": {
+    "path": "{{ nanobot_workspace_dir }}"
+  }
+}

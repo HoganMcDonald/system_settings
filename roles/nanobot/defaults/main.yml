@@ -1,0 +1,4 @@
+nanobot_config_dir: "{{ ansible_env.HOME }}/.nanobot"
+nanobot_workspace_dir: "{{ ansible_env.HOME }}/.nanobot/workspace"
+nanobot_skills_src: "{{ dotfiles_home }}/roles/nanobot/files/skills"
+meetings_dir: "{{ ansible_env.HOME }}/meetings"

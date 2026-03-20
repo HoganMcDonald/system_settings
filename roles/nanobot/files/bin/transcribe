@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Transcribe a meeting audio file using whisper-cpp (local, on-device)
+# Usage: transcribe <audio-file>
+#
+# Output: ~/meetings/<basename>.txt
+#
+# Models are stored at ~/.cache/whisper/
+# First run will download the base.en model (~150MB).
+# For better accuracy at the cost of speed, use: WHISPER_MODEL=small.en transcribe <file>
+set -euo pipefail
+
+AUDIO_FILE="${1:?Usage: transcribe <audio-file>}"
+OUTPUT_DIR="${HOME}/meetings"
+MODEL="${WHISPER_MODEL:-base.en}"
+BASENAME=$(basename "${AUDIO_FILE%.*}")
+
+if [[ ! -f "${AUDIO_FILE}" ]]; then
+  echo "Error: file not found: ${AUDIO_FILE}" >&2
+  exit 1
+fi
+
+mkdir -p "${OUTPUT_DIR}"
+
+echo "Transcribing ${AUDIO_FILE} (model: ${MODEL})..."
+whisper-cpp \
+  --model "${MODEL}" \
+  --output-txt \
+  --output-file "${OUTPUT_DIR}/${BASENAME}" \
+  "${AUDIO_FILE}"
+
+echo "Done: ${OUTPUT_DIR}/${BASENAME}.txt"

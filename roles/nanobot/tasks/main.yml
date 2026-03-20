@@ -1,0 +1,51 @@
+- name: Install uv (Python package manager)
+  homebrew:
+    name: uv
+    state: present
+
+- name: Install nanobot
+  command: uv tool install nanobot-ai
+  args:
+    creates: "{{ ansible_env.HOME }}/.local/bin/nanobot"
+
+- name: Install whisper-cpp (local on-device meeting transcription)
+  homebrew:
+    name: whisper-cpp
+    state: present
+
+- name: Create meetings directory
+  file:
+    path: "{{ meetings_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Create nanobot config directory
+  file:
+    path: "{{ nanobot_config_dir }}"
+    state: directory
+    mode: "0700"
+
+- name: Create nanobot workspace directory
+  file:
+    path: "{{ nanobot_workspace_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Template nanobot config.json
+  template:
+    src: config.json.j2
+    dest: "{{ nanobot_config_dir }}/config.json"
+    mode: "0600"
+
+- name: Symlink nanobot skills into workspace
+  file:
+    src: "{{ nanobot_skills_src }}"
+    dest: "{{ nanobot_workspace_dir }}/skills"
+    state: link
+    force: yes
+
+- name: Install transcribe helper script
+  copy:
+    src: bin/transcribe
+    dest: "{{ ansible_env.HOME }}/bin/transcribe"
+    mode: "0755"

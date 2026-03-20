@@ -89,7 +89,16 @@ This is a macOS system setup repository containing an Ansible playbook for autom
 - 
 
 ### mcp-hub
-- 
+-
+
+### nanobot
+- Ultra-lightweight personal AI agent (OpenClaw alternative) running locally
+- Connects via Slack DM — create a Slack app at https://api.slack.com/apps with `chat:write`, `im:history`, `im:read`, `im:write` scopes
+- Powered by Claude (Anthropic API key in vault)
+- Secrets: copy `vault/nanobot_vars.yml.example` → `vault/nanobot_vars.yml`, fill in values, then `ansible-vault encrypt vault/nanobot_vars.yml`
+- Run daemon: `nanobot agent` (CLI) or configure as a launchd service for persistent background operation
+- Skills: `gh-workflow` (GitHub PRs/notifications), `linear-triage` (daily standup, ticket creation), `meeting-digest` (transcript → action items → Linear/GitHub)
+- Meeting transcription: `transcribe <audio-file>` → outputs `.txt` to `~/meetings/` using whisper-cpp (Metal-accelerated, fully on-device)
 
 ### mycli
 - 

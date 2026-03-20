@@ -6,6 +6,8 @@
       private: yes
   vars:
     ansible_become_password: "{{ become_password }}"
+  vars_files:
+    - "vault/nanobot_vars.yml"
   roles:
     # ====================
     #   Tools
@@ -46,6 +48,9 @@
     - role: agents
       tags:
         - agents
+    - role: nanobot
+      tags:
+        - nanobot
     - role: neovim
       tags:
         - neovim
