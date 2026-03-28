@@ -28,10 +28,8 @@
 - name: Install global npm packages
   command: "{{ ansible_env.HOME }}/.asdf/installs/nodejs/{{ nodejs_resolved_version.stdout | trim }}/bin/npm install -g {{ item }}"
   loop:
-    - yarn
     - nodemon
     - "@antfu/ni"
-    - pm2
 
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"

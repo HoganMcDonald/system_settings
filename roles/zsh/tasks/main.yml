@@ -48,6 +48,7 @@
     src: "{{ dotfiles_user_home }}/.config/zsh/zshrc"
     dest: "{{dotfiles_user_home}}/.zshrc"
     state: link
+    force: yes
 - name: Create hushlogin file
   file:
     src: "{{ dotfiles_user_home }}/.config/zsh/hushlogin"
