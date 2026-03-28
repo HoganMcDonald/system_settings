@@ -39,3 +39,7 @@
     src: neovim_env_template.j2
     dest: "{{ config }}/nvim/.env"
     mode: "0600" # Ensure only the user has access to the .env file
+
+- name: Record role in lockfile
+  command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
+  changed_when: false

@@ -53,3 +53,7 @@
 - name: Set Homebrew environment for current playbook
   set_fact:
     ansible_env: "{{ ansible_env | combine({'PATH': homebrew_prefix + '/bin:' + homebrew_prefix + '/sbin:' + ansible_env.PATH}) }}"
+
+- name: Record role in lockfile
+  command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
+  changed_when: false

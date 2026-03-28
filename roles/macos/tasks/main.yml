@@ -5,3 +5,7 @@
 - { include_tasks: energy-saver.yml, tags: "energy-saver" }
 - { include_tasks: hot-corners.yml, tags: "hot-corners" }
 - { include_tasks: trackpad.yml, tags: "trackpad" }
+
+- name: Record role in lockfile
+  command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
+  changed_when: false

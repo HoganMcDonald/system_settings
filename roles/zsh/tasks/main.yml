@@ -59,3 +59,7 @@
 - name: Install Starship prompt
   homebrew:
     name: starship
+
+- name: Record role in lockfile
+  command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
+  changed_when: false

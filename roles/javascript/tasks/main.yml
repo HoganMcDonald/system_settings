@@ -31,3 +31,7 @@
   npm:
     name: pm2
     global: yes
+
+- name: Record role in lockfile
+  command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
+  changed_when: false

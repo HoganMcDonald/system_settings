@@ -25,3 +25,7 @@
     dest: "{{ config }}/kitty/macos-launch-services-cmdline"
     state: link
     force: yes
+
+- name: Record role in lockfile
+  command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
+  changed_when: false
