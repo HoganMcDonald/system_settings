@@ -6,6 +6,8 @@
 - name: Install rust versions
   command: asdf install rust {{item}}
   loop: "{{versions}}"
+  register: rust_install
+  failed_when: rust_install.rc != 0 and "is already installed" not in rust_install.stderr
 
 - name: Set global version for rust to {{versions[0]}}
   command: "asdf set rust {{versions[0]}}"

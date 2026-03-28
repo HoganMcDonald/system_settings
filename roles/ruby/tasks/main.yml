@@ -6,6 +6,8 @@
 - name: Install ruby versions
   command: asdf install ruby {{item}}
   loop: "{{versions}}"
+  register: ruby_install
+  failed_when: ruby_install.rc != 0 and "is already installed" not in ruby_install.stderr
 
 - name: Set global version for ruby to {{versions[0]}}
   command: "asdf set ruby {{versions[0]}}"
