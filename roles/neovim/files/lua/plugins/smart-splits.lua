@@ -9,7 +9,7 @@ return {
       -- stop at edge; multiplexer integration handles crossing into tmux panes
       at_edge = "stop",
       move_cursor_same_row = true,
-      log_level = "off",
+      log_level = "fatal",
       multiplexer_integration = "tmux",
     },
     keys = {
