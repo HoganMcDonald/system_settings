@@ -1,7 +1,8 @@
 theme               = Catppuccin Mocha
-background-opacity  = 0.85
+background-opacity  = 0.9
 background-blur     = 85
 
+window-theme = light
 macos-titlebar-style = hidden
 mouse-hide-while-typing = true
 window-save-state = always
