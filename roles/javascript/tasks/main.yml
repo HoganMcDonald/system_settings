@@ -14,8 +14,13 @@
   args:
     chdir: "{{ ansible_env.HOME }}"
 
+- name: Resolve nodejs install path
+  command: asdf where nodejs {{ versions[0] }}
+  register: nodejs_install_path
+  changed_when: false
+
 - name: Install global npm packages
-  command: "{{ ansible_env.HOME }}/.asdf/installs/nodejs/{{ versions[0] }}/bin/npm install -g {{ item }}"
+  command: "{{ nodejs_install_path.stdout | trim }}/bin/npm install -g {{ item }}"
   loop:
     - yarn
     - nodemon
