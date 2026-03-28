@@ -2,6 +2,8 @@ return {
   {
     "mrjones2014/smart-splits.nvim",
     version = ">=1.0.0",
+    -- must load eagerly so @pane-is-vim is set in tmux before any keypress
+    lazy = false,
     opts = {
       default_amount = 3,
       -- stop at edge; multiplexer integration handles crossing into tmux panes
