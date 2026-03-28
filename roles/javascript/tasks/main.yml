@@ -15,14 +15,12 @@
     chdir: "{{ ansible_env.HOME }}"
 
 - name: Install global npm packages
-  command: "{{ ansible_env.HOME }}/.asdf/shims/npm install -g {{ item }}"
+  command: "{{ ansible_env.HOME }}/.asdf/installs/nodejs/{{ versions[0] }}/bin/npm install -g {{ item }}"
   loop:
     - yarn
     - nodemon
     - "@antfu/ni"
     - pm2
-  environment:
-    ASDF_NODEJS_VERSION: "{{ versions[0] }}"
 
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
