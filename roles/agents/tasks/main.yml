@@ -2,10 +2,12 @@
   homebrew_cask:
     name: claude-code
 
-- name: Install Codex CLI
-  npm:
-    name: "@openai/codex"
-    global: yes
+- name: Resolve npm path via asdf
+  shell: |
+    version=$(ls ~/.asdf/installs/nodejs/ | sort -V | tail -1)
+    ASDF_NODEJS_VERSION=$version ~/.asdf/installs/nodejs/$version/bin/npm install -g @openai/codex
+  register: codex_install
+  changed_when: "'added' in codex_install.stdout"
 
 - name: Check if Claude config exists
   stat: path="{{ claude_config_dir }}"
