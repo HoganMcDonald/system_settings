@@ -12,25 +12,13 @@
   args:
     chdir: "{{ ansible_env.HOME }}"
 
-- name: Install "yarn" node.js package globally
-  npm:
-    name: yarn
-    global: yes
-
-- name: Install "nodemon" node.js package globally
-  npm:
-    name: nodemon
-    global: yes
-
-- name: Install "ni" node.js package globally
-  npm:
-    name: "@antfu/ni"
-    global: yes
-
-- name: Install "pm2" node.js package globally
-  npm:
-    name: pm2
-    global: yes
+- name: Install global npm packages
+  command: "{{ ansible_env.HOME }}/.asdf/shims/npm install -g {{ item }}"
+  loop:
+    - yarn
+    - nodemon
+    - "@antfu/ni"
+    - pm2
 
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
