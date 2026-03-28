@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Updates a single role's entry in the lockfile.
+# Called by Ansible at the end of each successful role run.
+set -e
+
+role="${1:?Usage: lock-role <role-name>}"
+role=$(echo "$role" | tr '[:upper:]' '[:lower:]')
+
+DOTFILES_REPO="$(cd "$(dirname "$0")/.." && pwd)"
+LOCK_FILE="$HOME/.dotfiles/lock.json"
+
+mkdir -p "$HOME/.dotfiles"
+
+hash=$(git -C "$DOTFILES_REPO" log -1 --format="%H" -- "roles/$role/" 2>/dev/null)
+if [ -z "$hash" ]; then
+  exit 0
+fi
+
+if [ ! -f "$LOCK_FILE" ]; then
+  printf '{"timestamp":"","roles":{}}\n' > "$LOCK_FILE"
+fi
+
+tmp=$(mktemp)
+jq --arg r "$role" --arg h "$hash" '.roles[$r] = $h' "$LOCK_FILE" > "$tmp"
+mv "$tmp" "$LOCK_FILE"
