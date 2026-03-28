@@ -2,51 +2,32 @@ return {
   {
     "mrjones2014/smart-splits.nvim",
     version = ">=1.0.0",
-    build = "./kitty/install-kittens.bash",
     opts = {
-      -- Default amount of lines/columns to resize by
       default_amount = 3,
-      -- Behavior at edge: 'wrap' | 'split' | 'stop'
-      at_edge = "wrap",
-      -- Move cursor to same row regardless of line numbers
+      -- stop at edge; multiplexer integration handles crossing into tmux panes
+      at_edge = "stop",
       move_cursor_same_row = true,
-      -- Disable logging to prevent error messages
       log_level = "off",
+      multiplexer_integration = "tmux",
     },
     keys = {
-      -- Smart resize: resizes in the direction you specify
-      -- Vertical splits resize horizontally, horizontal splits resize vertically
-      -- Using Ctrl+Arrow keys to avoid Alt key delay on macOS
+      -- Resize: option+= to grow right, option+- to shrink left
       {
-        "<A-h>",
-        function()
-          require("smart-splits").resize_left()
-        end,
-        desc = "Resize split left",
-      },
-      {
-        "<A-j>",
-        function()
-          require("smart-splits").resize_down()
-        end,
-        desc = "Resize split down",
-      },
-      {
-        "<A-k>",
-        function()
-          require("smart-splits").resize_up()
-        end,
-        desc = "Resize split up",
-      },
-      {
-        "<A-l>",
+        "<A-=>",
         function()
           require("smart-splits").resize_right()
         end,
         desc = "Resize split right",
       },
+      {
+        "<A-->",
+        function()
+          require("smart-splits").resize_left()
+        end,
+        desc = "Resize split left",
+      },
 
-      -- Smart navigation between splits (integrates with Kitty/Zellij/Tmux)
+      -- Navigation: Ctrl+hjkl, bridges into adjacent tmux panes at edge
       {
         "<C-h>",
         function()
