@@ -44,6 +44,32 @@ _locked_timestamp() {
   jq -r '.timestamp // "never"' "$LOCK_FILE" 2>/dev/null
 }
 
+_list_changed_roles() {
+  while IFS= read -r role; do
+    local current locked
+    current=$(_role_hash "$role")
+    locked=$(_locked_hash "$role")
+    [ -z "$current" ] && continue
+    if [ -z "$locked" ] || [ "$current" != "$locked" ]; then
+      echo "$role"
+    fi
+  done < <(_list_roles)
+}
+
+_update_timestamp() {
+  _require_jq
+  _ensure_state_dir
+  local timestamp tmp
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  if [ ! -f "$LOCK_FILE" ]; then
+    jq -n --arg ts "$timestamp" '{"timestamp": $ts, "roles": {}}' > "$LOCK_FILE"
+    return
+  fi
+  tmp=$(mktemp)
+  jq --arg ts "$timestamp" '.timestamp = $ts' "$LOCK_FILE" > "$tmp"
+  mv "$tmp" "$LOCK_FILE"
+}
+
 # ── commands ─────────────────────────────────────────────────────────────────
 
 cmd_status() {
@@ -125,16 +151,38 @@ cmd_apply() {
   cmd_status
 
   echo ""
-  echo "==> Running playbook${tag:+ (tag: $tag)}..."
+
+  local tags_to_run
   if [ -n "$tag" ]; then
-    "$DOTFILES_REPO/bin/bootstrap" "$tag"
+    tags_to_run="$tag"
   else
-    "$DOTFILES_REPO/bin/bootstrap"
+    _require_jq
+    local changed_roles=()
+    while IFS= read -r role; do
+      changed_roles+=("$role")
+    done < <(_list_changed_roles)
+
+    if [ ${#changed_roles[@]} -eq 0 ]; then
+      echo "Nothing to apply — all roles are up to date."
+      return
+    fi
+
+    local joined=""
+    for role in "${changed_roles[@]}"; do
+      joined="${joined:+$joined,}$role"
+    done
+    tags_to_run="$joined"
   fi
 
-  echo ""
-  echo "==> Updating lockfile..."
-  cmd_lock
+  echo "==> Running playbook (tags: $tags_to_run)..."
+  if "$DOTFILES_REPO/bin/bootstrap" "$tags_to_run"; then
+    echo ""
+    echo "==> Updating lockfile timestamp..."
+    _update_timestamp
+  else
+    echo ""
+    echo "warn: Playbook exited with errors. Roles that succeeded are recorded in the lockfile."
+  fi
 }
 
 cmd_sync() {
