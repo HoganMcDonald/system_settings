@@ -3,3 +3,12 @@
 .env
 
 **/.claude/settings.local.json
+
+# nanobot runtime files
+roles/nanobot/files/config.json
+roles/nanobot/files/gateway.log
+roles/nanobot/files/history/
+roles/nanobot/files/workspace/sessions/
+roles/nanobot/files/workspace/memory/HISTORY.md
+roles/nanobot/files/workspace/memory/MEMORY.md
+roles/nanobot/files/workspace/cron/
