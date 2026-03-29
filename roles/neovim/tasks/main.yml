@@ -30,7 +30,7 @@
 
 - name: Decrypt neovim environment variables
   ansible.builtin.include_vars:
-    file: "{{ dotfiles_home }}/vault/neovim_env_vars.yml"
+    file: "{{ dotfiles_home }}/vault/secrets.yml"
     name: env_vars
   no_log: false # Avoid logging sensitive information
 
