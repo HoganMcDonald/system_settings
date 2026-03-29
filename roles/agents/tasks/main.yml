@@ -1,3 +1,7 @@
+- name: Load vault secrets
+  ansible.builtin.include_vars:
+    file: "{{ dotfiles_home }}/vault/secrets.yml"
+
 - name: Install Claude Code CLI
   homebrew_cask:
     name: claude-code
@@ -53,22 +57,22 @@
     name: anomalyco/tap/opencode
     state: present
 
-- name: Check if opencode config exists
-  stat: path="{{ opencode_config_dir }}"
-  register: opencode_config_stat
-
-- name: Back up opencode config
-  command: "mv {{ opencode_config_dir }} {{ opencode_config_dir }}_old"
-  args:
-    creates: "{{ opencode_config_dir }}_old"
-  when: opencode_config_stat.stat.exists
-
-- name: Symlink opencode config
+- name: Create opencode config dir
   file:
-    src: "{{ dotfiles_home }}/roles/agents/files/opencode"
-    dest: "{{ opencode_config_dir }}"
+    path: "{{ opencode_config_dir }}"
+    state: directory
+
+- name: Symlink opencode tui config
+  file:
+    src: "{{ dotfiles_home }}/roles/agents/files/opencode/tui.json"
+    dest: "{{ opencode_config_dir }}/tui.json"
     state: link
     force: yes
+
+- name: Render opencode config
+  template:
+    src: opencode.json.j2
+    dest: "{{ opencode_config_dir }}/opencode.json"
 
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
