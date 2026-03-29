@@ -1,5 +1,5 @@
 theme               = Github Dark
-background-opacity  = 0.9
+background-opacity  = 0.85
 background-blur     = 85
 
 window-theme = light
