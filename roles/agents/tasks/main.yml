@@ -43,6 +43,33 @@
     state: link
     force: yes
 
+- name: Tap anomalyco/tap for opencode
+  homebrew_tap:
+    name: anomalyco/tap
+    state: present
+
+- name: Install opencode
+  homebrew:
+    name: anomalyco/tap/opencode
+    state: present
+
+- name: Check if opencode config exists
+  stat: path="{{ opencode_config_dir }}"
+  register: opencode_config_stat
+
+- name: Back up opencode config
+  command: "mv {{ opencode_config_dir }} {{ opencode_config_dir }}_old"
+  args:
+    creates: "{{ opencode_config_dir }}_old"
+  when: opencode_config_stat.stat.exists
+
+- name: Symlink opencode config
+  file:
+    src: "{{ dotfiles_home }}/roles/agents/files/opencode"
+    dest: "{{ opencode_config_dir }}"
+    state: link
+    force: yes
+
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
   changed_when: false

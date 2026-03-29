@@ -1,2 +1,3 @@
 claude_config_dir: "{{ ansible_env.HOME }}/.claude"
 codex_config_dir: "{{ ansible_env.HOME }}/.codex"
+opencode_config_dir: "{{ ansible_env.HOME }}/.config/opencode"
