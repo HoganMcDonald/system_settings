@@ -2,6 +2,16 @@
   homebrew:
     name: tmux
 
+- name: Tap ser-ge/tap for cms
+  homebrew_tap:
+    name: ser-ge/tap
+    state: present
+
+- name: Install cms (tmux session manager)
+  homebrew:
+    name: ser-ge/tap/cms
+    state: present
+
 - name: Install tmuxinator
   homebrew:
     name: tmuxinator
