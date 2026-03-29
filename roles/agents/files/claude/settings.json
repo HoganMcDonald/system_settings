@@ -1,29 +1,100 @@
 {
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "low",
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "lua-lsp@claude-plugins-official": true,
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
+  },
   "hooks": {
     "Notification": [
       {
-        "matcher": "",
         "hooks": [
           {
-            "type": "command",
-            "command": "printf '\\a' > /dev/tty 2>/dev/null; terminal-notifier -title 'Claude Code' -message '$CLAUDE_NOTIFICATION_MESSAGE' -sound default 2>/dev/null || true",
-            "timeout": 5
+            "command": "printf '\\a' \u003e /dev/tty 2\u003e/dev/null; terminal-notifier -title 'Claude Code' -message '$CLAUDE_NOTIFICATION_MESSAGE' -sound default 2\u003e/dev/null || true",
+            "timeout": 5,
+            "type": "command"
           }
-        ]
+        ],
+        "matcher": ""
+      },
+      {
+        "hooks": [
+          {
+            "command": "/opt/homebrew/bin/cms internal hook --socket /var/folders/q7/bys9dr7d1wj1q0f3689g_sdr0000gn/T/cms-501.sock notification",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "async": true,
+            "command": "/opt/homebrew/bin/cms internal hook --socket /var/folders/q7/bys9dr7d1wj1q0f3689g_sdr0000gn/T/cms-501.sock pre-tool-use",
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "/opt/homebrew/bin/cms internal hook --socket /var/folders/q7/bys9dr7d1wj1q0f3689g_sdr0000gn/T/cms-501.sock session-end",
+            "timeout": 1,
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "/opt/homebrew/bin/cms internal hook --socket /var/folders/q7/bys9dr7d1wj1q0f3689g_sdr0000gn/T/cms-501.sock session-start",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "/opt/homebrew/bin/cms internal hook --socket /var/folders/q7/bys9dr7d1wj1q0f3689g_sdr0000gn/T/cms-501.sock stop",
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "/opt/homebrew/bin/cms internal hook --socket /var/folders/q7/bys9dr7d1wj1q0f3689g_sdr0000gn/T/cms-501.sock prompt-submit",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": ""
       }
     ]
   },
   "statusLine": {
-    "type": "command",
-    "command": "npx -y @owloops/claude-powerline@latest --style=minimal"
-  },
-  "enabledPlugins": {
-    "rust-analyzer-lsp@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
-    "lua-lsp@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true,
-    "code-review@claude-plugins-official": true
-  },
-  "alwaysThinkingEnabled": true,
-  "effortLevel": "low"
+    "command": "npx -y @owloops/claude-powerline@latest --style=minimal",
+    "type": "command"
+  }
 }
