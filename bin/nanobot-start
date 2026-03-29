@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -e
+
+PID_FILE="$HOME/.nanobot/gateway.pid"
+LOG_FILE="$HOME/.nanobot/gateway.log"
+
+if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+  echo "nanobot is already running (pid $(cat "$PID_FILE"))"
+  exit 0
+fi
+
+echo "Starting nanobot gateway..."
+nanobot gateway >> "$LOG_FILE" 2>&1 &
+echo $! > "$PID_FILE"
+
+echo "nanobot started (pid $(cat "$PID_FILE"))"
+echo "Logs: $LOG_FILE"
