@@ -46,6 +46,9 @@
     - role: agents
       tags:
         - agents
+    - role: nanobot
+      tags:
+        - nanobot
     - role: neovim
       tags:
         - neovim

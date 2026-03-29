@@ -1,0 +1,29 @@
+---
+- name: Load vault secrets
+  ansible.builtin.include_vars:
+    file: "{{ dotfiles_home }}/vault/secrets.yml"
+
+- name: Install uv
+  homebrew:
+    name: uv
+    state: present
+
+- name: Install nanobot-ai via uv
+  command: uv tool install nanobot-ai
+  register: nanobot_install
+  changed_when: "'Installed' in nanobot_install.stdout"
+  failed_when: nanobot_install.rc != 0 and "already installed" not in nanobot_install.stderr
+
+- name: Create nanobot config dir
+  file:
+    path: "{{ nanobot_config_dir }}"
+    state: directory
+
+- name: Render nanobot config
+  template:
+    src: config.json.j2
+    dest: "{{ nanobot_config_dir }}/config.json"
+
+- name: Record role in lockfile
+  command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
+  changed_when: false
