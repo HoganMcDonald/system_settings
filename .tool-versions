@@ -1,5 +1,5 @@
 nodejs 25.1.0
 ruby 3.4.6
-lua 5.4.7
+lua 5.5.0
 rust 1.94.0
 neovim stable --home
