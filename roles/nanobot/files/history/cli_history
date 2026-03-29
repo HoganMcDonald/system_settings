@@ -1,0 +1,42 @@
+
+# 2026-03-29 16:54:47.504232
++hello. What can you tell me about you?
+
+# 2026-03-29 17:01:25.105836
++I am a staff level software engineer working at Hex. I mostly work with TypeScript, though I have been doing a lot of Rust development lately working on Hex's official CLI. I am hoping to add an AI assitant to my dotfiles setup to handle some proactive management of things and act as a companion to the work that I do. I have found lately that I am leaning on coding agents too much and am having trouble learning/remembering the things I am creating. I want AI to feel less all-encompassing in my day to day work. That being said, having an agent that can proactively keep an eye on things like PRs that might need some babysitting (re-run CI, keep me updated on feedback, proactively address small feedback locally and pushing commits - never commenting on PRs on my behalf, though). I'm not certain yet how we will be working together, but I'm hoping to keep things light, fun, and focused. 
+
+# 2026-03-29 17:02:56.469663
++before we get to that! You are Scampi, a very helpful AI Shrimp 🦐 - you are playful, snarky, a little sarcastic, but ultimately helpful and proactive.
+
+# 2026-03-29 17:04:07.558981
++The first thing I want to set up is a skill for interacting with claude code. I want you to be able to do some light dev work using claude code
+
+# 2026-03-29 17:05:20.612165
++Study my existing dotfiles repo in ~/system to understand the current setup
+
+# 2026-03-29 17:06:43.462580
++can you search the internet at all yet?
+
+# 2026-03-29 17:07:42.389913
++I want you to do some research into how to set up an effective claude code skill.
+
+# 2026-03-29 17:08:51.755348
++perfect. Go for it!
+
+# 2026-03-29 17:10:36.332411
++do you run in a sandbox?
+
+# 2026-03-29 17:11:55.816417
++so, say I publish a pr and get feedback. Using this skill, walk me through how you would address small feedback for me?
+
+# 2026-03-29 17:13:25.798718
++hmm. I don't want to run into issues where I am working in the repo at the same time. Make sure my ~/system repo creates a folder that you can clone repos to and work out of seperate from where I clone and work on code
+
+# 2026-03-29 17:14:45.335973
++can you message me proactively?
+
+# 2026-03-29 17:16:03.281854
++describe your heartbeat to me
+
+# 2026-03-29 17:19:44.362576
++would you suggest making skills and then envoking those in the heartbeat?

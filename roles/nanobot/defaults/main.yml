@@ -1,2 +1,3 @@
 ---
 nanobot_config_dir: "{{ ansible_env.HOME }}/.nanobot"
+agent_workspace_dir: "{{ ansible_env.HOME }}/code/agent-workspace"
