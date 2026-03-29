@@ -6,6 +6,8 @@
 - name: Install lua versions
   command: asdf install lua {{item}}
   loop: "{{versions}}"
+  register: lua_install
+  failed_when: lua_install.rc != 0 and "is already installed" not in lua_install.stderr
 
 - name: Set global version for lua to {{versions[0]}}
   command: "asdf set lua {{versions[0]}}"
