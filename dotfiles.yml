@@ -81,6 +81,9 @@
     # ====================
     #   Languages
     # ====================
+    - role: lua
+      tags:
+        - lua
     - role: ruby
       tags:
         - ruby
