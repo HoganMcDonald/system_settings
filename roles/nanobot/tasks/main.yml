@@ -29,6 +29,13 @@
     path: "{{ agent_workspace_dir }}"
     state: directory
 
+- name: Symlink nanobot workspace skills
+  file:
+    src: "{{ dotfiles_home }}/roles/nanobot/files/workspace/skills"
+    dest: "{{ nanobot_config_dir }}/workspace/skills"
+    state: link
+    force: yes
+
 - name: Ensure nanobot scripts are executable
   file:
     path: "{{ playbook_dir }}/bin/{{ item }}"
