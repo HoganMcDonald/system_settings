@@ -4,6 +4,21 @@
 
 **/.claude/settings.local.json
 
+# codex runtime files
+roles/agents/files/codex/auth.json
+roles/agents/files/codex/version.json
+roles/agents/files/codex/cache/
+roles/agents/files/codex/models_cache.json
+roles/agents/files/codex/logs_*.sqlite*
+roles/agents/files/codex/state_*.sqlite*
+roles/agents/files/codex/log/
+roles/agents/files/codex/shell_snapshots/
+roles/agents/files/codex/memories/
+roles/agents/files/codex/.tmp/
+roles/agents/files/codex/tmp/
+roles/agents/files/codex/.personality_migration
+roles/agents/files/codex/skills/.system/
+
 # nanobot runtime files
 roles/nanobot/files/config.json
 roles/nanobot/files/gateway.log
