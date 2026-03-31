@@ -15,9 +15,10 @@ skill to address small changes. The user always reviews and ships — never auto
 ## Workflow
 
 ### Heartbeat / proactive check
-1. Run `scripts/pr_status.sh OWNER/REPO` for each known repo
-2. For any PR with new review comments or failed CI, summarize and notify
-3. Log findings to memory/history even if no notification channel is available
+1. Run `scripts/pr_status.sh --mine` to get all your open PRs
+2. Run `scripts/pr_status.sh --review-requested` to get PRs waiting on you
+3. For any PR with new review comments or failed CI, summarize and notify
+4. Log findings to memory/history even if no notification channel is available
 
 ### Addressing feedback (on request)
 1. **Fetch** — run `pr_status.sh OWNER/REPO PR_NUM` to get full PR detail + CI state
@@ -68,5 +69,8 @@ Add repos to monitor here as they become relevant. Format: `owner/repo`.
 
 ## Reference
 
-- `scripts/pr_status.sh` — fetch open PRs or single PR detail + CI state
+- `scripts/pr_status.sh --mine` — all open PRs authored by you (cross-repo)
+- `scripts/pr_status.sh --review-requested` — PRs waiting on your review (cross-repo)
+- `scripts/pr_status.sh <owner/repo>` — open PRs in a specific repo
+- `scripts/pr_status.sh <owner/repo> <pr_number>` — single PR detail + CI state
 - `references/gh-commands.md` — full gh CLI reference for PR/CI operations
