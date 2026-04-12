@@ -25,6 +25,9 @@
     - role: devbox
       tags:
         - devbox
+    - role: direnv
+      tags:
+        - direnv
     - role: JavaScript
       tags:
         - javascript
