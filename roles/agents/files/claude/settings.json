@@ -96,5 +96,6 @@
     "typescript-lsp@claude-plugins-official": true
   },
   "alwaysThinkingEnabled": true,
-  "effortLevel": "low"
+  "effortLevel": "low",
+  "model": "opus"
 }
