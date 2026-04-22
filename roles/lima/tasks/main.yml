@@ -44,6 +44,12 @@
     launchctl load "{{ ansible_env.HOME }}/Library/LaunchAgents/com.hoganmcdonald.lima-open.plist"
   when: lima_open_agent.changed
 
+- name: Ensure lima share directory exists
+  file:
+    path: "{{ ansible_env.HOME }}/.local/share/lima"
+    state: directory
+    mode: '0755'
+
 - name: Stage VM-side xdg-open shim for install into guest
   copy:
     src: xdg-open
