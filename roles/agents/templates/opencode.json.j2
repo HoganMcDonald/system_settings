@@ -1,12 +1,19 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "anthropic/claude-sonnet-4-6",
+  "model": "ollama/qwen3.6-27b",
   "autoupdate": "notify",
   "snapshot": true,
   "provider": {
-    "anthropic": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local)",
       "options": {
-        "apiKey": "{{ anthropic_api_key }}"
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "qwen3.6-27b": {
+          "name": "Qwen 3.6 27B (local)"
+        }
       }
     }
   }
