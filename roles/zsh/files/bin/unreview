@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+#
+# unreview - Clean up a review session (tmux + worktree)
+#
+# Usage: unreview <branch-name> [-n|--dry-run]
+
+set -e
+
+# --- Help -------------------------------------------------------------------
+
+display_help() {
+  cat << 'EOF'
+unreview - Clean up a review session (tmux + worktree)
+
+Usage: unreview [options] <branch-name>
+
+Options:
+  -n, --dry-run  Show what would be done without doing it
+  -h, --help     Display this help message and exit
+
+Tears down the tmux session and worktree associated with a review branch.
+Does NOT delete the branch itself — it is not yours to manage.
+
+Example:
+  unreview feat/add-auth
+  unreview feat/add-auth --dry-run
+EOF
+  exit 0
+}
+
+# --- Arg parsing -------------------------------------------------------------
+
+DRY_RUN=false
+BRANCH=""
+
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help)
+      display_help
+      ;;
+    -n|--dry-run)
+      DRY_RUN=true
+      ;;
+    -*)
+      echo "Error: unknown option: $arg"
+      exit 1
+      ;;
+    *)
+      if [ -n "$BRANCH" ]; then
+        echo "Error: unexpected argument: $arg"
+        exit 1
+      fi
+      BRANCH="$arg"
+      ;;
+  esac
+done
+
+if [ -z "$BRANCH" ]; then
+  echo "Error: expected a branch name"
+  echo "Usage: unreview <branch-name> [-n|--dry-run]"
+  exit 1
+fi
+
+# --- Prereq checks ----------------------------------------------------------
+
+if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+  echo "Error: not inside a git repository"
+  exit 1
+fi
+
+if ! command -v tmux &>/dev/null; then
+  echo "Error: tmux is not installed (brew install tmux)"
+  exit 1
+fi
+
+REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
+
+# --- Helpers ----------------------------------------------------------------
+
+find_worktree_for_branch() {
+  local target_branch="$1"
+  local wt_path=""
+
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*)
+        wt_path="${line#worktree }"
+        ;;
+      "branch refs/heads/$target_branch")
+        echo "$wt_path"
+        return 0
+        ;;
+      "")
+        wt_path=""
+        ;;
+    esac
+  done < <(git worktree list --porcelain)
+
+  return 1
+}
+
+find_sessions_for_worktree() {
+  local wt_path="$1"
+
+  if ! tmux list-panes -a -F '#{session_name} #{pane_current_path}' 2>/dev/null | while IFS=' ' read -r session pane_path; do
+    case "$pane_path" in
+      "$wt_path"|"$wt_path"/*)
+        echo "$session"
+        ;;
+    esac
+  done | sort -u; then
+    return 0
+  fi
+}
+
+# --- Find worktree ----------------------------------------------------------
+
+WORKTREE_PATH=$(find_worktree_for_branch "$BRANCH" || true)
+
+if [ -z "$WORKTREE_PATH" ]; then
+  echo "No worktree found for branch '$BRANCH'."
+  exit 0
+fi
+
+echo "Worktree: $WORKTREE_PATH"
+
+# --- Find and kill tmux sessions --------------------------------------------
+
+SESSIONS=$(find_sessions_for_worktree "$WORKTREE_PATH")
+
+if [ -n "$SESSIONS" ]; then
+  while IFS= read -r session; do
+    if $DRY_RUN; then
+      echo "[dry-run] Would kill tmux session: $session"
+    else
+      if [ -n "$TMUX" ]; then
+        CURRENT_SESSION=$(tmux display-message -p '#S')
+        if [ "$CURRENT_SESSION" = "$session" ]; then
+          OTHER=$(tmux list-sessions -F '#S' | grep -v "^${session}$" | head -1 || true)
+          if [ -z "$OTHER" ]; then
+            echo "Error: cannot kill session '$session' — it is the only tmux session"
+            echo "Run unreview from a different tmux session."
+            exit 1
+          fi
+          echo "Switching to session '$OTHER' before killing '$session'..."
+          tmux switch-client -t "$OTHER"
+        fi
+      fi
+      echo "Killing tmux session: $session"
+      tmux kill-session -t "$session"
+    fi
+  done <<< "$SESSIONS"
+else
+  echo "No tmux sessions found for this worktree."
+fi
+
+# --- Remove worktree --------------------------------------------------------
+
+if [ "$(pwd)" != "$REPO_ROOT" ]; then
+  case "$(pwd)" in
+    "$WORKTREE_PATH"|"$WORKTREE_PATH"/*)
+      if $DRY_RUN; then
+        echo "[dry-run] Would cd to $REPO_ROOT"
+      else
+        cd "$REPO_ROOT"
+      fi
+      ;;
+  esac
+fi
+
+CLAUDE_PROJECTS_DIR="$HOME/.claude/projects"
+WT_PROJECT_KEY=$(echo "$WORKTREE_PATH" | tr '/' '-')
+if [ -L "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY" ]; then
+  if $DRY_RUN; then
+    echo "[dry-run] Would remove claude projects symlink: $CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY"
+  else
+    rm "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY"
+  fi
+fi
+
+if $DRY_RUN; then
+  echo "[dry-run] Would remove worktree: git worktree remove $WORKTREE_PATH"
+else
+  echo "Removing worktree: $WORKTREE_PATH"
+  git worktree remove "$WORKTREE_PATH"
+fi
+
+# --- Summary -----------------------------------------------------------------
+
+echo ""
+echo "unreview complete for '$BRANCH'."
+echo "Note: branch '$BRANCH' was not deleted — it belongs to someone else."
