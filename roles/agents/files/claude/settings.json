@@ -10,77 +10,6 @@
             "timeout": 5
           }
         ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/opt/homebrew/bin/cms internal hook --socket /var/folders/q7/bys9dr7d1wj1q0f3689g_sdr0000gn/T/cms-501.sock notification",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/opt/homebrew/bin/cms internal hook --socket /var/folders/q7/bys9dr7d1wj1q0f3689g_sdr0000gn/T/cms-501.sock pre-tool-use",
-            "timeout": 5,
-            "async": true
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/opt/homebrew/bin/cms internal hook --socket /var/folders/q7/bys9dr7d1wj1q0f3689g_sdr0000gn/T/cms-501.sock session-end",
-            "timeout": 1
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/opt/homebrew/bin/cms internal hook --socket /var/folders/q7/bys9dr7d1wj1q0f3689g_sdr0000gn/T/cms-501.sock session-start",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/opt/homebrew/bin/cms internal hook --socket /var/folders/q7/bys9dr7d1wj1q0f3689g_sdr0000gn/T/cms-501.sock stop",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/opt/homebrew/bin/cms internal hook --socket /var/folders/q7/bys9dr7d1wj1q0f3689g_sdr0000gn/T/cms-501.sock prompt-submit",
-            "timeout": 10
-          }
-        ]
       }
     ]
   },
@@ -97,5 +26,5 @@
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "low",
-  "model": "opus"
+  "model": "opus[1m]"
 }
