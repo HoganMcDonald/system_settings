@@ -1,0 +1,62 @@
+---
+- name: Install Ollama
+  community.general.homebrew_cask:
+    name: ollama-app
+    state: present
+
+- name: Ensure Ollama server is running
+  shell: |
+    if ! pgrep -f "Ollama.app" >/dev/null 2>&1 && ! pgrep -x ollama >/dev/null 2>&1; then
+      open -ga Ollama
+      for _ in $(seq 1 20); do
+        if curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+          exit 0
+        fi
+        sleep 0.5
+      done
+      echo "Ollama did not become ready in time" >&2
+      exit 1
+    fi
+  changed_when: false
+
+- name: Write Modelfiles
+  template:
+    src: Modelfile.j2
+    dest: "/tmp/ollama-modelfile-{{ item.name }}"
+    mode: '0644'
+  loop: "{{ ollama_models }}"
+  loop_control:
+    loop_var: model
+
+- name: List existing Ollama models
+  command: ollama list
+  register: ollama_list
+  changed_when: false
+
+- name: Create Ollama models
+  command: "ollama create {{ item.name }} -f /tmp/ollama-modelfile-{{ item.name }}"
+  loop: "{{ ollama_models }}"
+  loop_control:
+    loop_var: item
+  when: item.name not in ollama_list.stdout
+
+- name: Clean up Modelfiles
+  file:
+    path: "/tmp/ollama-modelfile-{{ item.name }}"
+    state: absent
+  loop: "{{ ollama_models }}"
+  loop_control:
+    loop_var: item
+
+- name: Verify Ollama installation
+  command: ollama --version
+  register: ollama_version
+  changed_when: false
+
+- name: Display Ollama version
+  debug:
+    msg: "{{ ollama_version.stdout }}"
+
+- name: Record role in lockfile
+  command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
+  changed_when: false

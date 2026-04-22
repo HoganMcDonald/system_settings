@@ -28,6 +28,12 @@
     - role: direnv
       tags:
         - direnv
+    - role: lima
+      tags:
+        - lima
+    - role: ollama
+      tags:
+        - ollama
     - role: JavaScript
       tags:
         - javascript

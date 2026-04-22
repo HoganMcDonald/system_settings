@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+#
+# linux - Drop into a shell on a local Linux VM (Lima-backed)
+#
+# Usage: linux [command...]
+#
+# On first run, provisions an Ubuntu VM named "default" using Lima's
+# template. Subsequent runs reuse it and attach to a shell. Your current
+# working directory is mounted inside the VM, so files "just work".
+
+set -e
+
+VM_NAME="${LINUX_VM_NAME:-default}"
+VM_TEMPLATE="${LINUX_VM_TEMPLATE:-template://ubuntu}"
+
+display_help() {
+  cat << 'EOF'
+linux - Drop into a shell on a local Linux VM (Lima-backed)
+
+Usage: linux [options] [command...]
+
+Options:
+  -h, --help     Display this help message and exit
+
+With no arguments, opens an interactive shell in the VM. Any additional
+arguments are executed inside the VM instead.
+
+On first run, creates an Ubuntu VM named "default" (override with
+LINUX_VM_NAME / LINUX_VM_TEMPLATE env vars). The current working
+directory is mounted inside the VM.
+
+Examples:
+  linux                       # interactive shell
+  linux uname -a              # run a one-off command
+  linux bash -lc 'apt list'   # run via login shell
+EOF
+  exit 0
+}
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  display_help
+fi
+
+if ! command -v limactl &>/dev/null; then
+  echo "Error: limactl is not installed (brew install lima)" >&2
+  exit 1
+fi
+
+STATUS=$(limactl list --format '{{.Status}}' "$VM_NAME" 2>/dev/null || true)
+
+case "$STATUS" in
+  Running)
+    ;;
+  Stopped)
+    echo "Starting existing VM '$VM_NAME'..." >&2
+    limactl start "$VM_NAME"
+    ;;
+  "")
+    echo "Creating VM '$VM_NAME' from $VM_TEMPLATE..." >&2
+    limactl start --name="$VM_NAME" --tty=false "$VM_TEMPLATE"
+    ;;
+  *)
+    echo "VM '$VM_NAME' is in unexpected state: $STATUS" >&2
+    exit 1
+    ;;
+esac
+
+exec limactl shell "$VM_NAME" "$@"

@@ -1,0 +1,18 @@
+---
+- name: Install Lima
+  community.general.homebrew:
+    name: lima
+    state: present
+
+- name: Verify Lima installation
+  command: limactl --version
+  register: lima_version
+  changed_when: false
+
+- name: Display Lima version
+  debug:
+    msg: "{{ lima_version.stdout }} is installed"
+
+- name: Record role in lockfile
+  command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
+  changed_when: false

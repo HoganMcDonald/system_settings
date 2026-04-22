@@ -1,0 +1,16 @@
+---
+# Models to create on install. Each entry builds an Ollama model via a
+# generated Modelfile, so you get a clean local name (e.g. "qwen3.6-27b")
+# and can lock in parameters like context length.
+#
+# Fields:
+#   name:       local Ollama model name
+#   from:       base model ref (Ollama library or hf.co/org/repo:tag)
+#   parameters: map of Modelfile PARAMETER directives (optional)
+#
+# See https://github.com/ollama/ollama/blob/main/docs/modelfile.md
+ollama_models:
+  - name: qwen3.6-27b
+    from: hf.co/unsloth/Qwen3.6-27B-GGUF:Q5_K_M
+    parameters:
+      num_ctx: 32768

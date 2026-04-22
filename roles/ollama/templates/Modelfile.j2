@@ -1,0 +1,4 @@
+FROM {{ model.from }}
+{% for key, value in (model.parameters | default({})).items() %}
+PARAMETER {{ key }} {{ value }}
+{% endfor %}
