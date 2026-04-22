@@ -57,12 +57,33 @@ case "$STATUS" in
     ;;
   "")
     echo "Creating VM '$VM_NAME' from $VM_TEMPLATE..." >&2
-    limactl start --name="$VM_NAME" --tty=false "$VM_TEMPLATE"
+    limactl start \
+      --name="$VM_NAME" \
+      --tty=false \
+      --set='.mounts |= map(.writable = true)' \
+      "$VM_TEMPLATE"
     ;;
   *)
     echo "VM '$VM_NAME' is in unexpected state: $STATUS" >&2
     exit 1
     ;;
 esac
+
+# Ensure the host-open passthrough is wired up. The shim forwards xdg-open
+# invocations to the host's LaunchAgent via ~/.lima-open-queue.
+SHIM_SRC="$HOME/.local/share/lima/xdg-open"
+if [ -f "$SHIM_SRC" ]; then
+  limactl shell "$VM_NAME" -- sh -c '
+    set -e
+    src="$HOME/.local/share/lima/xdg-open"
+    dst=/usr/local/bin/xdg-open
+    if [ ! -e "$dst" ] || ! cmp -s "$src" "$dst" 2>/dev/null; then
+      sudo install -m 0755 "$src" "$dst"
+    fi
+    : > "$HOME/.lima-open-queue" 2>/dev/null || {
+      echo "warning: $HOME is not writable from the VM; recreate with writable mount" >&2
+    }
+  ' >/dev/null || true
+fi
 
 exec limactl shell "$VM_NAME" "$@"

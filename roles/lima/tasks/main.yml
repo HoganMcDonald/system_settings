@@ -13,6 +13,43 @@
   debug:
     msg: "{{ lima_version.stdout }} is installed"
 
+- name: Ensure ~/.local/bin exists
+  file:
+    path: "{{ ansible_env.HOME }}/.local/bin"
+    state: directory
+    mode: '0755'
+
+- name: Install lima-open watcher script
+  copy:
+    src: lima-open-watcher
+    dest: "{{ ansible_env.HOME }}/.local/bin/lima-open-watcher"
+    mode: '0755'
+
+- name: Ensure LaunchAgents directory exists
+  file:
+    path: "{{ ansible_env.HOME }}/Library/LaunchAgents"
+    state: directory
+    mode: '0755'
+
+- name: Install lima-open LaunchAgent
+  template:
+    src: com.hoganmcdonald.lima-open.plist.j2
+    dest: "{{ ansible_env.HOME }}/Library/LaunchAgents/com.hoganmcdonald.lima-open.plist"
+    mode: '0644'
+  register: lima_open_agent
+
+- name: Reload lima-open LaunchAgent
+  shell: |
+    launchctl unload "{{ ansible_env.HOME }}/Library/LaunchAgents/com.hoganmcdonald.lima-open.plist" 2>/dev/null || true
+    launchctl load "{{ ansible_env.HOME }}/Library/LaunchAgents/com.hoganmcdonald.lima-open.plist"
+  when: lima_open_agent.changed
+
+- name: Stage VM-side xdg-open shim for install into guest
+  copy:
+    src: xdg-open
+    dest: "{{ ansible_env.HOME }}/.local/share/lima/xdg-open"
+    mode: '0755'
+
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
   changed_when: false

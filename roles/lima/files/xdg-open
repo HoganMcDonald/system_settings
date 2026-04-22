@@ -1,0 +1,15 @@
+#!/bin/sh
+# VM-side xdg-open shim. Appends the target to a queue file on the shared
+# home mount; the host's lima-open LaunchAgent picks it up and runs `open`.
+#
+# Install inside the Lima VM at /usr/local/bin/xdg-open (or earlier in PATH
+# than the distro's xdg-utils package). Requires the host home mount to be
+# writable in lima.yaml:
+#   mounts:
+#     - location: "~"
+#       writable: true
+
+set -eu
+
+[ $# -ge 1 ] || { echo "usage: xdg-open <url|path>" >&2; exit 1; }
+printf '%s\n' "$1" >> "$HOME/.lima-open-queue"

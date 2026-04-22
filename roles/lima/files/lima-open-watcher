@@ -1,0 +1,13 @@
+#!/bin/sh
+# Tails the lima-open queue file and opens each URL/path on the host.
+# Populated by VM-side xdg-open shim at ~/.lima-open-queue.
+
+set -eu
+
+queue="$HOME/.lima-open-queue"
+[ -e "$queue" ] || : > "$queue"
+
+exec /usr/bin/tail -n 0 -F "$queue" | while IFS= read -r target; do
+  [ -z "$target" ] && continue
+  /usr/bin/open "$target" || true
+done
