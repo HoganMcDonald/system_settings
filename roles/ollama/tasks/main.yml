@@ -23,8 +23,6 @@
     dest: "/tmp/ollama-modelfile-{{ item.name }}"
     mode: '0644'
   loop: "{{ ollama_models }}"
-  loop_control:
-    loop_var: model
 
 - name: List existing Ollama models
   command: ollama list
@@ -34,8 +32,6 @@
 - name: Create Ollama models
   command: "ollama create {{ item.name }} -f /tmp/ollama-modelfile-{{ item.name }}"
   loop: "{{ ollama_models }}"
-  loop_control:
-    loop_var: item
   when: item.name not in ollama_list.stdout
 
 - name: Clean up Modelfiles
@@ -43,8 +39,6 @@
     path: "/tmp/ollama-modelfile-{{ item.name }}"
     state: absent
   loop: "{{ ollama_models }}"
-  loop_control:
-    loop_var: item
 
 - name: Verify Ollama installation
   command: ollama --version
