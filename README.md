@@ -4,6 +4,17 @@ Ansible playbook that provisions a fresh macOS machine into my working environme
 
 ![preview image](/docs/preview.png)
 
+## Regenerating docs images
+
+CLI frames in `docs/cli/` are generated headlessly via [freeze](https://github.com/charmbracelet/freeze):
+
+```sh
+brew install charmbracelet/tap/freeze
+bin/screenshots cli         # regenerate CLI frames only
+bin/screenshots desktop     # requires a logged-in GUI session
+bin/screenshots             # both
+```
+
 ## Install
 
 Clone into `~/system` (the path is assumed by `bin/bootstrap` and some roles):
@@ -88,6 +99,8 @@ dotfiles lock       # manually snapshot current role hashes
 
 Typical loop: edit a role, commit, `dotfiles sync` to push, then on any machine `dotfiles apply` to pull and run only what actually changed.
 
+![dotfiles status](docs/cli/dotfiles-status.png)
+
 ### `hack` / `rehack` / `unhack` / `hacks` — stacked worktree sessions
 
 Built around git-town stacked branches, git worktrees, and tmux. Worktrees live under `<repo>/.worktrees/<adjective-animal>/`.
@@ -100,6 +113,8 @@ unhack feat/add-auth   # tear down session + worktree, delegate branch cleanup t
 ```
 
 The tmux session is named `<parent>/<branch>` so stacks nest cleanly inside an outer session.
+
+![hack --help](docs/cli/hack-help.png)
 
 ### `swap` / `unswap` — run a branch in the main checkout
 
@@ -134,6 +149,8 @@ xdg-open https://example.com   # opens in your host browser
 ```
 
 Env vars: `LINUX_VM_NAME` (default `default`), `LINUX_VM_TEMPLATE` (default `template://ubuntu`).
+
+![linux --help](docs/cli/linux-help.png)
 
 ### `myconnect` / `pgconnect` — named database connections
 

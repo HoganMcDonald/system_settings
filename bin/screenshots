@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+#
+# screenshots - regenerate documentation images in docs/
+#
+# CLI captures are fully headless via `freeze` (brew install charmbracelet/tap/freeze).
+# Desktop captures use `screencapture` and require a logged-in GUI session plus
+# Screen Recording permission for the invoking terminal.
+#
+# Usage:
+#   bin/screenshots            # regenerate everything
+#   bin/screenshots cli        # CLI frames only (headless-safe)
+#   bin/screenshots desktop    # desktop frames only (requires GUI)
+
+set -e
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+CLI_DIR="$REPO_ROOT/docs/cli"
+DESKTOP_DIR="$REPO_ROOT/docs/desktop"
+
+FREEZE_OPTS=(
+  --window
+  --border.radius 8
+  --padding 20
+  --margin 10
+  --shadow.blur 20
+  --shadow.y 5
+  --font.size 13
+  --background "#1a1b26"
+)
+
+gen_cli() {
+  command -v freeze >/dev/null 2>&1 || {
+    echo "error: freeze not installed (brew install charmbracelet/tap/freeze)" >&2
+    exit 1
+  }
+  mkdir -p "$CLI_DIR"
+
+  local frames=(
+    "dotfiles-status:dotfiles status"
+    "dotfiles-help:dotfiles help"
+    "hack-help:hack --help"
+    "hacks-help:hacks --help"
+    "linux-help:linux --help"
+    "swap-help:swap --help"
+    "review-help:review --help"
+  )
+
+  for frame in "${frames[@]}"; do
+    local name="${frame%%:*}"
+    local cmd="${frame#*:}"
+    echo "  → $name"
+    freeze -x "$cmd" -o "$CLI_DIR/$name.png" "${FREEZE_OPTS[@]}" >/dev/null
+  done
+}
+
+gen_desktop() {
+  command -v screencapture >/dev/null 2>&1 || {
+    echo "error: screencapture not found (macOS only)" >&2
+    exit 1
+  }
+  mkdir -p "$DESKTOP_DIR"
+
+  echo "  → full screen (3s delay — arrange your desktop)"
+  sleep 3
+  screencapture -x -t png "$DESKTOP_DIR/desktop.png"
+}
+
+case "${1:-all}" in
+  cli)     gen_cli ;;
+  desktop) gen_desktop ;;
+  all)     gen_cli; gen_desktop ;;
+  *) echo "usage: $0 [cli|desktop|all]" >&2; exit 1 ;;
+esac
+
+echo "Done."
