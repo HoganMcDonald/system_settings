@@ -12,3 +12,4 @@ tools:
   - lazydocker
   - lastpass-cli
   - entr
+  - fd
