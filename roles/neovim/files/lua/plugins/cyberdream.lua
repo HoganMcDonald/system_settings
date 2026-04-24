@@ -4,7 +4,7 @@ return {
     lazy = false,
     priority = 1000,
     opts = {
-      transparent = false,
+      transparent = true,
       italic_comments = true,
       borderless_pickers = true,
       terminal_colors = true,
