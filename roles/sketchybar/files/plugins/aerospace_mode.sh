@@ -14,32 +14,32 @@ fi
 
 # Set icon, color, and bar background based on mode
 LABEL="Main"
-COLOR="0xff89b4fa"
+COLOR="0xff5ea1ff"
 BAR_COLOR="0x0"  # Default sketchybar background
 
 case "$MODE" in
     "move")
-        COLOR="0xffa6e3a1"
+        COLOR="0xff5eff6b"
         BAR_COLOR="0x44a6e3a1"  # Semi-transparent green
         LABEL="Move"
         ;;
     "resize")
-        COLOR="0xfff9e2af"
+        COLOR="0xfff1ff5e"
         BAR_COLOR="0x44f9e2af"  # Semi-transparent yellow
         LABEL="Resize"
         ;;
     "join")
-        COLOR="0xfff38ba8"
+        COLOR="0xffff6e5e"
         BAR_COLOR="0x44f38ba8"  # Semi-transparent red
         LABEL="Join"
         ;;
     "workspace")
-        COLOR="0xffcba6f7"
+        COLOR="0xffbd5eff"
         BAR_COLOR="0x44cba6f7"  # Semi-transparent purple
         LABEL="Workspace"
         ;;
     *)
-        COLOR="0xff89b4fa"
+        COLOR="0xff5ea1ff"
         BAR_COLOR="0x44000000"  # Default sketchybar background (transparent with blur)
         LABEL="Main"
         MODE="main"

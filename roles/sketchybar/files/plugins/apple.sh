@@ -5,7 +5,7 @@ POPUP_CLICK_SCRIPT='sketchybar --set apple popup.drawing=toggle'
 
 APPLE=""
 FONT="Hack Nerd Font"
-COLOR="0xffa6e3a1"
+COLOR="0xff5eff6b"
 
 apple_logo=(
   icon=$APPLE

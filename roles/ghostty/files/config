@@ -1,8 +1,8 @@
-theme               = Github Dark
-background-opacity  = 0.85
-background-blur     = 85
+theme               = cyberdream
+background-opacity  = 1.0
+background-blur     = 0
 
-window-theme = light
+window-theme = dark
 macos-titlebar-style = hidden
 mouse-hide-while-typing = true
 window-save-state = always

@@ -2,7 +2,7 @@
 
 sketchybar --set $NAME \
   label="Loading..." \
-  icon.color=0xff5edaff
+  icon.color=0xff5ef1ff
 
 # fetch weather data
 LOCATION="Seoul"

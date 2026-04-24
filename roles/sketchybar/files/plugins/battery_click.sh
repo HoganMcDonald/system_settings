@@ -17,29 +17,29 @@ fi
 case ${PERCENTAGE} in
   [8-9][0-9] | 100)
     ICON="􀛨"
-    ICON_COLOR=0xffa6e3a1
+    ICON_COLOR=0xff5eff6b
     ;;
   7[0-9])
     ICON="􀺸"
-    ICON_COLOR=0xfff9e2af
+    ICON_COLOR=0xfff1ff5e
     ;;
   [4-6][0-9])
     ICON="􀺶"
-    ICON_COLOR=0xfffab387
+    ICON_COLOR=0xffffbd5e
     ;;
   [1-3][0-9])
     ICON="􀛩"
-    ICON_COLOR=0xfff38ba8
+    ICON_COLOR=0xffff6e5e
     ;;
   [0-9])
     ICON="􀛪"
-    ICON_COLOR=0xffeba0ac
+    ICON_COLOR=0xffff6e5e
     ;;
 esac
 
 if [[ "$CHARGING" != "" ]]; then
   ICON="􀢋"
-  ICON_COLOR=0xffe2f9af
+  ICON_COLOR=0xfff1ff5e
 fi
 
 if [ -f "$STATE_FILE" ]; then

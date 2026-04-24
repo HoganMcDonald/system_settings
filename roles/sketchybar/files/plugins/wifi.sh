@@ -11,7 +11,7 @@ fi
 if [ -z "$SSID" ] || [ "$SSID" = "You are not associated with an AirPort network." ]; then
   # No connection - use outline wifi icon
   sketchybar --set "$NAME" \
-    icon="󰖪" icon.color=0xff6c7086 \
+    icon="󰖪" icon.color=0xff7b8496 \
     label="Not Connected"
 else
   # Get signal strength using airport utility or iwconfig alternative
@@ -39,24 +39,24 @@ else
     if [ "$ABS_SIGNAL" -le 50 ]; then
       # Excellent signal (-30 to -50 dBm)
       ICON="󰤨"
-      ICON_COLOR=0xff58d1fc
+      ICON_COLOR=0xff5ef1ff
     elif [ "$ABS_SIGNAL" -le 60 ]; then
       # Good signal (-50 to -60 dBm)
       ICON="󰤥"
-      ICON_COLOR=0xff58d1fc
+      ICON_COLOR=0xff5ef1ff
     elif [ "$ABS_SIGNAL" -le 70 ]; then
       # Fair signal (-60 to -70 dBm)
       ICON="󰤢"
-      ICON_COLOR=0xfff9e2af
+      ICON_COLOR=0xfff1ff5e
     else
       # Weak signal (-70+ dBm)
       ICON="󰤟"
-      ICON_COLOR=0xfff38ba8
+      ICON_COLOR=0xffff6e5e
     fi
   else
     # Default to good signal if we can't determine strength
     ICON="󰤨"
-    ICON_COLOR=0xff58d1fc
+    ICON_COLOR=0xff5ef1ff
   fi
 
   # Set the icon and remove label for clean look
