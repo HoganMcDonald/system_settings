@@ -1,4 +1,4 @@
-theme = "catppuccin_frappe"
+theme = "base16_transparent"
 
 [editor]
 line-number = "relative"
@@ -67,3 +67,19 @@ characters = { space = "·", nbsp = "⍽", tab = "→", newline = "⏎" }
 render = true
 character = "┊"
 skip-levels = 1
+
+[keys.normal]
+C-y = [
+  ':sh rm -f /tmp/unique-file',
+  ':insert-output yazi "%{buffer_name}" --chooser-file=/tmp/unique-file',
+  ':sh printf "\x1b[?1049h\x1b[?2004h" > /dev/tty',
+  ':open %sh{cat /tmp/unique-file}',
+  ':redraw',
+]
+
+[keys.normal.space]
+"/" = "global_search"
+
+[keys.select]
+"A-k" = "expand_selection"
+"A-j" = "shrink_selection"
