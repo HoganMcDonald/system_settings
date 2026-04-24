@@ -27,17 +27,7 @@ return {
     end,
     opts = {
       default_amount = 3,
-      -- at_edge: navigate to adjacent tmux pane, or stop if none exists
-      at_edge = function(ctx)
-        if not vim.env.TMUX then
-          return
-        end
-        local dirs = { left = "L", right = "R", up = "U", down = "D" }
-        local d = dirs[ctx.direction]
-        if d then
-          vim.fn.system({ "tmux", "select-pane", "-" .. d })
-        end
-      end,
+      at_edge = "stop",
       move_cursor_same_row = true,
       log_level = "fatal",
       -- disable built-in mux integration; @pane-is-vim is managed in init above
