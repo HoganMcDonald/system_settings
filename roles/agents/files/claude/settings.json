@@ -1,4 +1,5 @@
 {
+  "model": "opus[1m]",
   "hooks": {
     "Notification": [
       {
@@ -26,5 +27,8 @@
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "low",
-  "model": "opus[1m]"
+  "skipAutoPermissionPrompt": true,
+  "permissions": {
+    "defaultMode": "auto"
+  }
 }
