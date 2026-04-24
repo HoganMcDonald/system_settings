@@ -1,3 +1,4 @@
+alias g='lazygit'
 alias ls='ls -G'
 alias lt='tree'
 alias ll='ls -lFha'
