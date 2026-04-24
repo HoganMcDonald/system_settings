@@ -3,8 +3,35 @@ name = "rust"
 auto-format = true
 formatter = { command = "rustfmt" }
 
-[language-server.rust-analyzer]
-config = { checkOnSave = true, cargo = { allFeatures = true }}
+[language-server.rust-analyzer.config]
+checkOnSave = true
+
+[language-server.rust-analyzer.config.cargo]
+features = "all"
+
+[language-server.rust-analyzer.config.inlayHints]
+bindingModeHints.enable = false
+closingBraceHints.minLines = 10
+closureReturnTypeHints.enable = "with_block"
+discriminantHints.enable = "fieldless"
+lifetimeElisionHints.enable = "skip_trivial"
+typeHints.hideClosureInitialization = false
+
+[language-server.typescript-language-server]
+config.typescript.inlayHints = { includeInlayParameterNameHints = "all", includeInlayParameterNameHintsWhenArgumentMatchesName = true, includeInlayFunctionParameterTypeHints = true, includeInlayVariableTypeHints = true, includeInlayPropertyDeclarationTypeHints = true, includeInlayFunctionLikeReturnTypeHints = true, includeInlayEnumMemberValueHints = true }
+config.javascript.inlayHints = { includeInlayParameterNameHints = "all", includeInlayParameterNameHintsWhenArgumentMatchesName = true, includeInlayFunctionParameterTypeHints = true, includeInlayVariableTypeHints = true, includeInlayPropertyDeclarationTypeHints = true, includeInlayFunctionLikeReturnTypeHints = true, includeInlayEnumMemberValueHints = true }
+
+[language-server.gopls]
+config.hints = { assignVariableTypes = true, compositeLiteralFields = true, compositeLiteralTypes = true, constantValues = true, functionTypeParameters = true, parameterNames = true, rangeVariableTypes = true }
+
+[language-server.lua-language-server]
+config.Lua.hint = { enable = true, arrayIndex = "Enable", setType = true, paramName = "All", paramType = true, await = true }
+
+[language-server.pyright]
+config.python.analysis = { inlayHints = { callArgumentNames = true, functionReturnTypes = true, variableTypes = true, genericTypes = true } }
+
+[language-server.ruby-lsp]
+config.rubyLsp.featuresConfiguration.inlayHint = { implicitHashValue = true, implicitRescue = true }
 
 [[language]]
 name = "go"
