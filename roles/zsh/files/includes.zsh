@@ -6,7 +6,7 @@
 # . ~/.asdf/plugins/java/set-java-home.zsh
 #
 if command -v devbox &>/dev/null; then
-  eval "$(devbox global shellenv --init-hook)"
+  eval "$(devbox global shellenv)"
 fi
 
 if command -v direnv &>/dev/null; then

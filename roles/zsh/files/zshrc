@@ -11,15 +11,10 @@ zinit light-mode wait lucid for \
   zsh-users/zsh-autosuggestions \
   zsh-users/zsh-syntax-highlighting
 
-# completions (cached, no compaudit)
-autoload -Uz compinit
-if [[ -f "${ZDOTDIR:-$HOME}/.zcompdump" && $(date +'%j') == $(stat -f '%Sm' -t '%j' "${ZDOTDIR:-$HOME}/.zcompdump" 2>/dev/null) ]]; then
-  compinit -C
-else
-  compinit
-fi
-
+# completions
 fpath=($HOME/.config/zsh/completions $fpath)
+autoload -Uz compinit
+compinit -C
 
 # Use rg to respect .gitignore
 export FZF_DEFAULT_COMMAND='rg --hidden --ignore .git -g ""'
