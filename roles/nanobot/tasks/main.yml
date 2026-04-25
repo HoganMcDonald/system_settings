@@ -29,6 +29,17 @@
     path: "{{ agent_workspace_dir }}"
     state: directory
 
+- name: Check if skills is a real directory
+  stat:
+    path: "{{ nanobot_config_dir }}/workspace/skills"
+  register: skills_stat
+
+- name: Remove existing skills directory if not a symlink
+  file:
+    path: "{{ nanobot_config_dir }}/workspace/skills"
+    state: absent
+  when: skills_stat.stat.exists and not skills_stat.stat.islnk
+
 - name: Symlink nanobot workspace skills
   file:
     src: "{{ dotfiles_home }}/roles/nanobot/files/workspace/skills"
