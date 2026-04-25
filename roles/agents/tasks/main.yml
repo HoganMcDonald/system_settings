@@ -6,10 +6,10 @@
   homebrew_cask:
     name: claude-code
 
-- name: Resolve npm path via asdf
+- name: Install codex via npm
   shell: |
-    version=$(ls ~/.asdf/installs/nodejs/ | sort -V | tail -1)
-    ASDF_NODEJS_VERSION=$version ~/.asdf/installs/nodejs/$version/bin/npm install -g @openai/codex
+    eval "$(devbox global shellenv)"
+    npm install -g @openai/codex
   register: codex_install
   changed_when: "'added' in codex_install.stdout"
 
