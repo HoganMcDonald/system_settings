@@ -1,17 +1,18 @@
----
-- name: Install direnv
-  homebrew:
-    name: direnv
-    state: present
+- name: Install direnv via devbox global
+  command: devbox global add direnv@latest
+  register: direnv_add
+  changed_when: "'already' not in direnv_add.stderr"
 
 - name: Verify direnv installation
-  command: direnv version
+  shell: |
+    eval "$(devbox global shellenv)"
+    direnv version
   register: direnv_version
   changed_when: false
 
 - name: Display direnv version
   debug:
-    msg: "direnv {{ direnv_version.stdout }} is installed"
+    msg: "direnv {{ direnv_version.stdout }} is installed via devbox global"
 
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"

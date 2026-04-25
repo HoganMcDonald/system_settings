@@ -1,6 +1,10 @@
-- name: Install tmux
-  homebrew:
-    name: tmux
+- name: Install tmux tools via devbox global
+  command: "devbox global add {{ item }}"
+  loop:
+    - tmux@latest
+    - tmuxinator@latest
+  register: tmux_install
+  changed_when: "'already' not in tmux_install.stderr"
 
 - name: Tap ser-ge/tap for cms
   homebrew_tap:
@@ -11,10 +15,6 @@
   homebrew:
     name: ser-ge/tap/cms
     state: present
-
-- name: Install tmuxinator
-  homebrew:
-    name: tmuxinator
 
 # tmux config
 - name: Install TPM (Tmux Plugin Manager)

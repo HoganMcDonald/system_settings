@@ -6,12 +6,10 @@
   homebrew_cask:
     name: claude-code
 
-- name: Install codex via npm
-  shell: |
-    eval "$(devbox global shellenv)"
-    npm install -g @openai/codex
+- name: Install codex via devbox global
+  command: devbox global add codex@latest
   register: codex_install
-  changed_when: "'added' in codex_install.stdout"
+  changed_when: "'already' not in codex_install.stderr"
 
 - name: Check if Claude config exists
   stat: path="{{ claude_config_dir }}"

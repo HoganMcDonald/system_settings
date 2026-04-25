@@ -1,6 +1,7 @@
-- name: Install zellij
-  homebrew:
-    name: zellij
+- name: Install zellij via devbox global
+  command: devbox global add zellij@latest
+  register: zellij_add
+  changed_when: "'already' not in zellij_add.stderr"
 
 # zellij config
 - name: Make sure config is up to date

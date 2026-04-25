@@ -1,6 +1,7 @@
-- name: Install Helix editor
-  homebrew:
-    name: helix
+- name: Install Helix editor via devbox global
+  command: devbox global add helix@latest
+  register: helix_add
+  changed_when: "'already' not in helix_add.stderr"
 
 - name: Create Helix config folder if it doesn't exist
   shell: "mkdir -p {{ config }}/helix/"

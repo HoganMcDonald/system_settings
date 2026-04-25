@@ -22,22 +22,19 @@
     state: link
     force: yes
 
-- name: Install github cli
-  homebrew:
-    name: gh
+- name: Install git tools via devbox global
+  command: "devbox global add {{ item }}"
+  loop:
+    - gh@latest
+    - lazygit@latest
+    - git-town@latest
+  register: git_tools_install
+  changed_when: "'already' not in git_tools_install.stderr"
 
 - name: Install gh-dash extension
   command: gh extension install dlvhdr/gh-dash
   args:
     creates: "{{ ansible_user_dir }}/.local/share/gh/extensions/gh-dash"
-
-- name: Install lazygit
-  homebrew:
-    name: lazygit
-
-- name: Install git-town
-  homebrew:
-    name: git-town
 
 - name: Create lazygit config directory
   file:

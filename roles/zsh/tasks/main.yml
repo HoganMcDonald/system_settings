@@ -51,9 +51,10 @@
     force: yes
 
 # prompt
-- name: Install Starship prompt
-  homebrew:
-    name: starship
+- name: Install Starship prompt via devbox global
+  command: devbox global add starship@latest
+  register: starship_add
+  changed_when: "'already' not in starship_add.stderr"
 
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"

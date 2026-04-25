@@ -1,14 +1,14 @@
-tools:
-  - prettyping
-  - bat
-  - htop
-  - fzf
-  - git-delta
-  - tldr
-  - ripgrep
+devbox_tools:
+  - prettyping@latest
+  - bat@latest
+  - htop@latest
+  - fzf@latest
+  - delta@latest
+  - tealdeer@latest
+  - ripgrep@latest
+  - lazydocker@latest
+  - entr@latest
+
+homebrew_tools:
   - gnu-sed
-  - pgcli
-  - mycli
-  - lazydocker
   - lastpass-cli
-  - entr

@@ -1,7 +1,13 @@
-- name: Install cli tools
+- name: Install CLI tools via devbox global
+  command: "devbox global add {{ item }}"
+  loop: "{{ devbox_tools }}"
+  register: devbox_install
+  changed_when: "'already' not in devbox_install.stderr"
+
+- name: Install CLI tools via Homebrew
   homebrew:
-    name: "{{item}}"
-  loop: "{{tools}}"
+    name: "{{ item }}"
+  loop: "{{ homebrew_tools }}"
 
 - name: Tap homebrew fonts
   homebrew_tap:
