@@ -1,25 +1,18 @@
-- name: Add neovim plugin
-  command: asdf plugin add neovim
+- name: Add neovim to devbox global
+  command: devbox global add neovim@latest
   register: nvim_add
-  failed_when: nvim_add == 2
+  changed_when: "'already' not in nvim_add.stderr"
 
-- name: Check if nightly version is already installed
-  shell: asdf list neovim | grep -q nightly
-  register: nightly_check
-  failed_when: false
+- name: Verify neovim is available
+  shell: |
+    eval "$(devbox global shellenv)"
+    nvim --version | head -1
+  register: nvim_version
   changed_when: false
 
-- name: Uninstall previous nightly version
-  command: asdf uninstall neovim nightly
-  when: nightly_check.rc == 0
-
-- name: Install neovim nightly
-  command: asdf install neovim nightly
-
-- name: Set nightly as the global neovim version
-  command: asdf set neovim nightly
-  args:
-    chdir: "{{ ansible_env.HOME }}"
+- name: Display neovim version
+  debug:
+    msg: "{{ nvim_version.stdout }} is installed via devbox global"
 
 - name: Make sure config is up to date
   file:

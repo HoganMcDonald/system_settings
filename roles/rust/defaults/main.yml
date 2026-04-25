@@ -1,6 +1,3 @@
-versions:
-  - latest
-
 components:
   - rust-analyzer
   - clippy

@@ -1,27 +1,26 @@
-- name: Add rust plugin
-  command: asdf plugin add rust
-  register: rust_add
-  failed_when: rust_add == 2
+- name: Install rustup
+  shell: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+  args:
+    creates: "{{ ansible_env.HOME }}/.cargo/bin/rustup"
 
-- name: Install rust versions
-  command: asdf install rust {{item}}
-  loop: "{{versions}}"
-  register: rust_install
-  failed_when: rust_install.rc != 0 and "is already installed" not in rust_install.stderr
+- name: Install stable toolchain
+  command: "{{ ansible_env.HOME }}/.cargo/bin/rustup toolchain install stable"
 
-- name: Set global version for rust to {{versions[0]}}
-  command: "asdf set rust {{versions[0]}}"
+- name: Set stable as default
+  command: "{{ ansible_env.HOME }}/.cargo/bin/rustup default stable"
 
-- name: Install rustup components on default toolchain
-  command: rustup component add {{item}}
-  loop: "{{components}}"
+- name: Install rustup components
+  command: "{{ ansible_env.HOME }}/.cargo/bin/rustup component add {{ item }}"
+  loop: "{{ components }}"
 
-- name: Install rustup components on all installed toolchains
-  shell: |
-    for toolchain in $(rustup toolchain list | awk '{print $1}'); do
-      rustup component add {{item}} --toolchain "$toolchain" 2>/dev/null || true
-    done
-  loop: "{{components}}"
+- name: Verify rust is available
+  command: "{{ ansible_env.HOME }}/.cargo/bin/rustc --version"
+  register: rust_version
+  changed_when: false
+
+- name: Display rust version
+  debug:
+    msg: "{{ rust_version.stdout }} is installed via rustup"
 
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"

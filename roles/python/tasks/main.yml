@@ -1,0 +1,19 @@
+- name: Add python3 to devbox global
+  command: devbox global add python3@latest
+  register: python_add
+  changed_when: "'already' not in python_add.stderr"
+
+- name: Verify python is available
+  shell: |
+    eval "$(devbox global shellenv)"
+    python3 --version
+  register: python_version
+  changed_when: false
+
+- name: Display python version
+  debug:
+    msg: "{{ python_version.stdout }} is installed via devbox global"
+
+- name: Record role in lockfile
+  command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
+  changed_when: false
