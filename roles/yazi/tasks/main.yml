@@ -23,17 +23,10 @@
     state: link
     force: yes
 
-- name: Install yazi plugins
-  command: "ya pkg add yazi-rs/plugins:{{ item }}"
-  loop:
-    - vcs-files
-    - full-border
-    - smart-enter
+- name: Install yazi plugins from package.toml
+  command: ya pkg install
   register: yazi_pkg
-  changed_when: "'already exists' not in (yazi_pkg.stderr | default(''))"
-  failed_when:
-    - yazi_pkg.rc != 0
-    - "'already exists' not in (yazi_pkg.stderr | default(''))"
+  changed_when: "'is up to date' not in (yazi_pkg.stdout | default(''))"
 
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
