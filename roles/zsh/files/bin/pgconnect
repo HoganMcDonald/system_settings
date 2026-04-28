@@ -55,44 +55,50 @@ fi
 PGURL="$1"
 NAME="$2"
 
-# Extract connection details from URL
-if [[ "$PGURL" =~ postgres://(.*):(.*)@(.*):(.*)/(.*)$ ]]; then
-  USER="${BASH_REMATCH[1]}"
-  PASSWORD="${BASH_REMATCH[2]}"
-  HOST="${BASH_REMATCH[3]}"
-  PORT="${BASH_REMATCH[4]}"
-  DB="${BASH_REMATCH[5]}"
+# Extract connection details from URL.
+# Accepts:
+#   postgres://host:port/db
+#   postgres://user@host:port/db
+#   postgres://user:password@host:port/db
+USER=""
+PASSWORD=""
+if [[ "$PGURL" =~ ^postgres(ql)?://(([^:@/]+)(:([^@/]*))?@)?([^:/]+):([0-9]+)/(.+)$ ]]; then
+  USER="${BASH_REMATCH[3]}"
+  PASSWORD="${BASH_REMATCH[5]}"
+  HOST="${BASH_REMATCH[6]}"
+  PORT="${BASH_REMATCH[7]}"
+  DB="${BASH_REMATCH[8]}"
 else
   echo "Error: Invalid PostgreSQL URL format"
-  echo "Format should be: postgres://user:password@host:port/dbname"
+  echo "Format should be: postgres://[user[:password]@]host:port/dbname"
   exit 1
 fi
 
-# Set up .pgpass file
+# Set up .pgpass file (only when a password is provided)
 PGPASS_FILE="$HOME/.pgpass"
 
-# Create .pgpass if it doesn't exist
-if [ ! -f "$PGPASS_FILE" ]; then
-  touch "$PGPASS_FILE"
-  chmod 600 "$PGPASS_FILE"
-  echo "Created new .pgpass file with secure permissions"
-else
-  # Check permissions and fix if needed
-  PERMS=$(stat -f "%OLp" "$PGPASS_FILE")
-  if [ "$PERMS" != "600" ]; then
+if [ -n "$PASSWORD" ]; then
+  if [ ! -f "$PGPASS_FILE" ]; then
+    touch "$PGPASS_FILE"
     chmod 600 "$PGPASS_FILE"
-    echo "Fixed permissions on .pgpass file"
+    echo "Created new .pgpass file with secure permissions"
+  else
+    PERMS=$(stat -f "%OLp" "$PGPASS_FILE")
+    if [ "$PERMS" != "600" ]; then
+      chmod 600 "$PGPASS_FILE"
+      echo "Fixed permissions on .pgpass file"
+    fi
   fi
-fi
 
-# Add entry to .pgpass if it doesn't already exist
-PGPASS_LINE="$HOST:$PORT:$DB:$USER:$PASSWORD"
-
-if grep -q "$PGPASS_LINE" "$PGPASS_FILE"; then
-  echo "Entry for $NAME already exists in .pgpass"
+  PGPASS_LINE="$HOST:$PORT:$DB:$USER:$PASSWORD"
+  if grep -qF "$PGPASS_LINE" "$PGPASS_FILE"; then
+    echo "Entry for $NAME already exists in .pgpass"
+  else
+    echo "$PGPASS_LINE" >> "$PGPASS_FILE"
+    echo "Added entry for $NAME to .pgpass"
+  fi
 else
-  echo "$PGPASS_LINE" >> "$PGPASS_FILE"
-  echo "Added entry for $NAME to .pgpass"
+  echo "No password in URL; skipping .pgpass entry"
 fi
 
 # Set up pg_service.conf
@@ -106,13 +112,17 @@ if [ ! -f "$PG_SERVICE_FILE" ]; then
   echo "Created new pg_service.conf file"
 fi
 
-# Add entry to pg_service.conf
+# Add entry to pg_service.conf (omit user= when not provided)
 SERVICE_ENTRY="
 [$NAME]
 host=$HOST
 port=$PORT
-dbname=$DB
-user=$USER
+dbname=$DB"
+if [ -n "$USER" ]; then
+  SERVICE_ENTRY="$SERVICE_ENTRY
+user=$USER"
+fi
+SERVICE_ENTRY="$SERVICE_ENTRY
 "
 
 # Check if entry already exists, and replace it if it does
