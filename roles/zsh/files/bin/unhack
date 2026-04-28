@@ -2,7 +2,8 @@
 #
 # unhack - Clean up a hack session (tmux + worktree + branch)
 #
-# Usage: unhack <branch-name> [-n|--dry-run]
+# Usage: unhack [options] <branch-name>
+#        unhack -i [options]
 
 set -e
 
@@ -13,10 +14,19 @@ display_help() {
 unhack - Clean up a hack session (tmux + worktree + branch)
 
 Usage: unhack [options] <branch-name>
+       unhack -i [options]
 
 Options:
-  -n, --dry-run  Show what would be done without doing it
-  -h, --help     Display this help message and exit
+  -i, --interactive  Open $EDITOR with one line per worktree, prefixed with
+                     an action verb, like `git rebase -i`. Verbs:
+                       u, unhack <branch>   remove worktree
+                       f, force  <branch>   force-remove (even if dirty)
+                       k, keep   <branch>   skip
+                     Save and quit to apply.
+  -f, --force        Pass --force to `git worktree remove` so worktrees with
+                     uncommitted changes are deleted.
+  -n, --dry-run      Show what would be done without doing it
+  -h, --help         Display this help message and exit
 
 Tears down the tmux session and worktree associated with a branch, then
 delegates to `git merged` for branch cleanup (rebase children onto main,
@@ -24,9 +34,11 @@ delete the merged branch).
 
 Run this after a branch has been squash-merged on GitHub.
 
-Example:
+Examples:
   unhack feat/add-auth
   unhack feat/add-auth --dry-run
+  unhack -f feat/abandoned          # nuke a dirty worktree
+  unhack -i                         # pick multiple worktrees in $EDITOR
 EOF
   exit 0
 }
@@ -34,6 +46,8 @@ EOF
 # --- Arg parsing -------------------------------------------------------------
 
 DRY_RUN=false
+INTERACTIVE=false
+FORCE=false
 BRANCH=""
 
 for arg in "$@"; do
@@ -43,6 +57,12 @@ for arg in "$@"; do
       ;;
     -n|--dry-run)
       DRY_RUN=true
+      ;;
+    -i|--interactive)
+      INTERACTIVE=true
+      ;;
+    -f|--force)
+      FORCE=true
       ;;
     -*)
       echo "Error: unknown option: $arg"
@@ -58,9 +78,15 @@ for arg in "$@"; do
   esac
 done
 
-if [ -z "$BRANCH" ]; then
+if $INTERACTIVE && [ -n "$BRANCH" ]; then
+  echo "Error: -i/--interactive does not take a branch argument"
+  exit 1
+fi
+
+if ! $INTERACTIVE && [ -z "$BRANCH" ]; then
   echo "Error: expected a branch name"
-  echo "Usage: unhack <branch-name> [-n|--dry-run]"
+  echo "Usage: unhack <branch-name> [-n|--dry-run] [-f|--force]"
+  echo "       unhack -i [-n|--dry-run] [-f|--force]"
   exit 1
 fi
 
@@ -76,32 +102,14 @@ if ! command -v tmux &>/dev/null; then
   exit 1
 fi
 
-if ! git show-ref --verify --quiet "refs/heads/$BRANCH"; then
-  echo "Error: branch '$BRANCH' does not exist locally"
-  exit 1
-fi
-
 # Resolve to the main worktree root, not a linked worktree
 REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
-
-# --- Swap guard --------------------------------------------------------------
-
-SWAP_STATE="$REPO_ROOT/.worktrees/.swap-state"
-if [ -f "$SWAP_STATE" ]; then
-  source "$SWAP_STATE"
-  if [ "$SWAP_BRANCH" = "$BRANCH" ]; then
-    echo "Error: branch '$BRANCH' is currently swapped into the main directory."
-    echo "Run 'unswap' before running 'unhack'."
-    exit 1
-  fi
-fi
 
 # --- Helpers ----------------------------------------------------------------
 
 find_worktree_for_branch() {
   local target_branch="$1"
   local wt_path=""
-  local wt_branch=""
 
   while IFS= read -r line; do
     case "$line" in
@@ -114,7 +122,6 @@ find_worktree_for_branch() {
         ;;
       "")
         wt_path=""
-        wt_branch=""
         ;;
     esac
   done < <(git worktree list --porcelain)
@@ -126,7 +133,6 @@ find_sessions_for_worktree() {
   local wt_path="$1"
 
   if ! tmux list-panes -a -F '#{session_name} #{pane_current_path}' 2>/dev/null | while IFS=' ' read -r session pane_path; do
-    # Check if pane cwd is the worktree or a subdirectory of it
     case "$pane_path" in
       "$wt_path"|"$wt_path"/*)
         echo "$session"
@@ -137,100 +143,334 @@ find_sessions_for_worktree() {
   fi
 }
 
-# --- Find worktree ----------------------------------------------------------
+# Collect (branch, worktree, dirty) tuples for all worktrees under .worktrees/.
+# Output: tab-separated `branch<TAB>path<TAB>dirty(0|1)` per line.
+list_worktree_branches() {
+  local wt_path=""
+  local branch=""
 
-WORKTREE_PATH=$(find_worktree_for_branch "$BRANCH" || true)
-
-if [ -z "$WORKTREE_PATH" ]; then
-  echo "No worktree found for branch '$BRANCH', skipping worktree/tmux cleanup."
-else
-  echo "Worktree: $WORKTREE_PATH"
-
-  # --- Find and kill tmux sessions ------------------------------------------
-
-  SESSIONS=$(find_sessions_for_worktree "$WORKTREE_PATH")
-
-  if [ -n "$SESSIONS" ]; then
-    while IFS= read -r session; do
-      if $DRY_RUN; then
-        echo "[dry-run] Would kill tmux session: $session"
-      else
-        # If we're inside the target session, switch away first
-        if [ -n "$TMUX" ]; then
-          CURRENT_SESSION=$(tmux display-message -p '#S')
-          if [ "$CURRENT_SESSION" = "$session" ]; then
-            # Find another session to switch to
-            OTHER=$(tmux list-sessions -F '#S' | grep -v "^${session}$" | head -1 || true)
-            if [ -z "$OTHER" ]; then
-              echo "Error: cannot kill session '$session' — it is the only tmux session"
-              echo "Run unhack from a different tmux session."
-              exit 1
-            fi
-            echo "Switching to session '$OTHER' before killing '$session'..."
-            tmux switch-client -t "$OTHER"
-          fi
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*)
+        wt_path="${line#worktree }"
+        branch=""
+        ;;
+      "branch refs/heads/"*)
+        branch="${line#branch refs/heads/}"
+        ;;
+      "")
+        if [ -n "$wt_path" ] && [ -n "$branch" ]; then
+          case "$wt_path" in
+            "$REPO_ROOT/.worktrees/"*)
+              local dirty=0
+              if [ -n "$(git -C "$wt_path" status --porcelain 2>/dev/null)" ]; then
+                dirty=1
+              fi
+              printf '%s\t%s\t%s\n' "$branch" "$wt_path" "$dirty"
+              ;;
+          esac
         fi
-        echo "Killing tmux session: $session"
-        tmux kill-session -t "$session"
-      fi
-    done <<< "$SESSIONS"
-  else
-    echo "No tmux sessions found for this worktree."
-  fi
+        wt_path=""
+        branch=""
+        ;;
+    esac
+  done < <(git worktree list --porcelain)
 
-  # --- Remove worktree ------------------------------------------------------
-
-  # Ensure we're not inside the worktree being removed
-  if [ "$(pwd)" != "$REPO_ROOT" ]; then
-    case "$(pwd)" in
-      "$WORKTREE_PATH"|"$WORKTREE_PATH"/*)
-        if $DRY_RUN; then
-          echo "[dry-run] Would cd to $REPO_ROOT"
-        else
-          cd "$REPO_ROOT"
+  if [ -n "$wt_path" ] && [ -n "$branch" ]; then
+    case "$wt_path" in
+      "$REPO_ROOT/.worktrees/"*)
+        local dirty=0
+        if [ -n "$(git -C "$wt_path" status --porcelain 2>/dev/null)" ]; then
+          dirty=1
         fi
+        printf '%s\t%s\t%s\n' "$branch" "$wt_path" "$dirty"
         ;;
     esac
   fi
+}
 
-  # Clean up ~/.claude/projects/ symlink for this worktree
-  CLAUDE_PROJECTS_DIR="$HOME/.claude/projects"
-  WT_PROJECT_KEY=$(echo "$WORKTREE_PATH" | tr '/' '-')
-  if [ -L "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY" ]; then
-    if $DRY_RUN; then
-      echo "[dry-run] Would remove claude projects symlink: $CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY"
-    else
-      rm "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY"
+# --- Per-branch teardown ----------------------------------------------------
+
+teardown_branch() {
+  local BRANCH="$1"
+
+  if ! git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+    echo "Error: branch '$BRANCH' does not exist locally"
+    return 1
+  fi
+
+  # Swap guard
+  local SWAP_STATE="$REPO_ROOT/.worktrees/.swap-state"
+  if [ -f "$SWAP_STATE" ]; then
+    # shellcheck disable=SC1090
+    local SWAP_BRANCH=""
+    source "$SWAP_STATE"
+    if [ "$SWAP_BRANCH" = "$BRANCH" ]; then
+      echo "Error: branch '$BRANCH' is currently swapped into the main directory."
+      echo "Run 'unswap' before running 'unhack'."
+      return 1
     fi
   fi
 
+  local WORKTREE_PATH
+  WORKTREE_PATH=$(find_worktree_for_branch "$BRANCH" || true)
+
+  if [ -z "$WORKTREE_PATH" ]; then
+    echo "No worktree found for branch '$BRANCH', skipping worktree/tmux cleanup."
+  else
+    echo "Worktree: $WORKTREE_PATH"
+
+    local SESSIONS
+    SESSIONS=$(find_sessions_for_worktree "$WORKTREE_PATH")
+
+    if [ -n "$SESSIONS" ]; then
+      while IFS= read -r session; do
+        if $DRY_RUN; then
+          echo "[dry-run] Would kill tmux session: $session"
+        else
+          if [ -n "$TMUX" ]; then
+            local CURRENT_SESSION
+            CURRENT_SESSION=$(tmux display-message -p '#S')
+            if [ "$CURRENT_SESSION" = "$session" ]; then
+              local OTHER
+              OTHER=$(tmux list-sessions -F '#S' | grep -v "^${session}$" | head -1 || true)
+              if [ -z "$OTHER" ]; then
+                echo "Error: cannot kill session '$session' — it is the only tmux session"
+                echo "Run unhack from a different tmux session."
+                return 1
+              fi
+              echo "Switching to session '$OTHER' before killing '$session'..."
+              tmux switch-client -t "$OTHER"
+            fi
+          fi
+          echo "Killing tmux session: $session"
+          tmux kill-session -t "$session"
+        fi
+      done <<< "$SESSIONS"
+    else
+      echo "No tmux sessions found for this worktree."
+    fi
+
+    # Step out of the worktree if we're inside it
+    if [ "$(pwd)" != "$REPO_ROOT" ]; then
+      case "$(pwd)" in
+        "$WORKTREE_PATH"|"$WORKTREE_PATH"/*)
+          if $DRY_RUN; then
+            echo "[dry-run] Would cd to $REPO_ROOT"
+          else
+            cd "$REPO_ROOT"
+          fi
+          ;;
+      esac
+    fi
+
+    # Clean up ~/.claude/projects/ symlink for this worktree
+    local CLAUDE_PROJECTS_DIR="$HOME/.claude/projects"
+    local WT_PROJECT_KEY
+    WT_PROJECT_KEY=$(echo "$WORKTREE_PATH" | tr '/' '-')
+    if [ -L "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY" ]; then
+      if $DRY_RUN; then
+        echo "[dry-run] Would remove claude projects symlink: $CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY"
+      else
+        rm "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY"
+      fi
+    fi
+
+    if $DRY_RUN; then
+      if $FORCE; then
+        echo "[dry-run] Would move $WORKTREE_PATH to trash and rm -rf in background (force)"
+      else
+        echo "[dry-run] Would move $WORKTREE_PATH to trash and rm -rf in background"
+      fi
+    else
+      if ! $FORCE; then
+        if [ -n "$(git -C "$WORKTREE_PATH" status --porcelain 2>/dev/null)" ]; then
+          echo "Error: '$WORKTREE_PATH' has uncommitted or untracked changes."
+          echo "Hint: rerun with -f/--force to delete it anyway."
+          return 1
+        fi
+      fi
+
+      local trash_root="$REPO_ROOT/.worktrees/.trash"
+      mkdir -p "$trash_root"
+      local trash_path="$trash_root/$(basename "$WORKTREE_PATH").$(date +%s).$$"
+
+      if ! mv "$WORKTREE_PATH" "$trash_path"; then
+        echo "Error: failed to move worktree to trash"
+        return 1
+      fi
+
+      git worktree prune
+
+      echo "Worktree moved to trash; deleting in background: $trash_path"
+      ( nohup rm -rf "$trash_path" </dev/null >/dev/null 2>&1 & )
+    fi
+  fi
+
+  # --- Branch cleanup via git merged ----------------------------------------
+  echo ""
   if $DRY_RUN; then
-    echo "[dry-run] Would remove worktree: git worktree remove $WORKTREE_PATH"
+    echo "[dry-run] Would prompt to run: git merged $BRANCH"
+    echo "Running: git merged --dry-run $BRANCH"
+    git merged --dry-run "$BRANCH" || true
   else
-    echo "Removing worktree: $WORKTREE_PATH"
-    git worktree remove "$WORKTREE_PATH"
+    local answer
+    read -rp "Run 'git merged $BRANCH'? (cleans up branch and rebases children) [Y/n] " answer </dev/tty
+    answer="${answer:-Y}"
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+      echo "Running: git merged $BRANCH"
+      git merged "$BRANCH" || true
+    else
+      echo "Skipping branch cleanup. Branch '$BRANCH' kept."
+    fi
   fi
+
+  echo ""
+  echo "unhack complete for '$BRANCH'."
+}
+
+# --- Interactive flow -------------------------------------------------------
+
+run_interactive() {
+  local entries
+  entries=$(list_worktree_branches)
+
+  if [ -z "$entries" ]; then
+    echo "No worktrees found under $REPO_ROOT/.worktrees/"
+    exit 0
+  fi
+
+  local tmpfile
+  tmpfile=$(mktemp -t unhack-interactive.XXXXXX)
+  trap 'rm -f "$tmpfile"' EXIT
+
+  {
+    echo "# unhack interactive — one worktree per line."
+    echo "#"
+    echo "# Commands:"
+    echo "#   u, unhack <branch>   remove worktree (fails if dirty)"
+    echo "#   f, force  <branch>   force-remove worktree (even if dirty)"
+    echo "#   k, keep   <branch>   skip this worktree"
+    echo "#"
+    echo "# Lines starting with # are ignored. Save and quit to execute."
+    echo "# A global -f/--force upgrades every 'unhack' line to 'force'."
+    echo "#"
+    while IFS=$'\t' read -r branch path dirty; do
+      if [ "$dirty" = "1" ]; then
+        printf 'force  %s\t# dirty: %s\n' "$branch" "$path"
+      else
+        printf 'unhack %s\t# %s\n' "$branch" "$path"
+      fi
+    done <<< "$entries"
+  } > "$tmpfile"
+
+  local before_hash
+  before_hash=$(shasum "$tmpfile" | awk '{print $1}')
+
+  "${EDITOR:-vi}" "$tmpfile"
+
+  local after_hash
+  after_hash=$(shasum "$tmpfile" | awk '{print $1}')
+
+  # Parse selections
+  local -a branches
+  local -a forces
+  local line verb branch rest
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%%#*}"
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [ -z "$line" ] && continue
+
+    verb="${line%%[[:space:]]*}"
+    rest="${line#"$verb"}"
+    rest="${rest#"${rest%%[![:space:]]*}"}"
+    branch="${rest%%[[:space:]]*}"
+
+    case "$verb" in
+      u|unhack)
+        if [ -z "$branch" ]; then
+          echo "Error: '$verb' line missing branch: $line"
+          exit 1
+        fi
+        branches+=("$branch")
+        forces+=("0")
+        ;;
+      f|force)
+        if [ -z "$branch" ]; then
+          echo "Error: '$verb' line missing branch: $line"
+          exit 1
+        fi
+        branches+=("$branch")
+        forces+=("1")
+        ;;
+      k|keep|drop|skip)
+        ;;
+      *)
+        echo "Error: unknown verb '$verb' (expected u/unhack, f/force, or k/keep)"
+        exit 1
+        ;;
+    esac
+  done < "$tmpfile"
+
+  if [ ${#branches[@]} -eq 0 ]; then
+    echo "No 'unhack' lines selected. Nothing to do."
+    exit 0
+  fi
+
+  local i=0
+  local failures=0
+  local global_force="$FORCE"
+  while [ $i -lt ${#branches[@]} ]; do
+    local b="${branches[$i]}"
+    local line_force="${forces[$i]}"
+    if [ "$line_force" = "1" ] || $global_force; then
+      FORCE=true
+    else
+      FORCE=false
+    fi
+    echo "=========================================="
+    if $FORCE; then
+      echo "unhack (force): $b"
+    else
+      echo "unhack: $b"
+    fi
+    echo "=========================================="
+    if ! teardown_branch "$b"; then
+      failures=$((failures + 1))
+      echo "(continuing with remaining branches)"
+    fi
+    i=$((i + 1))
+  done
+  FORCE="$global_force"
+
+  if [ $failures -gt 0 ]; then
+    echo ""
+    echo "Done with $failures failure(s)."
+    exit 1
+  fi
+}
+
+# --- Sweep stale trash from previous runs -----------------------------------
+
+sweep_trash() {
+  local trash_root="$REPO_ROOT/.worktrees/.trash"
+  [ -d "$trash_root" ] || return 0
+  local entry
+  for entry in "$trash_root"/*; do
+    [ -e "$entry" ] || continue
+    ( nohup rm -rf "$entry" </dev/null >/dev/null 2>&1 & )
+  done
+}
+
+if ! $DRY_RUN; then
+  sweep_trash
 fi
 
-# --- Branch cleanup via git merged ------------------------------------------
+# --- Dispatch ---------------------------------------------------------------
 
-echo ""
-if $DRY_RUN; then
-  echo "[dry-run] Would prompt to run: git merged $BRANCH"
-  echo "Running: git merged --dry-run $BRANCH"
-  git merged --dry-run "$BRANCH"
+if $INTERACTIVE; then
+  run_interactive
 else
-  read -rp "Run 'git merged $BRANCH'? (cleans up branch and rebases children) [Y/n] " answer
-  answer="${answer:-Y}"
-  if [[ "$answer" =~ ^[Yy]$ ]]; then
-    echo "Running: git merged $BRANCH"
-    git merged "$BRANCH"
-  else
-    echo "Skipping branch cleanup. Branch '$BRANCH' kept."
-  fi
+  teardown_branch "$BRANCH"
 fi
-
-# --- Summary -----------------------------------------------------------------
-
-echo ""
-echo "unhack complete for '$BRANCH'."

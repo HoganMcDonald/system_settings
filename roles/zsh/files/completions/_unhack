@@ -4,6 +4,8 @@ _unhack() {
   _arguments \
     '(-h --help)'{-h,--help}'[Display help message]' \
     '(-n --dry-run)'{-n,--dry-run}'[Show what would be done without doing it]' \
+    '(-i --interactive)'{-i,--interactive}'[Pick multiple worktrees in $EDITOR]' \
+    '(-f --force)'{-f,--force}'[Force-remove worktrees with uncommitted changes]' \
     '1:branch:__unhack_worktree_branches'
 }
 
