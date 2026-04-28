@@ -67,6 +67,9 @@
     - role: zellij
       tags:
         - zellij
+    - role: yazi
+      tags:
+        - yazi
 
     # ====================
     #   Apps

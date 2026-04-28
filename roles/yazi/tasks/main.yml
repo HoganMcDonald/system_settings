@@ -1,0 +1,36 @@
+- name: Install Yazi via devbox global
+  command: devbox global add yazi@latest
+  register: yazi_add
+  changed_when: "'already' not in yazi_add.stderr"
+
+- name: Create Yazi config folder if it doesn't exist
+  shell: "mkdir -p {{ config }}/yazi/"
+
+- name: Check if config exists and is not already our symlink
+  stat: path="{{ config }}/yazi"
+  register: yazi_config_stat
+
+- name: Back up existing config
+  command: "mv {{ config }}/yazi {{ config }}/yazi_old"
+  args:
+    creates: "{{ config }}/yazi_old"
+  when: yazi_config_stat.stat.exists and not yazi_config_stat.stat.islnk
+
+- name: Make sure config is up to date
+  file:
+    src: "{{ dotfiles_home }}/roles/yazi/files/"
+    dest: "{{ config }}/yazi"
+    state: link
+    force: yes
+
+- name: Install yazi plugins
+  command: "ya pkg add yazi-rs/plugins:{{ item }}"
+  loop:
+    - vcs-files
+    - full-border
+    - smart-enter
+  register: yazi_pkg
+  changed_when: "'already exists' not in (yazi_pkg.stderr | default(''))"
+  failed_when:
+    - yazi_pkg.rc != 0
+    - "'already exists' not in (yazi_pkg.stderr | default(''))"
