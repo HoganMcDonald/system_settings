@@ -34,3 +34,7 @@
   failed_when:
     - yazi_pkg.rc != 0
     - "'already exists' not in (yazi_pkg.stderr | default(''))"
+
+- name: Record role in lockfile
+  command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
+  changed_when: false
