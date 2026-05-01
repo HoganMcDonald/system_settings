@@ -302,6 +302,69 @@ elif [ "$npc" != "null" ]; then
   fi
 fi
 
+# ─── Swap monster ────────────────────────────────────────────────────
+
+ensure_swap_item() {
+  if ! sketchybar --query pet.swap >/dev/null 2>&1; then
+    sketchybar --add item pet.swap right \
+               --set pet.swap icon="👺" \
+                              icon.font="Apple Color Emoji:Regular:18.0" \
+                              label.drawing=off \
+                              padding_left=4 \
+                              padding_right=4 \
+                              drawing=off \
+                              click_script="${SCRIPT_DIR}/pet_swap.sh poke" >/dev/null 2>&1
+  fi
+}
+
+current_boot=$(boot_time)
+swap_present=$(echo "$state" | jq -r '.swap_monster.present')
+swap_boot=$(echo "$state" | jq -r '.swap_monster.boot_time')
+swap_last_spoke=$(echo "$state" | jq -r '.swap_monster.last_spoke')
+
+if [ "$swap_present" = "true" ] && [ "$current_boot" -gt 0 ] \
+   && [ "$swap_boot" != "$current_boot" ]; then
+  # Reboot detected: clear the monster regardless of swap state.
+  state=$(echo "$state" | jq '.swap_monster = {present:false, boot_time:0, spawned_at:0, last_spoke:0}')
+  swap_present=false
+  ensure_swap_item
+  sketchybar --set pet.swap drawing=off >/dev/null 2>&1
+fi
+
+if [ "$swap_present" != "true" ]; then
+  swap_used=$(swap_used_bytes)
+  if [ "$swap_used" -ge "$SWAP_THRESHOLD_BYTES" ] && [ "$current_boot" -gt 0 ]; then
+    state=$(echo "$state" | jq \
+      --argjson b "$current_boot" --argjson t "$t" '
+      .swap_monster = {present:true, boot_time:$b, spawned_at:$t, last_spoke:$t}')
+    swap_present=true
+    swap_last_spoke=$t
+    ensure_swap_item
+    sketchybar --set pet.swap drawing=on >/dev/null 2>&1
+    ( "${SCRIPT_DIR}/pet_swap.sh" spawn >/dev/null 2>&1 & )
+  fi
+elif [ "$swap_present" = "true" ]; then
+  ensure_swap_item
+  sketchybar --set pet.swap drawing=on >/dev/null 2>&1
+  # Random idle muttering.
+  if [ $(( t - swap_last_spoke )) -ge "$SWAP_SPEECH_THROTTLE" ] \
+     && [ $(( RANDOM % 3 )) -eq 0 ]; then
+    ( "${SCRIPT_DIR}/pet_swap.sh" idle >/dev/null 2>&1 & )
+  fi
+fi
+
+# Override pet appearance and shake when monster is present.
+if [ "$swap_present" = "true" ] && [ "$alive" = "true" ]; then
+  label="😰"
+  color="$PET_COLOR_RED"
+  sketchybar --set pet icon="$icon" label="$label" icon.color="$color" >/dev/null 2>&1
+  # Anxious shiver, throttled gently.
+  if [ $(( t - $(echo "$state" | jq -r '.last_shake') )) -ge 60 ]; then
+    ( "${SCRIPT_DIR}/pet_animate.sh" cleanliness >/dev/null 2>&1 & )
+    state=$(echo "$state" | jq --argjson t "$t" '.last_shake = $t')
+  fi
+fi
+
 # ─── Persist & refresh popup labels ──────────────────────────────────
 
 write_state "$state"

@@ -12,6 +12,8 @@ SHAKE_THROTTLE_SECONDS=180
 WANDER_MAX=80
 NPC_LIFETIME_MIN=480
 NPC_LIFETIME_RANGE=420
+SWAP_THRESHOLD_BYTES=$((100 * 1024 * 1024))
+SWAP_SPEECH_THROTTLE=900
 
 ensure_state_dir() {
   mkdir -p "$STATE_DIR"
@@ -47,6 +49,12 @@ default_state() {
     died_at: null,
     grave_until: 0,
     npc: null,
+    swap_monster: {
+      present: false,
+      boot_time: 0,
+      spawned_at: 0,
+      last_spoke: 0
+    },
     ai_enabled: true,
     claude: {
       session_active: false,
@@ -88,6 +96,11 @@ migrate_state() {
     .died_at        //= null |
     .grave_until    //= 0 |
     .npc            //= null |
+    .swap_monster   //= {} |
+    .swap_monster.present     = (if .swap_monster.present == null then false else .swap_monster.present end) |
+    .swap_monster.boot_time   //= 0 |
+    .swap_monster.spawned_at  //= 0 |
+    .swap_monster.last_spoke  //= 0 |
     .ai_enabled     = (if .ai_enabled == null then true else .ai_enabled end) |
     .claude         //= {} |
     .claude.session_active         = (if .claude.session_active == null then false else .claude.session_active end) |
@@ -288,6 +301,38 @@ PET_COLOR_RED=0xffff6e5e
 PET_COLOR_PURPLE=0xffbd5eff
 PET_COLOR_PINK=0xffff5ea0
 PET_COLOR_TEAL=0xff5ef1ff
+
+# ─── System probes ────────────────────────────────────────────────────
+
+# Bytes currently in swap. Echoes 0 on parse failure.
+swap_used_bytes() {
+  local out
+  out=$(sysctl -n vm.swapusage 2>/dev/null) || { echo 0; return; }
+  # Format: "total = 1024.00M  used = 256.00M  free = 768.00M  (encrypted)"
+  local used_str
+  used_str=$(echo "$out" | sed -nE 's/.*used = ([0-9.]+)([KMG]).*/\1 \2/p')
+  [ -z "$used_str" ] && { echo 0; return; }
+  local val unit
+  val=${used_str% *}
+  unit=${used_str##* }
+  awk -v v="$val" -v u="$unit" 'BEGIN{
+    mult=1
+    if (u=="K") mult=1024
+    else if (u=="M") mult=1024*1024
+    else if (u=="G") mult=1024*1024*1024
+    printf "%d", v*mult
+  }'
+}
+
+# Unix timestamp of the current boot. Echoes 0 on failure.
+boot_time() {
+  local out sec
+  out=$(sysctl -n kern.boottime 2>/dev/null) || { echo 0; return; }
+  # Format: "{ sec = 1714579200, usec = 0 } Mon May  1 00:00:00 2024"
+  # Anchor on '{ sec' so usec doesn't get captured by the greedy .*.
+  sec=$(echo "$out" | sed -nE 's/^\{ *sec *= *([0-9]+).*/\1/p')
+  echo "${sec:-0}"
+}
 
 color_for_low() {
   local low="$1"
