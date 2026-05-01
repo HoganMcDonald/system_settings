@@ -81,9 +81,9 @@ age=$(( t - born_at ))
 just_died=false
 
 if [ "$alive" = "true" ]; then
-  hunger=$(echo "$state" | jq -r '.hunger | floor')
-  happiness=$(echo "$state" | jq -r '.happiness | floor')
-  cleanliness=$(echo "$state" | jq -r '.cleanliness | floor')
+  hunger=$(echo "$state" | jq -r '(.hunger // 100) | floor')
+  happiness=$(echo "$state" | jq -r '(.happiness // 100) | floor')
+  cleanliness=$(echo "$state" | jq -r '(.cleanliness // 100) | floor')
 
   died=false
   check_death() {
@@ -145,12 +145,12 @@ fi
 
 # ─── Render main icon ────────────────────────────────────────────────
 
-hunger=$(echo "$state" | jq -r '.hunger | floor')
-happiness=$(echo "$state" | jq -r '.happiness | floor')
-energy=$(echo "$state" | jq -r '.energy | floor')
-cleanliness=$(echo "$state" | jq -r '.cleanliness | floor')
+hunger=$(echo "$state" | jq -r '(.hunger // 100) | floor')
+happiness=$(echo "$state" | jq -r '(.happiness // 100) | floor')
+energy=$(echo "$state" | jq -r '(.energy // 100) | floor')
+cleanliness=$(echo "$state" | jq -r '(.cleanliness // 100) | floor')
 form=$(echo "$state" | jq -r '.adult_form // ""')
-lineage=$(echo "$state" | jq -r '.lineage')
+lineage=$(echo "$state" | jq -r '.lineage // "eldritch"')
 
 icon=$(sprite_for_stage "$stage" "$form" "$lineage")
 

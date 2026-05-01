@@ -66,22 +66,38 @@ default_state() {
 migrate_state() {
   local s="$1"
   echo "$s" | jq '
+    .born_at        //= (now | floor) |
+    .stage          //= "egg" |
     .last_stage     //= (.stage // "egg") |
+    .adult_form     //= null |
     .lineage        //= "eldritch" |
+    .hunger         = ((.hunger // 100)) |
+    .happiness      = ((.happiness // 100)) |
+    .energy         = ((.energy // 100)) |
+    .cleanliness    = ((.cleanliness // 100)) |
+    .last_tick      //= (now | floor) |
+    .last_fed       //= 0 |
+    .last_played    //= 0 |
+    .last_cleaned   //= 0 |
+    .last_petted    //= 0 |
     .last_spoke     //= 0 |
     .last_shake     //= 0 |
     .wander_offset  //= 5 |
+    .care_log       //= [] |
+    .alive          = (if .alive == null then true else .alive end) |
+    .died_at        //= null |
+    .grave_until    //= 0 |
     .npc            //= null |
-    .ai_enabled     //= true |
+    .ai_enabled     = (if .ai_enabled == null then true else .ai_enabled end) |
     .claude         //= {} |
-    .claude.session_active         //= false |
+    .claude.session_active         = (if .claude.session_active == null then false else .claude.session_active end) |
     .claude.session_started_at     //= 0 |
     .claude.last_event_at          //= 0 |
     .claude.current_tool           //= null |
     .claude.recent_failures        //= [] |
     .claude.events_this_session    //= 0 |
-    .claude.long_session_announced //= false |
-    .claude.idle_announced         //= false |
+    .claude.long_session_announced = (if .claude.long_session_announced == null then false else .claude.long_session_announced end) |
+    .claude.idle_announced         = (if .claude.idle_announced == null then false else .claude.idle_announced end) |
     .claude.last_ai_call           //= 0
   '
 }
@@ -252,10 +268,10 @@ mood_glyph() {
 
 stat_bar() {
   local v="$1"
-  local filled=$(( v / 14 ))
-  [ "$filled" -gt 7 ] && filled=7
+  local filled=$(( v / 20 ))
+  [ "$filled" -gt 5 ] && filled=5
   local bar="" i=0
-  while [ "$i" -lt 7 ]; do
+  while [ "$i" -lt 5 ]; do
     if [ "$i" -lt "$filled" ]; then bar+="█"; else bar+="░"; fi
     i=$((i + 1))
   done

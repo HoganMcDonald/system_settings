@@ -2,7 +2,7 @@
 # Lazy-init of the pet popup menu. Mirrors apple_popup.sh.
 
 ROW_FONT="Hack Nerd Font:Bold:12.00"
-ROW_WIDTH=200
+ROW_WIDTH=240
 ACTION="${HOME}/.config/sketchybar/plugins/pet_action.sh"
 CLOSE='sketchybar --set pet popup.drawing=off'
 
@@ -54,7 +54,7 @@ sketchybar \
                click_script="$ACTION toggle-ai" \
   --add item pet.status popup.pet \
   --set pet.status icon="👁" \
-                   label="  ░░░░░░░ ░░░░░░░ ░░░░░░░ ░░░░░░░" \
+                   label="  ░░░░░ ░░░░░ ░░░░░ ░░░░░" \
                    label.font="$ROW_FONT" \
                    icon.font="$ROW_FONT" \
                    padding_left=12 \
