@@ -4,6 +4,9 @@
 ROW_FONT="Hack Nerd Font:Bold:12.00"
 ROW_WIDTH=240
 ACTION="${HOME}/.config/sketchybar/plugins/pet_action.sh"
+# Close the popup first so it disappears instantly, then run the action
+# in the background. Sketchybar serializes click_scripts, so anything
+# blocking here makes the click feel laggy.
 CLOSE='sketchybar --set pet popup.drawing=off'
 
 sketchybar \
@@ -15,7 +18,7 @@ sketchybar \
                  padding_left=12 \
                  padding_right=12 \
                  width=$ROW_WIDTH \
-                 click_script="$ACTION feed; $CLOSE" \
+                 click_script="$CLOSE; $ACTION feed &" \
   --add item pet.play popup.pet \
   --set pet.play icon="🎈" \
                  label="  Play" \
@@ -24,7 +27,7 @@ sketchybar \
                  padding_left=12 \
                  padding_right=12 \
                  width=$ROW_WIDTH \
-                 click_script="$ACTION play; $CLOSE" \
+                 click_script="$CLOSE; $ACTION play &" \
   --add item pet.clean popup.pet \
   --set pet.clean icon="🧼" \
                   label="  Clean" \
@@ -33,7 +36,7 @@ sketchybar \
                   padding_left=12 \
                   padding_right=12 \
                   width=$ROW_WIDTH \
-                  click_script="$ACTION clean; $CLOSE" \
+                  click_script="$CLOSE; $ACTION clean &" \
   --add item pet.pet popup.pet \
   --set pet.pet icon="💖" \
                 label="  Pet" \
@@ -42,7 +45,7 @@ sketchybar \
                 padding_left=12 \
                 padding_right=12 \
                 width=$ROW_WIDTH \
-                click_script="$ACTION pet; $CLOSE" \
+                click_script="$CLOSE; $ACTION pet &" \
   --add item pet.ai popup.pet \
   --set pet.ai icon="🤖" \
                label="  AI: on" \
@@ -69,4 +72,4 @@ sketchybar \
                  padding_right=12 \
                  width=$ROW_WIDTH \
                  drawing=off \
-                 click_script="$ACTION bury; $CLOSE"
+                 click_script="$CLOSE; $ACTION bury &"
