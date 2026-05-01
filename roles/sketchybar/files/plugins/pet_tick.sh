@@ -153,6 +153,7 @@ form=$(echo "$state" | jq -r '.adult_form // ""')
 lineage=$(echo "$state" | jq -r '.lineage // "eldritch"')
 
 icon=$(sprite_for_stage "$stage" "$form" "$lineage")
+[ -z "$icon" ] && icon="🥚"
 
 if [ "$alive" = "false" ]; then
   label=""
@@ -254,7 +255,7 @@ ensure_npc_item() {
   if ! sketchybar --query pet.npc >/dev/null 2>&1; then
     sketchybar --add item pet.npc right \
                --set pet.npc icon="" \
-                             icon.font="SF Pro Display:Regular:16.0" \
+                             icon.font="Apple Color Emoji:Regular:16.0" \
                              label.drawing=off \
                              padding_left=4 \
                              padding_right=4 \
