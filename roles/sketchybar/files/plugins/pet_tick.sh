@@ -181,13 +181,26 @@ sketchybar --set pet icon="$icon" label="$label" icon.color="$color" >/dev/null 
 
 # ─── Wandering ───────────────────────────────────────────────────────
 
+ensure_pet_track() {
+  if ! sketchybar --query pet.track >/dev/null 2>&1; then
+    sketchybar --add space pet.track right \
+               --set pet.track \
+                     width="$WANDER_MAX" \
+                     background.drawing=off \
+                     label.drawing=off \
+                     icon.drawing=off \
+               --move pet.track after pet >/dev/null 2>&1
+  fi
+}
+
 if [ "$alive" = "true" ]; then
+  ensure_pet_track
   current_offset=$(echo "$state" | jq -r '.wander_offset')
   if [ "$sleeping" = "true" ]; then
     target_offset=0
     anim_ticks=60
   elif roll 6; then
-    # Long stroll: jump 60-120px somewhere new.
+    # Long stroll: jump anywhere in the runway.
     target_offset=$(rand_between 0 $WANDER_MAX)
     anim_ticks=45
   else
@@ -199,7 +212,10 @@ if [ "$alive" = "true" ]; then
     anim_ticks=20
   fi
   if [ "$target_offset" -ne "$current_offset" ]; then
-    sketchybar --animate sin "$anim_ticks" --set pet padding_left="$target_offset" >/dev/null 2>&1
+    # The track sits to the right of pet. Wider track = pet pushed left.
+    # So track_width = WANDER_MAX - wander_offset gives bidirectional motion.
+    track_width=$(( WANDER_MAX - target_offset ))
+    sketchybar --animate sin "$anim_ticks" --set pet.track width="$track_width" >/dev/null 2>&1
     state=$(echo "$state" | jq --argjson o "$target_offset" '.wander_offset = $o')
   fi
 fi
