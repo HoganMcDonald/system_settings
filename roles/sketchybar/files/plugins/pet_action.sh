@@ -31,6 +31,7 @@ case "$verb" in
       flash_row_red pet.feed; exit 0
     fi
     state=$(echo "$state" | jq --argjson t "$t" '.hunger = 100 | .last_fed = $t')
+    ( "${SCRIPT_DIR}/pet_animate.sh" content >/dev/null 2>&1 & )
     ;;
   play)
     [ "$alive" = "true" ] || exit 0
@@ -39,6 +40,7 @@ case "$verb" in
       flash_row_red pet.play; exit 0
     fi
     state=$(echo "$state" | jq --argjson t "$t" '.happiness = 100 | .last_played = $t')
+    ( "${SCRIPT_DIR}/pet_animate.sh" content >/dev/null 2>&1 & )
     ;;
   clean)
     [ "$alive" = "true" ] || exit 0
@@ -47,6 +49,7 @@ case "$verb" in
       flash_row_red pet.clean; exit 0
     fi
     state=$(echo "$state" | jq --argjson t "$t" '.cleanliness = 100 | .last_cleaned = $t')
+    ( "${SCRIPT_DIR}/pet_animate.sh" content >/dev/null 2>&1 & )
     ;;
   coffee)
     [ "$alive" = "true" ] || exit 0

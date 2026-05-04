@@ -26,6 +26,14 @@ set_y() {
   sketchybar --animate sin "$2" --set pet y_offset="$1" >/dev/null 2>&1
 }
 
+set_size() {
+  sketchybar --set pet icon.font="Apple Color Emoji:Regular:${1}" >/dev/null 2>&1
+}
+
+set_color() {
+  sketchybar --animate sin "$2" --set pet icon.color="$1" >/dev/null 2>&1
+}
+
 case "$pattern" in
   hunger)
     # Rapid horizontal-feeling jitter via vertical micro-shakes.
@@ -56,9 +64,21 @@ case "$pattern" in
     set_y 0 6
     ;;
   content)
-    # Happy hop.
-    set_y  3 12; sleep 0.25
-    set_y  0 18
+    # Loud, celebratory: grow, big bounce + overshoot, color flash, settle.
+    set_size 24; set_color "$PET_COLOR_PINK" 6
+    set_y  10 8;  sleep 0.18
+    set_size 26
+    set_y  -4 14; sleep 0.30
+    set_color "$PET_COLOR_TEAL" 6
+    set_y   8 8;  sleep 0.16
+    set_y  -2 8;  sleep 0.14
+    set_color "$PET_COLOR_GREEN" 6
+    set_y   4 6;  sleep 0.10
+    set_size 16
+    set_y   0 10
+    sleep 0.05
+    # Reset color so next render picks back up the mood-based color.
+    sketchybar --trigger pet_action >/dev/null 2>&1
     ;;
   death)
     # One last sigh.
