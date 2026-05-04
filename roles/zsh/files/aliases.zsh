@@ -9,6 +9,7 @@ alias preview="fzf --preview 'bat --color \"always\" {}'"
 alias top='htop'
 alias man='tldr'
 alias t='tmuxinator'
+alias y='yazi'
 
 # utility
 alias ip="ifconfig -u | grep 'inet ' | grep -v 127.0.0.1 | cut -d\  -f2 | head -1"
