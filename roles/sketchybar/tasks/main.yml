@@ -64,25 +64,39 @@
     state: directory
     mode: '0755'
 
+- name: Disengage brew services from sketchybar
+  # We manage the launchd plist ourselves under a non-homebrew Label so brew
+  # services can't recognize or clobber it. Run this regardless of whether
+  # the plist task changed — `brew services stop` is idempotent.
+  command: brew services stop sketchybar
+  failed_when: false
+  changed_when: false
+
+- name: Remove legacy homebrew-labeled plist if present
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/Library/LaunchAgents/homebrew.mxcl.sketchybar.plist"
+    state: absent
+
+- name: Bootout legacy launchd service if loaded
+  command: launchctl bootout "gui/{{ ansible_env.UID | default(lookup('env', 'UID')) }}/homebrew.mxcl.sketchybar"
+  failed_when: false
+  changed_when: false
+
 - name: Deploy custom plist with correct PATH
   template:
-    src: homebrew.mxcl.sketchybar.plist.j2
-    dest: "{{ ansible_env.HOME }}/Library/LaunchAgents/homebrew.mxcl.sketchybar.plist"
+    src: local.sketchybar.plist.j2
+    dest: "{{ ansible_env.HOME }}/Library/LaunchAgents/local.sketchybar.plist"
     mode: '0644'
   register: plist_deployed
 
-- name: Stop sketchybar service if running
-  command: brew services stop sketchybar
+- name: Bootout existing local.sketchybar service if running
+  command: launchctl bootout "gui/{{ ansible_env.UID | default(lookup('env', 'UID')) }}/local.sketchybar"
   when: plist_deployed.changed
   failed_when: false
 
-- name: Unload existing plist if present
-  command: launchctl unload {{ ansible_env.HOME }}/Library/LaunchAgents/homebrew.mxcl.sketchybar.plist
+- name: Bootstrap sketchybar service
+  command: launchctl bootstrap "gui/{{ ansible_env.UID | default(lookup('env', 'UID')) }}" "{{ ansible_env.HOME }}/Library/LaunchAgents/local.sketchybar.plist"
   when: plist_deployed.changed
-  failed_when: false
-
-- name: Load sketchybar service
-  command: launchctl load -w {{ ansible_env.HOME }}/Library/LaunchAgents/homebrew.mxcl.sketchybar.plist
 
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
