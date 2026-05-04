@@ -4,8 +4,6 @@
 # on each pet_action / system_woke event. Also drives shakes, speech,
 # wandering, and NPC encounters.
 
-set -u
-
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=pet_lib.sh
 source "${SCRIPT_DIR}/pet_lib.sh"
@@ -13,6 +11,14 @@ source "${SCRIPT_DIR}/pet_lib.sh"
 state="$(read_state)"
 t=$(now)
 state=$(prune_failures "$state" "$t")
+
+# Defaults so subsequent comparisons never see unset values.
+stage="egg"
+mood="content"
+icon="🥚"
+label=""
+color="$PET_COLOR_TEAL"
+fire_idle=false
 
 last_tick=$(echo "$state" | jq -r '.last_tick')
 elapsed=$(( t - last_tick ))
@@ -162,8 +168,10 @@ if [ "$alive" = "false" ]; then
 else
   mood=$(mood_name "$hunger" "$happiness" "$energy" "$cleanliness")
   label=$(mood_glyph "$hunger" "$happiness" "$energy" "$cleanliness")
-  low=$hunger
-  for v in "$happiness" "$energy" "$cleanliness"; do
+  low="${hunger:-100}"
+  case "$low" in ''|*[!0-9-]*) low=100 ;; esac
+  for v in "${happiness:-100}" "${energy:-100}" "${cleanliness:-100}"; do
+    case "$v" in ''|*[!0-9-]*) continue ;; esac
     [ "$v" -lt "$low" ] && low=$v
   done
   color=$(color_for_low "$low")

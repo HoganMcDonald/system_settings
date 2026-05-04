@@ -256,7 +256,12 @@ form_for_care() {
 }
 
 mood_name() {
-  local hunger="$1" happiness="$2" energy="$3" cleanliness="$4"
+  local hunger="${1:-100}" happiness="${2:-100}" energy="${3:-100}" cleanliness="${4:-100}"
+  # Coerce non-numeric inputs to 100 so comparisons never error out.
+  case "$hunger"      in ''|*[!0-9-]*) hunger=100 ;; esac
+  case "$happiness"   in ''|*[!0-9-]*) happiness=100 ;; esac
+  case "$energy"      in ''|*[!0-9-]*) energy=100 ;; esac
+  case "$cleanliness" in ''|*[!0-9-]*) cleanliness=100 ;; esac
   local low_name="content" low_val=101
   for pair in "hunger:$hunger" "happiness:$happiness" "energy:$energy" "cleanliness:$cleanliness"; do
     local name="${pair%%:*}" val="${pair##*:}"
@@ -280,9 +285,11 @@ mood_glyph() {
 }
 
 stat_bar() {
-  local v="$1"
+  local v="${1:-0}"
+  case "$v" in ''|*[!0-9-]*) v=0 ;; esac
   local filled=$(( v / 20 ))
   [ "$filled" -gt 5 ] && filled=5
+  [ "$filled" -lt 0 ] && filled=0
   local bar="" i=0
   while [ "$i" -lt 5 ]; do
     if [ "$i" -lt "$filled" ]; then bar+="█"; else bar+="░"; fi
@@ -335,7 +342,8 @@ boot_time() {
 }
 
 color_for_low() {
-  local low="$1"
+  local low="${1:-100}"
+  case "$low" in ''|*[!0-9-]*) low=100 ;; esac
   if   [ "$low" -ge 75 ]; then echo "$PET_COLOR_TEAL"
   elif [ "$low" -ge 50 ]; then echo "$PET_COLOR_GREEN"
   elif [ "$low" -ge 25 ]; then echo "$PET_COLOR_YELLOW"
