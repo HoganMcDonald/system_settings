@@ -37,6 +37,15 @@ sketchybar \
                   padding_right=12 \
                   width=$ROW_WIDTH \
                   click_script="$CLOSE; $ACTION clean &" \
+  --add item pet.coffee popup.pet \
+  --set pet.coffee icon="☕" \
+                   label="  Coffee" \
+                   label.font="$ROW_FONT" \
+                   icon.font="$ROW_FONT" \
+                   padding_left=12 \
+                   padding_right=12 \
+                   width=$ROW_WIDTH \
+                   click_script="$CLOSE; $ACTION coffee &" \
   --add item pet.pet popup.pet \
   --set pet.pet icon="💖" \
                 label="  Pet" \

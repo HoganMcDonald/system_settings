@@ -48,6 +48,15 @@ case "$verb" in
     fi
     state=$(echo "$state" | jq --argjson t "$t" '.cleanliness = 100 | .last_cleaned = $t')
     ;;
+  coffee)
+    [ "$alive" = "true" ] || exit 0
+    last=$(echo "$state" | jq -r '.last_coffee')
+    if [ $(( t - last )) -lt "$COOLDOWN_SECONDS" ]; then
+      flash_row_red pet.coffee; exit 0
+    fi
+    state=$(echo "$state" | jq --argjson t "$t" '.energy = 100 | .last_coffee = $t')
+    ( "${SCRIPT_DIR}/pet_animate.sh" content >/dev/null 2>&1 & )
+    ;;
   pet)
     [ "$alive" = "true" ] || exit 0
     state=$(echo "$state" | jq --argjson t "$t" '

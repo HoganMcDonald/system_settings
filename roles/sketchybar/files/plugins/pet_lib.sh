@@ -40,6 +40,7 @@ default_state() {
     last_fed: 0,
     last_played: 0,
     last_cleaned: 0,
+    last_coffee: 0,
     last_petted: 0,
     last_spoke: 0,
     last_shake: 0,
@@ -87,6 +88,7 @@ migrate_state() {
     .last_fed       //= 0 |
     .last_played    //= 0 |
     .last_cleaned   //= 0 |
+    .last_coffee    //= 0 |
     .last_petted    //= 0 |
     .last_spoke     //= 0 |
     .last_shake     //= 0 |

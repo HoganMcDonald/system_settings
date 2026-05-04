@@ -382,6 +382,7 @@ if sketchybar --query pet.feed >/dev/null 2>&1; then
     --set pet.feed   label="  Feed   · ${hunger}/100" \
     --set pet.play   label="  Play   · ${happiness}/100" \
     --set pet.clean  label="  Clean  · ${cleanliness}/100" \
+    --set pet.coffee label="  Coffee · ${energy}/100" \
     --set pet.status label="  $(stat_bar "$hunger") $(stat_bar "$happiness") $(stat_bar "$energy") $(stat_bar "$cleanliness")" \
     >/dev/null 2>&1
 fi
