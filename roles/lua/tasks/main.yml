@@ -1,5 +1,8 @@
-- name: Add lua to devbox global
-  command: devbox global add lua@latest
+- name: Add lua 5.5 to devbox global
+  # SbarLua bundles Lua 5.5 and the .so it builds is ABI-locked to that
+  # version. The plain `lua` package on devbox is 5.2 which would silently
+  # crash sketchybar on require('sketchybar'). Use the 5.5 package instead.
+  command: devbox global add lua55Packages.lua@latest
   register: lua_add
   changed_when: "'already' not in lua_add.stderr"
 

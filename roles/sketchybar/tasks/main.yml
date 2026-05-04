@@ -16,14 +16,30 @@
   homebrew:
     name: sketchybar
 
+- name: Stat installed SbarLua module
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/.local/share/sketchybar_lua/sketchybar.so"
+  register: sbarlua_stat
+
+- name: Stat devbox lua binary
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/.local/share/devbox/global/default/.devbox/nix/profile/default/bin/lua"
+  register: devbox_lua_stat
+
 - name: Install SbarLua from source
+  # Rebuild if the .so is missing OR older than the current lua binary
+  # (e.g. after a version-manager swap that changes the lua ABI).
   shell: |
-    git clone https://github.com/FelixKratz/SbarLua.git /tmp/SbarLua && \
-    cd /tmp/SbarLua/ && \
-    make install && \
+    set -e
+    rm -rf /tmp/SbarLua
+    git clone https://github.com/FelixKratz/SbarLua.git /tmp/SbarLua
+    cd /tmp/SbarLua/
+    make install
     rm -rf /tmp/SbarLua/
-  args:
-    creates: "{{ ansible_env.HOME }}/.local/share/sketchybar_lua/sketchybar.so"
+  when: >
+    not sbarlua_stat.stat.exists
+    or (devbox_lua_stat.stat.exists
+        and devbox_lua_stat.stat.mtime > sbarlua_stat.stat.mtime)
 
 - name: Check if config exists
   stat: path="{{ config }}/sketchybar"
