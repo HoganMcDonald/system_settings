@@ -1,3 +1,7 @@
+- name: Load vault secrets
+  ansible.builtin.include_vars:
+    file: "{{ dotfiles_home }}/vault/secrets.yml"
+
 - name: Prepare to install sketchybar
   homebrew_tap:
     name: FelixKratz/formulae
