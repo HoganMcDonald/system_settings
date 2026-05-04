@@ -1,0 +1,9 @@
+[opener]
+edit = [
+  { run = 'hx "$@"', desc = "Open in Helix", block = true, for = "unix" },
+]
+
+[open]
+prepend_rules = [
+  { name = "*", use = "edit" },
+]
