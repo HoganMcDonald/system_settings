@@ -78,7 +78,7 @@
     state: absent
 
 - name: Bootout legacy launchd service if loaded
-  command: launchctl bootout "gui/{{ ansible_env.UID | default(lookup('env', 'UID')) }}/homebrew.mxcl.sketchybar"
+  command: launchctl bootout "gui/{{ lookup('pipe', 'id -u') }}/homebrew.mxcl.sketchybar"
   failed_when: false
   changed_when: false
 
@@ -90,12 +90,12 @@
   register: plist_deployed
 
 - name: Bootout existing local.sketchybar service if running
-  command: launchctl bootout "gui/{{ ansible_env.UID | default(lookup('env', 'UID')) }}/local.sketchybar"
+  command: launchctl bootout "gui/{{ lookup('pipe', 'id -u') }}/local.sketchybar"
   when: plist_deployed.changed
   failed_when: false
 
 - name: Bootstrap sketchybar service
-  command: launchctl bootstrap "gui/{{ ansible_env.UID | default(lookup('env', 'UID')) }}" "{{ ansible_env.HOME }}/Library/LaunchAgents/local.sketchybar.plist"
+  command: launchctl bootstrap "gui/{{ lookup('pipe', 'id -u') }}" "{{ ansible_env.HOME }}/Library/LaunchAgents/local.sketchybar.plist"
   when: plist_deployed.changed
 
 - name: Record role in lockfile
