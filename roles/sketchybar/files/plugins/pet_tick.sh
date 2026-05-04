@@ -185,14 +185,21 @@ if [ "$alive" = "true" ]; then
   current_offset=$(echo "$state" | jq -r '.wander_offset')
   if [ "$sleeping" = "true" ]; then
     target_offset=0
+    anim_ticks=60
+  elif roll 6; then
+    # Long stroll: jump 60-120px somewhere new.
+    target_offset=$(rand_between 0 $WANDER_MAX)
+    anim_ticks=45
   else
-    delta=$(( (RANDOM % 31) - 15 ))
+    # Casual amble: ±35px.
+    delta=$(( (RANDOM % 71) - 35 ))
     target_offset=$(( current_offset + delta ))
     [ "$target_offset" -lt 0 ]            && target_offset=0
     [ "$target_offset" -gt $WANDER_MAX ]  && target_offset=$WANDER_MAX
+    anim_ticks=20
   fi
   if [ "$target_offset" -ne "$current_offset" ]; then
-    sketchybar --animate sin 30 --set pet padding_left="$target_offset" >/dev/null 2>&1
+    sketchybar --animate sin "$anim_ticks" --set pet padding_left="$target_offset" >/dev/null 2>&1
     state=$(echo "$state" | jq --argjson o "$target_offset" '.wander_offset = $o')
   fi
 fi

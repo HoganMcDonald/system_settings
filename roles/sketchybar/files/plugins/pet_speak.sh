@@ -39,7 +39,9 @@ hide_action_rows() {
     --set pet.feed   drawing=off \
     --set pet.play   drawing=off \
     --set pet.clean  drawing=off \
+    --set pet.coffee drawing=off \
     --set pet.pet    drawing=off \
+    --set pet.ai     drawing=off \
     --set pet.status drawing=off \
     --set pet.bury   drawing=off
 }
@@ -51,13 +53,22 @@ restore_action_rows() {
     --set pet.feed   drawing=on \
     --set pet.play   drawing=on \
     --set pet.clean  drawing=on \
+    --set pet.coffee drawing=on \
     --set pet.pet    drawing=on \
+    --set pet.ai     drawing=on \
     --set pet.status drawing=on \
     --set pet.speech drawing=off
   if [ "$alive" = "true" ]; then
     sketchybar --set pet.bury drawing=off
   else
     sketchybar --set pet.bury drawing=on
+  fi
+}
+
+play_chime() {
+  # Soft, polite chime. Background so it never delays the speech bubble.
+  if [ -f /System/Library/Sounds/Tink.aiff ] && command -v afplay >/dev/null 2>&1; then
+    ( afplay -v 0.4 /System/Library/Sounds/Tink.aiff >/dev/null 2>&1 & )
   fi
 }
 
@@ -74,6 +85,7 @@ ensure_popup_mounted
 hide_action_rows
 sketchybar --set pet.speech label="  ${msg}" drawing=on
 sketchybar --set pet popup.drawing=on
+play_chime
 
 # Schedule the close. Detach so this script returns immediately.
 ( sleep 6; "${SCRIPT_DIR}/pet_speak.sh" --close ) >/dev/null 2>&1 &
