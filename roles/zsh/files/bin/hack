@@ -15,34 +15,63 @@ hack - Set up a stacked branch worktree with a full tmux session
 Usage: hack [options] <branch-name>
 
 Options:
-  -h, --help     Display this help message and exit
+  -h, --help        Display this help message and exit
+  -cs, --codespace  Use a GitHub codespace instead of a local worktree
 
-Creates a stacked branch (via git-town append), a worktree, and a tmux
-session with three windows: nvim, claude, and zsh.
+Default mode creates a stacked branch (via git-town append), a worktree, and a
+tmux session with three windows: nvim, claude, and zsh.
+
+With --codespace, creates (or reuses) a codespace for the branch and builds a
+tmux session whose windows SSH into the codespace: nvim, claude, and a shell
+that runs $HACK_CS_START (default: 'hdev dev:tmux --first-time') then drops
+into zsh.
 
 The tmux session is named <parent_session>/<branch> (or just <branch> if
-not inside tmux). The worktree gets a random adjective-animal directory name.
+not inside tmux). The local worktree gets a random adjective-animal name.
 
-Example:
+Examples:
   hack feat/add-auth
   hack fix/null-pointer
+  hack -cs feat/api-rewrite
 EOF
   exit 0
 }
 
 # --- Arg parsing -------------------------------------------------------------
 
-if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
-  display_help
-fi
+USE_CODESPACE=0
+BRANCH=""
 
-if [ $# -ne 1 ]; then
-  echo "Error: expected exactly one argument: <branch-name>"
-  echo "Usage: hack <branch-name>"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h|--help)
+      display_help
+      ;;
+    -cs|--codespace)
+      USE_CODESPACE=1
+      shift
+      ;;
+    -*)
+      echo "Error: unknown option '$1'"
+      echo "Usage: hack [-cs] <branch-name>"
+      exit 1
+      ;;
+    *)
+      if [ -n "$BRANCH" ]; then
+        echo "Error: expected exactly one branch name"
+        exit 1
+      fi
+      BRANCH="$1"
+      shift
+      ;;
+  esac
+done
+
+if [ -z "$BRANCH" ]; then
+  echo "Error: expected a branch name"
+  echo "Usage: hack [-cs] <branch-name>"
   exit 1
 fi
-
-BRANCH="$1"
 
 # --- Prereq checks ----------------------------------------------------------
 
@@ -59,6 +88,85 @@ fi
 if ! command -v tmux &>/dev/null; then
   echo "Error: tmux is not installed (brew install tmux)"
   exit 1
+fi
+
+if [ "$USE_CODESPACE" -eq 1 ] && ! command -v gh &>/dev/null; then
+  echo "Error: gh is not installed (brew install gh)"
+  exit 1
+fi
+
+# --- Codespace path ---------------------------------------------------------
+
+if [ "$USE_CODESPACE" -eq 1 ]; then
+  REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+  if [ -z "$REPO" ]; then
+    echo "Error: could not determine repo from current directory"
+    exit 1
+  fi
+
+  CURRENT=$(git branch --show-current)
+
+  # Create branch locally (stacked) if it doesn't exist, push it so codespace can use it
+  if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+    echo "Branch '$BRANCH' already exists, reusing."
+  else
+    git town append "$BRANCH"
+    git push -u origin "$BRANCH"
+    git checkout "$CURRENT"
+  fi
+
+  # Find existing codespace on this branch
+  NAME=$(gh cs list --repo "$REPO" --json name,gitStatus \
+    -q ".[] | select(.gitStatus.ref==\"$BRANCH\") | .name" 2>/dev/null | head -1)
+
+  if [ -z "$NAME" ]; then
+    echo "Creating codespace for $BRANCH..."
+    NAME=$(gh codespace create --repo "$REPO" --branch "$BRANCH" \
+      --machine "${HACK_CS_MACHINE:-largePremiumLinux}" --display-name "$BRANCH")
+  else
+    echo "Codespace '$NAME' already exists, reusing."
+  fi
+
+  # Wake it (no-op if running)
+  gh cs ssh -c "$NAME" -- true
+
+  # Workspace dir inside the codespace
+  REPO_NAME="${REPO##*/}"
+  CS_DIR="/workspaces/$REPO_NAME"
+  START_CMD="${HACK_CS_START:-hdev dev:tmux --first-time}"
+
+  # Tmux session
+  if [ -n "$TMUX" ]; then
+    PARENT_SESSION=$(tmux display-message -p '#S')
+    SESSION="${PARENT_SESSION}/${BRANCH}"
+  else
+    SESSION="$BRANCH"
+  fi
+
+  if tmux has-session -t "$SESSION" 2>/dev/null; then
+    echo "Session '$SESSION' already exists, switching."
+  else
+    tmux new-session -d -s "$SESSION" -n "nvim" \
+      "gh cs ssh -c $NAME -- -t 'cd $CS_DIR && nvim'"
+    tmux new-window -t "$SESSION" -n "claude" \
+      "gh cs ssh -c $NAME -- -t \"cd $CS_DIR && claude --permission-mode plan '/hack'\""
+    tmux new-window -t "$SESSION" -n "shell" \
+      "gh cs ssh -c $NAME -- -t 'cd $CS_DIR && $START_CMD; exec zsh -l'"
+    tmux select-window -t "$SESSION:nvim"
+  fi
+
+  echo ""
+  echo "  Branch:    $BRANCH (stacked on $CURRENT)"
+  echo "  Codespace: $NAME"
+  echo "  Session:   $SESSION"
+  echo ""
+
+  if [ -n "$TMUX" ]; then
+    tmux switch-client -t "$SESSION"
+  else
+    tmux attach-session -t "$SESSION"
+  fi
+  exit 0
 fi
 
 # --- Helpers -----------------------------------------------------------------
