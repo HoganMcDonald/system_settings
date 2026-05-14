@@ -11,7 +11,6 @@ local battery = require('bar.components.battery')
 local mode_indicator = require('bar.components.mode_indicator')
 local workspace_indicator = require('bar.components.workspace_indicator')
 local apple = require('bar.components.apple')
-local pet = require('bar.components.pet')
 
 local M = {}
 
@@ -94,7 +93,6 @@ function M.setup()
   -- Register custom events
   Event:new("aerospace_mode_change")
   Event:new("aerospace_workspace_change")
-  Event:new("pet_action")
 
   -- Store references for later use
   M.components = {
@@ -109,7 +107,6 @@ function M.setup()
     clock = clock(),
     wifi = wifi(),
     battery = battery(),
-    pet = pet(),
   }
 
   return M.components
