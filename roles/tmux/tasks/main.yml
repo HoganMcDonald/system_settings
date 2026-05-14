@@ -22,12 +22,16 @@
     path: "{{ config }}/tmux-palette"
     state: directory
 
-- name: tmux-palette - link commands.json
+- name: tmux-palette - link commands.static.json
   file:
-    src: "{{ dotfiles_home }}/roles/tmux/files/tmux-palette/commands.json"
-    dest: "{{ config }}/tmux-palette/commands.json"
+    src: "{{ dotfiles_home }}/roles/tmux/files/tmux-palette/commands.static.json"
+    dest: "{{ config }}/tmux-palette/commands.static.json"
     state: link
     force: yes
+
+- name: tmux-palette - seed commands.json from regen
+  command: palette-sessions-regen
+  changed_when: false
 
 - name: tmux-palette - link theme.json
   file:

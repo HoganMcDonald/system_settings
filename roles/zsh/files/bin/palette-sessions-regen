@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+#
+# palette-sessions-regen - Regenerate ~/.config/tmux-palette/commands.json from
+# tmux's current session list + cached Claude agent state + the curated
+# commands.static.json. Session entries are emitted FIRST so they appear at
+# the top of the palette.
+#
+# Triggers:
+#   - Claude Code hooks (via claude-session-state)
+#   - tmux session-created / session-closed hooks (see plugins.conf or settings)
+
+set -e
+
+CONFIG_DIR="$HOME/.config/tmux-palette"
+STATIC="$CONFIG_DIR/commands.static.json"
+OUT="$CONFIG_DIR/commands.json"
+STATE_FILE="$HOME/.cache/claude-sessions/state.json"
+
+[ -f "$STATIC" ] || { echo "missing $STATIC" >&2; exit 1; }
+mkdir -p "$(dirname "$STATE_FILE")"
+[ -f "$STATE_FILE" ] || echo '{}' > "$STATE_FILE"
+
+# Build a sessions JSON array from tmux + state cache. Each entry switches
+# the client to that session.
+SESSIONS=$(tmux list-sessions -F '#S' 2>/dev/null || true)
+CURRENT=$(tmux display-message -p '#S' 2>/dev/null || echo '')
+
+SESSION_ITEMS=$(jq -n --arg current "$CURRENT" --argjson state "$(cat "$STATE_FILE")" \
+  --rawfile sessions <(echo "$SESSIONS") '
+    ($sessions | rtrimstr("\n") | split("\n") | map(select(length > 0))) as $names
+    | $names | map(
+        . as $name
+        | ($state[$name].status // "idle") as $st
+        | {
+            icon: "●",
+            iconColor: (if $st == "waiting" then "#f1ff5e"
+                        elif $st == "working" then "#5ea1ff"
+                        else "#5a6272" end),
+            title: ($name
+                    + (if $name == $current then "  (current)" else "" end)
+                    + (if $st == "working" then "  🌀"
+                       elif $st == "waiting" then "  👀"
+                       else "  ☠️" end)),
+            description: ("session — " + $st),
+            category: "Sessions",
+            aliases: ["session", "s"],
+            action: { tmux: ("switch-client -t " + ($name | @sh)) }
+          }
+      )
+  ')
+
+STATIC_ITEMS=$(cat "$STATIC")
+
+# Sessions first, then the static curated entries.
+jq -n --argjson s "$SESSION_ITEMS" --argjson c "$STATIC_ITEMS" '$s + $c' > "$OUT.tmp"
+mv "$OUT.tmp" "$OUT"
