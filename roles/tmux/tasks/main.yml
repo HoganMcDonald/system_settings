@@ -6,14 +6,14 @@
   register: tmux_install
   changed_when: "'already' not in tmux_install.stderr"
 
-- name: Tap ser-ge/tap for cms
+- name: Tap alchemmist/tap for lazy-tmux
   homebrew_tap:
-    name: ser-ge/tap
+    name: alchemmist/tap
     state: present
 
-- name: Install cms (tmux session manager)
+- name: Install lazy-tmux (session save/restore)
   homebrew:
-    name: ser-ge/tap/cms
+    name: alchemmist/tap/lazy-tmux
     state: present
 
 # tmux config
