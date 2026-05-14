@@ -16,6 +16,38 @@
     name: alchemmist/tap/lazy-tmux
     state: present
 
+# tmux-palette commands.json
+- name: tmux-palette - ensure config dir exists
+  file:
+    path: "{{ config }}/tmux-palette"
+    state: directory
+
+- name: tmux-palette - link commands.json
+  file:
+    src: "{{ dotfiles_home }}/roles/tmux/files/tmux-palette/commands.json"
+    dest: "{{ config }}/tmux-palette/commands.json"
+    state: link
+    force: yes
+
+- name: tmux-palette - link theme.json
+  file:
+    src: "{{ dotfiles_home }}/roles/tmux/files/tmux-palette/theme.json"
+    dest: "{{ config }}/tmux-palette/theme.json"
+    state: link
+    force: yes
+
+- name: tmux-palette - ensure themes dir exists
+  file:
+    path: "{{ config }}/tmux-palette/themes"
+    state: directory
+
+- name: tmux-palette - link cyberdream theme
+  file:
+    src: "{{ dotfiles_home }}/roles/tmux/files/tmux-palette/themes/cyberdream.json"
+    dest: "{{ config }}/tmux-palette/themes/cyberdream.json"
+    state: link
+    force: yes
+
 # tmux config
 - name: Install TPM (Tmux Plugin Manager)
   git:

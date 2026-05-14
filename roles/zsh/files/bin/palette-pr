@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#
+# palette-pr - List PRs (filtered) in fzf and open the chosen one in the browser
+#
+# Usage: palette-pr <mine|requested|drafts>
+
+set -e
+
+FILTER="${1:-mine}"
+
+case "$FILTER" in
+  mine)
+    LABEL="my PRs"
+    JSON=$(gh pr list --author @me --json number,title,headRefName,isDraft,state)
+    ;;
+  requested)
+    LABEL="reviews requested"
+    JSON=$(gh pr list --search "review-requested:@me is:open" --json number,title,headRefName,isDraft,state,author)
+    ;;
+  drafts)
+    LABEL="my drafts"
+    JSON=$(gh pr list --author @me --draft --json number,title,headRefName)
+    ;;
+  *)
+    echo "Usage: palette-pr <mine|requested|drafts>" >&2
+    exit 1
+    ;;
+esac
+
+SELECTED=$(echo "$JSON" \
+  | jq -r '.[] | "\(.number)\t\(.title)\t\(.headRefName // "")\(if .isDraft then "  [draft]" else "" end)"' \
+  | fzf --prompt="$LABEL > " --reverse --height=100% --with-nth=2.. --delimiter='\t')
+
+if [ -z "$SELECTED" ]; then
+  exit 0
+fi
+
+NUM=$(echo "$SELECTED" | awk -F'\t' '{print $1}')
+gh pr view -w "$NUM"

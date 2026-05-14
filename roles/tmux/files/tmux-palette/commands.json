@@ -1,0 +1,169 @@
+[
+  {
+    "icon": "󰘬",
+    "title": "hack",
+    "description": "Create stacked branch + worktree + tmux session",
+    "category": "Worktrees",
+    "aliases": ["new", "branch"],
+    "action": {
+      "tmux": "display-popup -w 60% -h 5 -E 'zsh -lc \"read \\\"b?branch name: \\\" && [ -n \\\"$b\\\" ] && palette-action hack \\\"$b\\\"\"'"
+    }
+  },
+  {
+    "icon": "󰆴",
+    "title": "unhack",
+    "description": "Tear down worktree + session for a merged branch",
+    "category": "Worktrees",
+    "aliases": ["cleanup", "remove"],
+    "action": {
+      "tmux": "display-popup -w 75% -h 60% -E 'zsh -lc \"palette-action unhack --pick\"'"
+    }
+  },
+  {
+    "icon": "󰓡",
+    "title": "swap",
+    "description": "Move a worktree branch into the main directory",
+    "category": "Worktrees",
+    "action": {
+      "tmux": "display-popup -w 75% -h 60% -E 'zsh -lc \"palette-action swap --pick\"'"
+    }
+  },
+  {
+    "icon": "󰕌",
+    "title": "unswap",
+    "description": "Restore main branch and reattach the worktree",
+    "category": "Worktrees",
+    "action": {
+      "tmux": "run-shell -b 'zsh -lc \"palette-action unswap\"'"
+    }
+  },
+  {
+    "icon": "󰊢",
+    "title": "review",
+    "description": "Spin up a Claude review session for a branch",
+    "category": "Worktrees",
+    "action": {
+      "tmux": "display-popup -w 60% -h 5 -E 'zsh -lc \"read \\\"b?branch to review: \\\" && [ -n \\\"$b\\\" ] && palette-action review \\\"$b\\\"\"'"
+    }
+  },
+  {
+    "icon": "󰗨",
+    "title": "unreview",
+    "description": "Tear down a review session",
+    "category": "Worktrees",
+    "action": {
+      "tmux": "display-popup -w 75% -h 60% -E 'zsh -lc \"palette-action unreview --pick\"'"
+    }
+  },
+  {
+    "icon": "󰜉",
+    "title": "rehack",
+    "description": "Restore tmux sessions for orphaned worktrees",
+    "category": "Worktrees",
+    "action": {
+      "tmux": "run-shell -b 'zsh -lc \"palette-action rehack\"'"
+    }
+  },
+  {
+    "icon": "󰘦",
+    "title": "hacks",
+    "description": "List active worktrees and their sessions",
+    "category": "Worktrees",
+    "action": {
+      "tmux": "run-shell -b 'zsh -lc \"palette-action hacks\"'"
+    }
+  },
+
+  {
+    "icon": "󰉋",
+    "title": "yazi",
+    "description": "Floating file picker",
+    "category": "Tools",
+    "aliases": ["files", "fp"],
+    "action": {
+      "tmux": "display-popup -w 90% -h 90% -E 'zsh -lc yazi'"
+    }
+  },
+  {
+    "icon": "󰊢",
+    "title": "lazygit",
+    "description": "Git TUI",
+    "category": "Tools",
+    "aliases": ["lg", "git"],
+    "action": {
+      "tmux": "display-popup -w 95% -h 95% -E 'zsh -lc lazygit'"
+    }
+  },
+  {
+    "icon": "󰡨",
+    "title": "lazydocker",
+    "description": "Docker TUI",
+    "category": "Tools",
+    "aliases": ["ld", "docker"],
+    "action": {
+      "tmux": "display-popup -w 95% -h 95% -E 'zsh -lc lazydocker'"
+    }
+  },
+  {
+    "icon": "󰍛",
+    "title": "htop",
+    "description": "Process viewer",
+    "category": "Tools",
+    "aliases": ["top", "ps"],
+    "action": {
+      "tmux": "display-popup -w 90% -h 90% -E 'zsh -lc htop'"
+    }
+  },
+
+  {
+    "icon": "󰆼",
+    "title": "Connect to db",
+    "description": "Pick a service from ~/.pg_service.conf and open pgcli",
+    "category": "Postgres",
+    "aliases": ["pg", "pgcli", "psql"],
+    "action": {
+      "tmux": "display-popup -w 90% -h 90% -E 'zsh -lc palette-pg'"
+    }
+  },
+  {
+    "icon": "󰆺",
+    "title": "Add db connection",
+    "description": "Save a new Postgres connection (pgconnect)",
+    "category": "Postgres",
+    "aliases": ["pgconnect", "pgadd"],
+    "action": {
+      "tmux": "display-popup -w 70% -h 10 -E 'zsh -lc \"read \\\"u?postgres url: \\\" && read \\\"n?name: \\\" && pgconnect \\\"$u\\\" \\\"$n\\\"; echo; echo Press any key...; read -rn1\"'"
+    }
+  },
+
+  {
+    "icon": "󰊤",
+    "title": "PRs: mine",
+    "description": "Open PRs authored by you",
+    "category": "GitHub",
+    "aliases": ["mine", "myprs"],
+    "action": {
+      "tmux": "display-popup -w 90% -h 70% -E 'zsh -lc \"palette-pr mine\"'"
+    }
+  },
+  {
+    "icon": "󰊤",
+    "title": "PRs: review requested",
+    "description": "Open PRs where your review is requested",
+    "category": "GitHub",
+    "aliases": ["review", "requested"],
+    "action": {
+      "tmux": "display-popup -w 90% -h 70% -E 'zsh -lc \"palette-pr requested\"'"
+    }
+  },
+  {
+    "icon": "󰊤",
+    "title": "PRs: drafts",
+    "description": "Your draft PRs",
+    "category": "GitHub",
+    "aliases": ["drafts"],
+    "action": {
+      "tmux": "display-popup -w 90% -h 70% -E 'zsh -lc \"palette-pr drafts\"'"
+    }
+  }
+]

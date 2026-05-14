@@ -3,6 +3,11 @@
   register: node_add
   changed_when: "'already' not in node_add.stderr"
 
+- name: Add bun to devbox global
+  command: devbox global add bun@latest
+  register: bun_add
+  changed_when: "'already' not in bun_add.stderr"
+
 - name: Verify node is available
   shell: |
     eval "$(devbox global shellenv)"

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#
+# palette-pg - Pick a saved Postgres service from ~/.pg_service.conf and connect via pgcli
+
+set -e
+
+CONF="$HOME/.pg_service.conf"
+
+if [ ! -f "$CONF" ]; then
+  echo "No $CONF found. Add one with: pgconnect <url> <name>"
+  echo "Press any key to close..."
+  read -rn1
+  exit 1
+fi
+
+SERVICE=$(awk -F'[][]' '/^\[/ && NF>=3 {print $2}' "$CONF" \
+  | fzf --prompt="db > " --reverse --height=100%)
+
+if [ -z "$SERVICE" ]; then
+  exit 0
+fi
+
+exec pgcli "service=$SERVICE"
