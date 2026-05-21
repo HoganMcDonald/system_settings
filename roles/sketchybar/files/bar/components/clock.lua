@@ -1,24 +1,11 @@
-local Bracket = require('lib').Bracket
-local Item = require('lib').Item
 local colors = require('colors')
 
-local function clock()
-  local clock_widget = Item:new('item', 'clock', 'right')
-  clock_widget
-    :label_color(colors.text)
-    :label_font('SF Pro Display', 14)
-    :script('~/.config/sketchybar/plugins/clock.sh', 30)
-    :set({
-      click_script = "~/.config/sketchybar/plugins/clock_click.sh"
-    })
-
-  local clock_container = Bracket:new('clock', { 'clock' })
-  clock_container:move_to('right')
-
-  return {
-    clock_widget,
-    clock_container
-  }
-end
-
-return clock
+---@type ComponentSpec
+return {
+  name = 'clock',
+  script = { path = 'clock.sh', every = 30 },
+  on_click = 'clock_click.sh',
+  props = {
+    label = { color = colors.text },
+  },
+}

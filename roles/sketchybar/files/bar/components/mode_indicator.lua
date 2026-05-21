@@ -1,35 +1,30 @@
-local Bracket = require('lib').Bracket
-local Item = require('lib').Item
 local colors = require('colors')
 
-local function mode_indicator()
-  local mode_indicator_widget = Item:new('item', 'mode_indicator', 'left')
-  mode_indicator_widget
-    :label_string("Main")
-    :label_color(colors.text)
-    :label_font('SF Pro Display', 14)
-    :padding(5, 5)
-    :script('~/.config/sketchybar/plugins/aerospace_mode.sh', 0)
-    :subscribe('aerospace_mode_change')
-
-  local mode_indicator_container = Bracket:new('mode', { 'mode_indicator' })
-  mode_indicator_container
-    :move_to('left')
-    :set({
+---@type GroupSpec
+return {
+  group = {
+    name = 'mode',
+    props = {
       background = {
         drawing = true,
         color = colors.surface0,
         corner_radius = 16,
         height = 24,
         padding_left = 8,
-        padding_right = 8
-      }
-    })
-
-  return {
-    mode_indicator_widget,
-    mode_indicator_container
-  }
-end
-
-return mode_indicator
+        padding_right = 8,
+      },
+    },
+  },
+  items = {
+    {
+      name = 'mode_indicator',
+      script = 'aerospace_mode.sh',
+      subscribe = { 'aerospace_mode_change' },
+      props = {
+        label = { string = 'Main', color = colors.text },
+        padding_left = 5,
+        padding_right = 5,
+      },
+    },
+  },
+}

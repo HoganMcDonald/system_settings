@@ -1,28 +1,64 @@
-local Bracket = require('lib').Bracket
-local Item = require('lib').Item
 local colors = require('colors')
 
-local function battery()
-  local battery_widget = Item:new('item', 'battery', 'right')
-  battery_widget
-    :label_color(colors.text)
-    :label_font('SF Pro Display', 14)
-    :icon_color(colors.green)
-    :icon_font('SF Pro Display', 16)
-    :padding(5, 5)
-    :script('~/.config/sketchybar/plugins/battery.sh', 120)
-    :subscribe('power_source_change', 'system_woke')
-    :set({
-      click_script = "~/.config/sketchybar/plugins/battery_click.sh"
-    })
+local function pmset()
+  local f = io.popen('pmset -g batt')
+  if not f then
+    return nil, false
+  end
+  local out = f:read('*a') or ''
+  f:close()
+  local pct = tonumber(out:match('(%d+)%%'))
+  local charging = out:find('AC Power') ~= nil
+  return pct, charging
+end
 
-  local battery_container = Bracket:new('battery', { 'battery' })
-  battery_container:move_to('right')
+local function icon_for(pct, charging)
+  if charging then
+    return '\u{F008B}', 0xfff1ff5e
+  end
+  if pct >= 80 then
+    return '\u{F008C}', 0xff5eff6b
+  end
+  if pct >= 70 then
+    return '\u{F00FA}', 0xfff1ff5e
+  end
+  if pct >= 40 then
+    return '\u{F00F8}', 0xffffbd5e
+  end
+  if pct >= 10 then
+    return '\u{F008D}', 0xffff6e5e
+  end
+  return '\u{F008E}', 0xffff6e5e
+end
 
-  return {
-    battery_widget,
-    battery_container
+local function refresh(item)
+  local pct, charging = pmset()
+  if not pct then
+    return
+  end
+  local icon, color = icon_for(pct, charging)
+  item:set {
+    icon = { string = icon, color = color, padding_right = 5 },
+    label = { string = pct .. '%' },
   }
 end
 
-return battery
+---@type ComponentSpec
+return {
+  name = 'battery',
+  every = 120,
+  on_update = refresh,
+  on = {
+    power_source_change = refresh,
+    system_woke = refresh,
+  },
+  on_click = function(item)
+    item:set { popup = { drawing = 'toggle' } }
+  end,
+  props = {
+    label = { color = colors.text },
+    icon = { color = colors.green, font = { family = 'SF Pro Display', size = 16 } },
+    padding_left = 5,
+    padding_right = 5,
+  },
+}

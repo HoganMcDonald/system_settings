@@ -1,38 +1,49 @@
-local Bracket = require('lib').Bracket
-local Item = require('lib').Item
 local colors = require('colors')
 
-local function pet()
-  local pet_widget = Item:new('item', 'pet', 'right')
-  pet_widget
-    :icon_string('🥚')
-    :icon_color(colors.text)
-    :icon_font('Apple Color Emoji', 16)
-    :label_color(colors.text)
-    :label_font('Apple Color Emoji', 12)
-    :padding(5, 5)
-    :script('~/.config/sketchybar/plugins/pet_tick.sh', 60)
-    :subscribe('pet_action', 'system_woke')
-    :set({
-      click_script = '~/.config/sketchybar/plugins/pet_click.sh',
-      popup = {
-        drawing = false,
-        background = {
-          color = colors.base,
-          corner_radius = 8,
-          border_width = 1,
-          border_color = colors.purple,
-        },
+---@type ComponentSpec
+return {
+  name = 'pet',
+  script = { path = 'pet_tick.sh', every = 60 },
+  on_click = 'pet_click.sh',
+  subscribe = { 'system_woke' },
+  animate = {
+    flash = {
+      duration = 0.25,
+      curve = 'ease_out',
+      to = { icon = { color = colors.yellow } },
+    },
+    settle = {
+      duration = 0.6,
+      curve = 'ease_in_out',
+      to = { icon = { color = colors.text } },
+    },
+  },
+  on = {
+    pet_action = function(_, _, anim)
+      anim('flash')
+      anim('settle')
+    end,
+  },
+  props = {
+    icon = {
+      string = '🥚',
+      color = colors.text,
+      font = { family = 'Apple Color Emoji', size = 16 },
+    },
+    label = {
+      color = colors.text,
+      font = { family = 'Apple Color Emoji', size = 12 },
+    },
+    padding_left = 5,
+    padding_right = 5,
+    popup = {
+      drawing = false,
+      background = {
+        color = colors.base,
+        corner_radius = 8,
+        border_width = 1,
+        border_color = colors.purple,
       },
-    })
-
-  local pet_container = Bracket:new('pet', { 'pet' })
-  pet_container:move_to('right')
-
-  return {
-    pet_widget,
-    pet_container,
-  }
-end
-
-return pet
+    },
+  },
+}
