@@ -1,4 +1,0 @@
-FROM {{ item.from }}
-{% for key, value in (item.parameters | default({})).items() %}
-PARAMETER {{ key }} {{ value }}
-{% endfor %}
