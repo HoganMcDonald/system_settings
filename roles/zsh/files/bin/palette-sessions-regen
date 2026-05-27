@@ -19,13 +19,16 @@ STATE_FILE="$HOME/.cache/claude-sessions/state.json"
 [ -f "$STATIC" ] || { echo "missing $STATIC" >&2; exit 1; }
 mkdir -p "$(dirname "$STATE_FILE")"
 [ -f "$STATE_FILE" ] || echo '{}' > "$STATE_FILE"
+if ! STATE=$(jq -c . "$STATE_FILE" 2>/dev/null); then
+  STATE='{}'
+fi
 
 # Build a sessions JSON array from tmux + state cache. Each entry switches
 # the client to that session.
 SESSIONS=$(tmux list-sessions -F '#S' 2>/dev/null || true)
 CURRENT=$(tmux display-message -p '#S' 2>/dev/null || echo '')
 
-SESSION_ITEMS=$(jq -n --arg current "$CURRENT" --argjson state "$(cat "$STATE_FILE")" \
+SESSION_ITEMS=$(jq -n --arg current "$CURRENT" --argjson state "$STATE" \
   --rawfile sessions <(echo "$SESSIONS") '
     ($sessions | rtrimstr("\n") | split("\n") | map(select(length > 0))) as $names
     | $names | map(
@@ -51,6 +54,6 @@ SESSION_ITEMS=$(jq -n --arg current "$CURRENT" --argjson state "$(cat "$STATE_FI
 
 STATIC_ITEMS=$(cat "$STATIC")
 
-# Sessions first, then the static curated entries.
+# Live sessions first, then the static curated entries.
 jq -n --argjson s "$SESSION_ITEMS" --argjson c "$STATIC_ITEMS" '$s + $c' > "$OUT.tmp"
 mv "$OUT.tmp" "$OUT"

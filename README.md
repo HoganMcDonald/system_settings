@@ -51,7 +51,7 @@ Roles are tagged one-to-one with their role name — see `dotfiles.yml` for the 
 ## What's in the box
 
 **Tools**
-`homebrew`, `git`, `asdf`, `devbox`, `direnv`, `lima`, `ollama`, `cli`, `zsh`, `tmux`, `pgcli`, `mycli`, `agents`, `nanobot`, `neovim`, `helix`, `zellij`
+`homebrew`, `git`, `asdf`, `devbox`, `direnv`, `lima`, `cli`, `zsh`, `tmux`, `pgcli`, `mycli`, `agents`, `nanobot`, `neovim`, `helix`, `zellij`
 
 **Apps** (Homebrew casks)
 `apps` (Linear, Figma, Brain.fm), `aerospace`, `browsers`, `kitty`, `ghostty`, `sol`
