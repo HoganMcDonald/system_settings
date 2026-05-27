@@ -6,16 +6,6 @@
   register: tmux_install
   changed_when: "'already' not in tmux_install.stderr"
 
-- name: Tap alchemmist/tap for lazy-tmux
-  homebrew_tap:
-    name: alchemmist/tap
-    state: present
-
-- name: Install lazy-tmux (session save/restore)
-  homebrew:
-    name: alchemmist/tap/lazy-tmux
-    state: present
-
 # tmux-palette commands.json
 - name: tmux-palette - ensure config dir exists
   file:
