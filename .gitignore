@@ -5,17 +5,34 @@
 **/.claude/settings.local.json
 
 # codex runtime files
+roles/agents/files/codex/.codex-global-state.json*
 roles/agents/files/codex/auth.json
 roles/agents/files/codex/version.json
 roles/agents/files/codex/cache/
 roles/agents/files/codex/models_cache.json
+roles/agents/files/codex/goals_*.sqlite*
 roles/agents/files/codex/logs_*.sqlite*
+roles/agents/files/codex/memories_*.sqlite*
 roles/agents/files/codex/state_*.sqlite*
+roles/agents/files/codex/ambient-suggestions/
+roles/agents/files/codex/chrome-native-hosts-v2.json
+roles/agents/files/codex/computer-use/
+roles/agents/files/codex/external_agent_session_imports.json
+roles/agents/files/codex/installation_id
 roles/agents/files/codex/log/
+roles/agents/files/codex/node_repl/
+roles/agents/files/codex/plugins/.remote-plugin-install-staging/
+roles/agents/files/codex/plugins/cache/
+roles/agents/files/codex/plugins/local-marketplaces/
+roles/agents/files/codex/process_manager/
+roles/agents/files/codex/session_index.jsonl
+roles/agents/files/codex/sessions/
 roles/agents/files/codex/shell_snapshots/
+roles/agents/files/codex/sqlite/
 roles/agents/files/codex/memories/
 roles/agents/files/codex/.tmp/
 roles/agents/files/codex/tmp/
+roles/agents/files/codex/vendor_imports/
 roles/agents/files/codex/.personality_migration
 roles/agents/files/codex/skills/.system/
 
