@@ -40,6 +40,7 @@
 	park = town park
 	set-parent = town set-parent
 	ship = town ship
+	continue = town continue
 [fetch]
   prune = true
 [pull]
