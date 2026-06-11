@@ -1,20 +1,20 @@
 - name: Install rustup
   shell: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
   args:
-    creates: "{{ ansible_env.HOME }}/.cargo/bin/rustup"
+    creates: "{{ ansible_facts.env.HOME }}/.cargo/bin/rustup"
 
 - name: Install stable toolchain
-  command: "{{ ansible_env.HOME }}/.cargo/bin/rustup toolchain install stable"
+  command: "{{ ansible_facts.env.HOME }}/.cargo/bin/rustup toolchain install stable"
 
 - name: Set stable as default
-  command: "{{ ansible_env.HOME }}/.cargo/bin/rustup default stable"
+  command: "{{ ansible_facts.env.HOME }}/.cargo/bin/rustup default stable"
 
 - name: Install rustup components
-  command: "{{ ansible_env.HOME }}/.cargo/bin/rustup component add {{ item }}"
+  command: "{{ ansible_facts.env.HOME }}/.cargo/bin/rustup component add {{ item }}"
   loop: "{{ components }}"
 
 - name: Verify rust is available
-  command: "{{ ansible_env.HOME }}/.cargo/bin/rustc --version"
+  command: "{{ ansible_facts.env.HOME }}/.cargo/bin/rustc --version"
   register: rust_version
   changed_when: false
 

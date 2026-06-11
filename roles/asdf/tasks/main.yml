@@ -14,7 +14,7 @@
 
 - name: Set asdf shims in Ansible PATH
   set_fact:
-    ansible_env: "{{ ansible_env | combine({'PATH': ansible_env.HOME + '/.asdf/shims:' + ansible_env.PATH}) }}"
+    dotfiles_ansible_path: "{{ ansible_facts.env.HOME }}/.asdf/shims:{{ dotfiles_ansible_path | default(ansible_facts.env.PATH) }}"
 
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"

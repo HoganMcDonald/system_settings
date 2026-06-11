@@ -18,12 +18,12 @@
 
 - name: Stat installed SbarLua module
   ansible.builtin.stat:
-    path: "{{ ansible_env.HOME }}/.local/share/sketchybar_lua/sketchybar.so"
+    path: "{{ ansible_facts.env.HOME }}/.local/share/sketchybar_lua/sketchybar.so"
   register: sbarlua_stat
 
 - name: Stat devbox lua binary
   ansible.builtin.stat:
-    path: "{{ ansible_env.HOME }}/.local/share/devbox/global/default/.devbox/nix/profile/default/bin/lua"
+    path: "{{ ansible_facts.env.HOME }}/.local/share/devbox/global/default/.devbox/nix/profile/default/bin/lua"
   register: devbox_lua_stat
 
 - name: Install SbarLua from source
@@ -60,7 +60,7 @@
 
 - name: Ensure LaunchAgents directory exists
   file:
-    path: "{{ ansible_env.HOME }}/Library/LaunchAgents"
+    path: "{{ ansible_facts.env.HOME }}/Library/LaunchAgents"
     state: directory
     mode: '0755'
 
@@ -74,7 +74,7 @@
 
 - name: Remove legacy homebrew-labeled plist if present
   ansible.builtin.file:
-    path: "{{ ansible_env.HOME }}/Library/LaunchAgents/homebrew.mxcl.sketchybar.plist"
+    path: "{{ ansible_facts.env.HOME }}/Library/LaunchAgents/homebrew.mxcl.sketchybar.plist"
     state: absent
 
 - name: Bootout legacy launchd service if loaded
@@ -85,7 +85,7 @@
 - name: Deploy custom plist with correct PATH
   template:
     src: local.sketchybar.plist.j2
-    dest: "{{ ansible_env.HOME }}/Library/LaunchAgents/local.sketchybar.plist"
+    dest: "{{ ansible_facts.env.HOME }}/Library/LaunchAgents/local.sketchybar.plist"
     mode: '0644'
   register: plist_deployed
 
@@ -95,7 +95,7 @@
   failed_when: false
 
 - name: Bootstrap sketchybar service
-  command: launchctl bootstrap "gui/{{ lookup('pipe', 'id -u') }}" "{{ ansible_env.HOME }}/Library/LaunchAgents/local.sketchybar.plist"
+  command: launchctl bootstrap "gui/{{ lookup('pipe', 'id -u') }}" "{{ ansible_facts.env.HOME }}/Library/LaunchAgents/local.sketchybar.plist"
   when: plist_deployed.changed
 
 - name: Record role in lockfile
