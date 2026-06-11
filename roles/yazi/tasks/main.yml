@@ -3,8 +3,10 @@
   register: yazi_add
   changed_when: "'already' not in yazi_add.stderr"
 
-- name: Create Yazi config folder if it doesn't exist
-  shell: "mkdir -p {{ config }}/yazi/"
+- name: Ensure config directory exists
+  file:
+    path: "{{ config }}"
+    state: directory
 
 - name: Check if config exists and is not already our symlink
   stat: path="{{ config }}/yazi"

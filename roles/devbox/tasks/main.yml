@@ -27,6 +27,7 @@
     path: /usr/local/bin/devbox
     mode: '0755'
   become: yes
+  when: devbox_check.stat.exists and devbox_check.stat.mode != '0755'
 
 - name: Verify devbox installation
   command: devbox version

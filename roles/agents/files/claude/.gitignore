@@ -6,6 +6,7 @@
 !CLAUDE.md
 !settings.json
 !keybindings.json
+!policy-limits.json
 
 # Keep rules
 !rules/

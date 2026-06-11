@@ -64,7 +64,7 @@
   command: "mv {{ config }}/tmux {{ config }}/tmux_old"
   args:
     creates: "{{ config }}/tmux_old"
-  when: tmux_config_stat.stat.exists
+  when: tmux_config_stat.stat.exists and not tmux_config_stat.stat.islnk
 
 - name: Tmux - Make sure config is up to date
   file:
@@ -82,7 +82,7 @@
   command: "mv {{ config }}/tmuxinator {{ config }}/tmuxinator_old"
   args:
     creates: "{{ config }}/tmuxinator_old"
-  when: tmuxinator_config_stat.stat.exists
+  when: tmuxinator_config_stat.stat.exists and not tmuxinator_config_stat.stat.islnk
 
 - name: Tmuxinator - Make sure config is up to date
   file:

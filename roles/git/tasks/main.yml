@@ -10,10 +10,10 @@
   register: gitconfig_stat
 
 - name: Back up gitconfig
-  command: mv ~/.gitconfig ~/.gitconfig.bak
+  command: "mv {{ dotfiles_user_home }}/.gitconfig {{ dotfiles_user_home }}/.gitconfig.bak"
   args:
     creates: "{{dotfiles_user_home}}/.gitconfig.bak"
-  when: gitconfig_stat.stat.exists
+  when: gitconfig_stat.stat.exists and not gitconfig_stat.stat.islnk
 
 - name: Link gitconfig file
   file:
@@ -43,7 +43,10 @@
     mode: "0755"
 
 - name: Create .bin directory
-  command: "mkdir -p ~/.bin"
+  file:
+    path: "{{ dotfiles_user_home }}/.bin"
+    state: directory
+    mode: "0755"
 
 # Scripts used in gitconfig
 - name: Link stats script

@@ -2,8 +2,10 @@
   homebrew_cask:
     name: ghostty
 
-- name: Create Ghostty config folder if it doesn't exist
-  shell: "mkdir -p {{ config }}/ghostty/"
+- name: Ensure config directory exists
+  file:
+    path: "{{ config }}"
+    state: directory
 
 - name: Check if config exists
   stat: path="{{ config }}/ghostty"
@@ -13,7 +15,7 @@
   command: "mv {{ config }}/ghostty {{ config }}/ghostty_old"
   args:
     creates: "{{ config }}/ghostty_old"
-  when: ghostty_config_stat.stat.exists
+  when: ghostty_config_stat.stat.exists and not ghostty_config_stat.stat.islnk
 
 - name: Make sure config is up to date
   file:
