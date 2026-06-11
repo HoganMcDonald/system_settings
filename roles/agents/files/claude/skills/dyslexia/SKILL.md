@@ -95,9 +95,9 @@ Prefer:
 Example:
 
 ```ts
-const user = await db.user.findById(id)
-if (!user) throw new NotFoundError()
-return user
+const user = await db.user.findById(id);
+if (!user) throw new NotFoundError();
+return user;
 ```
 
 This is the "find or fail" pattern. The caller never gets `null`.
