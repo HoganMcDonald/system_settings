@@ -1,2 +1,2 @@
-vim.opt.runtimepath:prepend("/Users/hoganmcdonald/.local/share/nvim/orbit/orbit.nvim")
+vim.pack.add({ "https://github.com/HoganMcDonald/orbit.nvim" })
 require("orbit").setup()

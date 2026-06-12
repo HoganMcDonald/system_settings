@@ -1,5 +1,13 @@
 {
   "plugins": {
+    "cyberdream.nvim": {
+      "rev": "4fbdeb7376faed87ead7c7c805c02092ca7bac01",
+      "src": "https://github.com/scottmckendry/cyberdream.nvim"
+    },
+    "neo-tree": {
+      "rev": "2734f5cf4c59e79bbcc4521eb8d1e26fd305ad3c",
+      "src": "https://github.com/nvim-neo-tree/neo-tree.nvim"
+    },
     "orbit.nvim": {
       "rev": "29f54a025c20f01a00e759f1ebbc2332e68a63be",
       "src": "git@github.com:HoganMcDonald/orbit.nvim.git"
