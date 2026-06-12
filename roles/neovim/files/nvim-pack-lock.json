@@ -1,0 +1,8 @@
+{
+  "plugins": {
+    "orbit.nvim": {
+      "rev": "29f54a025c20f01a00e759f1ebbc2332e68a63be",
+      "src": "git@github.com:HoganMcDonald/orbit.nvim.git"
+    }
+  }
+}
