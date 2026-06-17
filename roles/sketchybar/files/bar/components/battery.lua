@@ -14,21 +14,21 @@ end
 
 local function icon_for(pct, charging)
   if charging then
-    return '\u{F008B}', 0xfff1ff5e
+    return '\u{F008B}', colors.amber
   end
   if pct >= 80 then
-    return '\u{F008C}', 0xff5eff6b
+    return '\u{F008C}', colors.green
   end
   if pct >= 70 then
-    return '\u{F00FA}', 0xfff1ff5e
+    return '\u{F00FA}', colors.amber
   end
   if pct >= 40 then
-    return '\u{F00F8}', 0xffffbd5e
+    return '\u{F00F8}', colors.warning
   end
   if pct >= 10 then
-    return '\u{F008D}', 0xffff6e5e
+    return '\u{F008D}', colors.critical
   end
-  return '\u{F008E}', 0xffff6e5e
+  return '\u{F008E}', colors.critical
 end
 
 local function refresh(item)
@@ -57,8 +57,13 @@ return {
   end,
   props = {
     label = { color = colors.text },
-    icon = { color = colors.green, font = { family = 'SF Pro Display', size = 16 } },
-    padding_left = 5,
-    padding_right = 5,
+    icon = { color = colors.green, font = { family = 'Hack Nerd Font:Bold', size = 16 } },
+    background = {
+      color = colors.with_alpha(colors.green, 0x16),
+      border_color = colors.with_alpha(colors.green, 0x99),
+      height = 28,
+    },
+    padding_left = 12,
+    padding_right = 12,
   },
 }

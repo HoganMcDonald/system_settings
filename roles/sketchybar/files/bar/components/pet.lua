@@ -39,8 +39,8 @@ return {
     popup = {
       drawing = false,
       background = {
-        color = colors.base,
-        corner_radius = 8,
+        color = colors.panel_bg,
+        corner_radius = 4,
         border_width = 1,
         border_color = colors.purple,
       },

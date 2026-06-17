@@ -13,42 +13,43 @@ else
 fi
 
 # Set icon, color, and bar background based on mode
-LABEL="Main"
-COLOR="0xff5ea1ff"
-BAR_COLOR="0x0"  # Default sketchybar background
+LABEL="[ MAIN ]"
+COLOR="0xff00f5ff"
+BAR_COLOR="0x00000000"
 
 case "$MODE" in
     "move")
-        COLOR="0xff5eff6b"
-        BAR_COLOR="0x44a6e3a1"  # Semi-transparent green
-        LABEL="Move"
+        COLOR="0xff35ff8a"
+        BAR_COLOR="0xd40a1d15"
+        LABEL="[ MOVE ]"
         ;;
     "resize")
-        COLOR="0xfff1ff5e"
-        BAR_COLOR="0x44f9e2af"  # Semi-transparent yellow
-        LABEL="Resize"
+        COLOR="0xffffd15c"
+        BAR_COLOR="0xd41d1708"
+        LABEL="[ RESIZE ]"
         ;;
     "join")
-        COLOR="0xffff6e5e"
-        BAR_COLOR="0x44f38ba8"  # Semi-transparent red
-        LABEL="Join"
+        COLOR="0xffff3f66"
+        BAR_COLOR="0xd4200812"
+        LABEL="[ JOIN ]"
         ;;
     "workspace")
-        COLOR="0xffbd5eff"
-        BAR_COLOR="0x44cba6f7"  # Semi-transparent purple
-        LABEL="Workspace"
+        COLOR="0xffff2bd6"
+        BAR_COLOR="0xd41d061c"
+        LABEL="[ WORKSPACE ]"
         ;;
     *)
-        COLOR="0xff5ea1ff"
-        BAR_COLOR="0x44000000"  # Default sketchybar background (transparent with blur)
-        LABEL="Main"
+        COLOR="0xff00f5ff"
+        BAR_COLOR="0x00000000"
+        LABEL="[ MAIN ]"
         MODE="main"
         ;;
 esac
 
 # Update the mode indicator item
 sketchybar --set mode_indicator \
-           label="$LABEL"
+           label="$LABEL" \
+           label.color="$COLOR"
 
 # Update the bar background color
 sketchybar --bar color="$BAR_COLOR"

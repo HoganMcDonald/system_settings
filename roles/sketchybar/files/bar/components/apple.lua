@@ -1,4 +1,4 @@
-local colors = require('colors')
+local colors = require 'colors'
 
 ---@type ComponentSpec
 return {
@@ -6,19 +6,26 @@ return {
   props = {
     icon = {
       string = '\u{F8FF}',
-      color = colors.green,
-      font = { family = 'Hack Nerd Font', size = 16 },
+      color = colors.magenta,
+      font = { family = 'SF Pro Display:Bold', size = 17 },
+      width = 28,
+      padding_left = 8,
     },
     label = { drawing = false },
     padding_left = 0,
     padding_right = 5,
+    background = {
+      color = colors.with_alpha(colors.magenta, 0x22),
+      border_color = colors.magenta,
+      height = 28,
+    },
   },
   popup = {
     background = {
-      color = colors.base,
-      corner_radius = 8,
+      color = colors.panel_bg,
+      corner_radius = 4,
       border_width = 1,
-      border_color = colors.lavender,
+      border_color = colors.magenta,
     },
     items = {
       {
@@ -29,6 +36,7 @@ return {
           padding_left = 12,
           padding_right = 12,
           width = 150,
+          border_width = 0,
         },
         on_click = 'open -a "System Information"; sketchybar --set apple popup.drawing=off',
       },

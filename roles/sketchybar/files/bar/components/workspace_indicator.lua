@@ -1,11 +1,11 @@
 local colors = require('colors')
 
 local COUNT = 4
-local ACTIVE_WIDTH = 24
-local INACTIVE_WIDTH = 12
+local ACTIVE_WIDTH = 34
+local INACTIVE_WIDTH = 9
 local SPACER_WIDTH = 6
-local OVAL_HEIGHT = 8
-local OVAL_RADIUS = 4
+local OVAL_HEIGHT = 9
+local OVAL_RADIUS = 2
 
 local items = {}
 
@@ -17,7 +17,9 @@ for i = 1, COUNT do
       label = { drawing = false },
       background = {
         drawing = true,
-        color = colors.lavender,
+        color = i == 1 and colors.cyan or colors.overlay1,
+        border_width = 1,
+        border_color = i == 1 and colors.text or colors.overlay2,
         height = OVAL_HEIGHT,
         corner_radius = OVAL_RADIUS,
         padding_left = 0,
@@ -52,6 +54,18 @@ end
 
 ---@type GroupSpec
 return {
-  group = { name = 'workspaces' },
+  group = {
+    name = 'workspaces',
+    props = {
+      background = {
+        drawing = true,
+        color = colors.panel_bg_dim,
+        border_color = colors.overlay2,
+        border_width = 1,
+        corner_radius = 3,
+        height = 28,
+      },
+    },
+  },
   items = items,
 }

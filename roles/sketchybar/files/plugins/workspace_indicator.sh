@@ -23,12 +23,14 @@ for i in {1..4}; do
   if [ "$i" = "$CURRENT_WORKSPACE" ]; then
     # Active workspace - make it twice as wide with faster animation
     sketchybar --animate tanh 8 \
-               --set workspace_$i width=24 \
-               background.color=0xffffffff
+               --set workspace_$i width=34 \
+               background.color=0xff00f5ff \
+               background.border_color=0xffe8fbff
   else
     # Inactive workspace - normal width with faster animation
     sketchybar --animate tanh 8 \
-               --set workspace_$i width=12 \
-               background.color=0xffffffff
+               --set workspace_$i width=9 \
+               background.color=0xff233743 \
+               background.border_color=0xff35505d
   fi
 done
