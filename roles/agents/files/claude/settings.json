@@ -19,7 +19,11 @@
       {
         "matcher": "",
         "hooks": [
-          { "type": "command", "command": "claude-session-state stop", "timeout": 3 }
+          {
+            "type": "command",
+            "command": "claude-session-state stop",
+            "timeout": 3
+          }
         ]
       }
     ],
@@ -27,7 +31,11 @@
       {
         "matcher": "",
         "hooks": [
-          { "type": "command", "command": "claude-session-state prompt", "timeout": 3 }
+          {
+            "type": "command",
+            "command": "claude-session-state prompt",
+            "timeout": 3
+          }
         ]
       }
     ],
@@ -35,7 +43,11 @@
       {
         "matcher": "Bash|Edit|Write|NotebookEdit|WebFetch|WebSearch|Task",
         "hooks": [
-          { "type": "command", "command": "claude-session-state tool", "timeout": 3 }
+          {
+            "type": "command",
+            "command": "claude-session-state tool",
+            "timeout": 3
+          }
         ]
       }
     ],
@@ -43,7 +55,11 @@
       {
         "matcher": "",
         "hooks": [
-          { "type": "command", "command": "claude-session-state end", "timeout": 3 }
+          {
+            "type": "command",
+            "command": "claude-session-state end",
+            "timeout": 3
+          }
         ]
       }
     ]

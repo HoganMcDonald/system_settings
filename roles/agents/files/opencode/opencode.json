@@ -4,6 +4,11 @@
   "autoupdate": "notify",
   "snapshot": true,
   "lsp": true,
+  "plugin": [
+    "opencode-vibeguard",
+    "opencode-dynamic-context-pruning",
+    "opencode-mermaid-renderer"
+  ],
   "mcp": {
     "linear": {
       "type": "remote",

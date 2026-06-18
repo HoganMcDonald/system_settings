@@ -16,6 +16,7 @@ roles/agents/files/codex/memories_*.sqlite*
 roles/agents/files/codex/state_*.sqlite*
 roles/agents/files/codex/ambient-suggestions/
 roles/agents/files/codex/chrome-native-hosts-v2.json
+roles/agents/files/codex/cloud-config-bundle-cache.json
 roles/agents/files/codex/computer-use/
 roles/agents/files/codex/external_agent_session_imports.json
 roles/agents/files/codex/installation_id
