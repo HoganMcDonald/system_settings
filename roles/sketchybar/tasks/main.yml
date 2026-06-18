@@ -16,6 +16,10 @@
   homebrew:
     name: sketchybar
 
+- name: Install Apple Silicon monitor
+  homebrew:
+    name: macmon
+
 - name: Stat installed SbarLua module
   ansible.builtin.stat:
     path: "{{ ansible_facts.env.HOME }}/.local/share/sketchybar_lua/sketchybar.so"

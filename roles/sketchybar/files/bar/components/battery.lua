@@ -90,9 +90,14 @@ return {
   end,
   props = {
     label = { color = colors.text, padding_right = 9 },
-    icon = { color = colors.green, font = { family = 'Hack Nerd Font:Bold', size = 16 }, padding_left = 8, padding_right = 5 },
+    icon = {
+      color = colors.green,
+      font = { family = 'Hack Nerd Font:Bold', size = 16 },
+      padding_left = 8,
+      padding_right = 5,
+    },
     background = {
-      color = colors.with_alpha(colors.green, 0x24),
+      color = colors.with_alpha(colors.green, 0x40),
       border_color = colors.with_alpha(colors.green, 0x99),
       height = 28,
     },

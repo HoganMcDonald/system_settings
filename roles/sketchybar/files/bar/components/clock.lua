@@ -1,4 +1,4 @@
-local colors = require('colors')
+local colors = require 'colors'
 
 ---@type ComponentSpec
 return {
@@ -9,7 +9,7 @@ return {
     label = { color = colors.amber, padding_right = 10 },
     icon = { string = '󰥔', color = colors.amber, padding_left = 8, padding_right = 7 },
     background = {
-      color = colors.with_alpha(colors.amber, 0x26),
+      color = colors.with_alpha(colors.amber, 0x40),
       border_color = colors.with_alpha(colors.amber, 0xaa),
       height = 28,
     },

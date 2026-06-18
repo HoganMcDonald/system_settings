@@ -15,7 +15,7 @@ return {
     padding_left = 4,
     padding_right = 4,
     background = {
-      color = colors.with_alpha(colors.magenta, 0x30),
+      color = colors.with_alpha(colors.magenta, 0x40),
       border_color = colors.magenta,
       height = 28,
     },

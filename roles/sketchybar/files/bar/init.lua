@@ -7,6 +7,8 @@ local mode_indicator = require('bar.components.mode_indicator')
 local workspace_indicator = require('bar.components.workspace_indicator')
 local clock = require('bar.components.clock')
 local wifi = require('bar.components.wifi')
+local cpu_temp = require('bar.components.cpu_temp')
+local ram_usage = require('bar.components.ram_usage')
 local battery = require('bar.components.battery')
 local swap_warning = require('bar.components.swap_warning')
 
@@ -49,7 +51,7 @@ function M.setup()
 
     left = { apple, degraded_warning, mode_indicator },
     center = { workspace_indicator },
-    right = { clock, wifi, battery, swap_warning },
+    right = { clock, wifi, cpu_temp, ram_usage, battery, swap_warning },
   })
 end
 
