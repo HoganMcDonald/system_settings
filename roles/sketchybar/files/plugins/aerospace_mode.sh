@@ -42,5 +42,7 @@ esac
 
 # Update the mode indicator item
 sketchybar --set mode_indicator \
+  background.drawing=off \
+  background.border_width=0 \
   label="$LABEL" \
   label.color="$COLOR"

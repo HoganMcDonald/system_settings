@@ -26,7 +26,11 @@ return {
         label = { string = '[ MAIN ]', color = colors.cyan },
         padding_left = 4,
         padding_right = 4,
-        background = { drawing = false },
+        background = {
+          drawing = false,
+          color = colors.transparent,
+          border_width = 0,
+        },
       },
     },
   },
