@@ -2,6 +2,7 @@ local lib = require('lib')
 local colors = require('colors')
 
 local apple = require('bar.components.apple')
+local degraded_warning = require('bar.components.degraded_warning')
 local mode_indicator = require('bar.components.mode_indicator')
 local workspace_indicator = require('bar.components.workspace_indicator')
 local clock = require('bar.components.clock')
@@ -46,7 +47,7 @@ function M.setup()
       padding_right = 4,
     },
 
-    left = { apple, mode_indicator },
+    left = { apple, degraded_warning, mode_indicator },
     center = { workspace_indicator },
     right = { clock, wifi, battery, swap_warning },
   })

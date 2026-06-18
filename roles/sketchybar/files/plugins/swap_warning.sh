@@ -4,7 +4,9 @@ SWAP_USAGE=$(sysctl -n vm.swapusage 2>/dev/null)
 USED=$(printf '%s\n' "$SWAP_USAGE" | sed -n 's/.*used = \([0-9.]*[MGT]\).*/\1/p')
 
 if [ -z "$USED" ]; then
-  sketchybar --set swap_alert drawing=off --set swap_detail drawing=off
+  sketchybar --set swap_alert drawing=off \
+             --set swap_detail drawing=off \
+             --set degraded_warning drawing=off
   exit 0
 fi
 
@@ -12,7 +14,9 @@ VALUE=${USED%?}
 UNIT=${USED: -1}
 
 if ! awk -v value="$VALUE" 'BEGIN { exit !(value > 0) }'; then
-  sketchybar --set swap_alert drawing=off --set swap_detail drawing=off
+  sketchybar --set swap_alert drawing=off \
+             --set swap_detail drawing=off \
+             --set degraded_warning drawing=off
   exit 0
 fi
 
@@ -23,4 +27,5 @@ DISPLAY=$(awk -v value="$VALUE" -v unit="$UNIT" 'BEGIN {
 }')
 
 sketchybar --set swap_alert drawing=on \
-           --set swap_detail drawing=on label="FAULT $DISPLAY"
+           --set swap_detail drawing=on label="FAULT $DISPLAY" \
+           --set degraded_warning drawing=on
