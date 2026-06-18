@@ -1,4 +1,4 @@
-local colors = require('colors')
+local colors = require 'colors'
 
 ---@type GroupSpec
 return {
@@ -24,8 +24,8 @@ return {
       subscribe = { 'aerospace_mode_change' },
       props = {
         label = { string = '[ MAIN ]', color = colors.cyan },
-        padding_left = 7,
-        padding_right = 7,
+        padding_left = 4,
+        padding_right = 4,
         background = { drawing = false },
       },
     },

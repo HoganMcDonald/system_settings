@@ -7,6 +7,7 @@ local workspace_indicator = require('bar.components.workspace_indicator')
 local clock = require('bar.components.clock')
 local wifi = require('bar.components.wifi')
 local battery = require('bar.components.battery')
+local swap_warning = require('bar.components.swap_warning')
 
 local M = {}
 
@@ -41,13 +42,13 @@ function M.setup()
         corner_radius = 3,
         height = 28,
       },
-      padding_left = 8,
-      padding_right = 8,
+      padding_left = 4,
+      padding_right = 4,
     },
 
     left = { apple, mode_indicator },
     center = { workspace_indicator },
-    right = { clock, wifi, battery },
+    right = { clock, wifi, battery, swap_warning },
   })
 end
 

@@ -39,7 +39,7 @@ M.crust     = 0xff010306
 M.transparent = 0x00000000
 M.bar_bg = M.transparent
 M.panel_bg = 0xe6071820
-M.panel_bg_dim = 0xc2111f2a
+M.panel_bg_dim = 0xd4111f2a
 M.glow_cyan = 0x6600f5ff
 M.glow_magenta = 0x66ff2bd6
 
