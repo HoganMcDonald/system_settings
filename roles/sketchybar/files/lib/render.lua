@@ -464,9 +464,11 @@ local function add_item(item_spec, defaults, region_position)
     item:set({ click_script = "sketchybar --set " .. item_spec.name .. " popup.drawing=toggle" })
   end
 
-  for _, ev in ipairs(item_spec.subscribe or {}) do
-    item:subscribe(ev)
-  end
+  -- Subscribe events are handled by sketchybar's script system.
+  -- For Lua callbacks, use the 'on' field instead.
+  -- if item_spec.subscribe and #item_spec.subscribe > 0 then
+  --   item:set({ subscribe = item_spec.subscribe })
+  -- end
 
   if item_spec.popup and item_spec.popup.items then
     add_popup_items(item_spec.name, item_spec.popup.items, defaults)

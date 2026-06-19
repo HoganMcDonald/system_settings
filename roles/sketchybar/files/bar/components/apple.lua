@@ -5,7 +5,7 @@ return {
   name = 'apple',
   props = {
     icon = {
-      string = '\u{F8FF}',
+      string = '\239\163\191',
       color = colors.magenta,
       font = { family = 'SF Pro Display:Bold', size = 17 },
       width = 28,
@@ -31,7 +31,7 @@ return {
       {
         name = 'about',
         props = {
-          icon = { string = '\u{F01C4}', font = { family = 'Hack Nerd Font:Bold', size = 12 } },
+          icon = { string = '\243\176\135\132', font = { family = 'Hack Nerd Font:Bold', size = 12 } },
           label = { string = ' About This Mac', font = { family = 'Hack Nerd Font:Bold', size = 12 } },
           padding_left = 12,
           padding_right = 12,

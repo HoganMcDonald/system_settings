@@ -11,7 +11,21 @@ local M = {}
 ---@field exec fun(command: string, ...): any
 
 ---@type SketchyBar
-local sbar = require("sketchybar")
+print("[sbar.lua] requiring sketchybar module...")
+local ok, sbar = pcall(require, 'sketchybar')
+if not ok then
+  print('[sbar.lua] error:', sbar)
+  sbar = nil
+else
+  print("[sbar.lua] sketchybar type:", type(sbar))
+  if type(sbar) == "table" then
+    for k, v in pairs(sbar) do
+      print("[sbar.lua]  ", k, type(v))
+    end
+  else
+    print("[sbar.lua] sketchybar value:", tostring(sbar))
+  end
+end
 
 ---Returns the SketchyBar instance.
 ---@return SketchyBar

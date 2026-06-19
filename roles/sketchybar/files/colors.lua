@@ -49,8 +49,8 @@ M.sky = M.cyan
 
 -- Utility function to create color with custom alpha
 function M.with_alpha(color, alpha)
-  local rgb = color & 0xffffff
-  return (alpha << 24) | rgb
+  local rgb = color % 0x1000000
+  return alpha * 0x1000000 + rgb
 end
 
 return M

@@ -45,21 +45,21 @@ end
 
 local function icon_for(pct, charging)
   if charging then
-    return '\u{F008B}', colors.amber
+    return '\243\176\130\139', colors.amber
   end
   if pct >= 80 then
-    return '\u{F008C}', colors.green
+    return '\243\176\130\140', colors.green
   end
   if pct >= 70 then
-    return '\u{F00FA}', colors.amber
+    return '\243\176\131\186', colors.amber
   end
   if pct >= 40 then
-    return '\u{F00F8}', colors.warning
+    return '\243\176\131\184', colors.warning
   end
   if pct >= 10 then
-    return '\u{F008D}', colors.critical
+    return '\243\176\130\141', colors.critical
   end
-  return '\u{F008E}', colors.critical
+  return '\243\176\130\142', colors.critical
 end
 
 local function refresh(item)
@@ -97,7 +97,7 @@ return {
       padding_right = 5,
     },
     background = {
-      color = colors.with_alpha(colors.green, 0x40),
+      color = colors.with_alpha(colors.green, 0x10),
       border_color = colors.with_alpha(colors.green, 0x99),
       height = 28,
     },

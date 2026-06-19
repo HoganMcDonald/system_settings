@@ -9,7 +9,7 @@ return {
     icon = { string = 'TEMP', color = colors.blue, padding_left = 8, padding_right = 6 },
     label = { string = '--C', color = colors.text, padding_right = 9 },
     background = {
-      color = colors.with_alpha(colors.blue, 0x40),
+      color = colors.with_alpha(colors.blue, 0x50),
       border_color = colors.with_alpha(colors.blue, 0x99),
       height = 28,
     },
