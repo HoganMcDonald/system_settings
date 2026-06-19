@@ -2,7 +2,7 @@
   community.general.homebrew_cask:
     name: karabiner-elements
     state: present
-    sudo_password: "{{ become_password }}"
+    sudo_password: "{{ ansible_become_pass | default(omit) }}"
 
 - name: Create Karabiner config directory
   file:
