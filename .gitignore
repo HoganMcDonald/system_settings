@@ -23,6 +23,7 @@ roles/agents/files/codex/installation_id
 roles/agents/files/codex/log/
 roles/agents/files/codex/node_repl/
 roles/agents/files/codex/plugins/.remote-plugin-install-staging/
+roles/agents/files/codex/plugins/.plugin-appserver/
 roles/agents/files/codex/plugins/cache/
 roles/agents/files/codex/plugins/local-marketplaces/
 roles/agents/files/codex/process_manager/
