@@ -1,8 +1,8 @@
 alias g='lazygit'
-alias ls='ls -G'
-alias lt='tree'
-alias ll='ls -lFha'
-alias lh='ls -a | egrep "^\."'
+alias ls='eza --icons'
+alias ll='eza -lah --git --icons'
+alias lt='eza --tree --level=2 --icons'
+alias lh='eza -d .* --icons'
 alias ping='prettyping --nolegend'
 alias cat='bat'
 alias preview="fzf --preview 'bat --color \"always\" {}'"

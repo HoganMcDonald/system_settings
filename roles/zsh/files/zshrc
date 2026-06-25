@@ -1,3 +1,8 @@
+# Enable startup profiling with: ZSH_PROFILE=1 zsh -i -c exit
+if [[ -n "$ZSH_PROFILE" ]]; then
+  zmodload zsh/zprof
+fi
+
 # zinit
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 if [[ ! -d "$ZINIT_HOME" ]]; then
@@ -27,3 +32,5 @@ eval "$(starship init zsh)"
 
 export EDITOR="nvim"
 export PATH="$HOME/.local/bin:$PATH"
+
+[[ -n "$ZSH_PROFILE" ]] && zprof

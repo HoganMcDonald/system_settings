@@ -3,6 +3,9 @@ devbox_tools:
   - bat@latest
   - htop@latest
   - fzf@latest
+  - zoxide@latest
+  - atuin@latest
+  - eza@latest
   - delta@latest
   - tealdeer@latest
   - ripgrep@latest
