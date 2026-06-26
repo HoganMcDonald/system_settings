@@ -1,8 +1,8 @@
 alias g='lazygit'
-alias ls='eza --icons'
-alias ll='eza -lah --git --icons'
-alias lt='eza --tree --level=2 --icons'
-alias lh='eza -d .* --icons'
+alias ls='eza --icons --group-directories-first --git'
+alias ll='ls -lah'
+alias lt='ls --tree --level=2 --icons'
+alias lh='ls -d .* --icons'
 alias ping='prettyping --nolegend'
 alias cat='bat'
 alias preview="fzf --preview 'bat --color \"always\" {}'"
@@ -18,7 +18,7 @@ alias ip="ifconfig -u | grep 'inet ' | grep -v 127.0.0.1 | cut -d\  -f2 | head -
 alias vim='nvim'
 alias v='nvim'
 alias vi='nvim'
-alias be='bundle exec'
 
 # ruby
 alias rubocop='bundle exec rubocop'
+alias be='bundle exec'
