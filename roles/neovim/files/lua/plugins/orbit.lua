@@ -1,4 +1,4 @@
 return {
-  dir = "~/orbit.nvim",
-  opts = {},
+  -- dir = "~/orbit.nvim",
+  -- opts = {},
 }

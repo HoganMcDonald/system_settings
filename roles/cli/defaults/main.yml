@@ -15,3 +15,5 @@ devbox_tools:
 homebrew_tools:
   - gnu-sed
   - lastpass-cli
+  - imagemagick
+  - mermaid-cli
