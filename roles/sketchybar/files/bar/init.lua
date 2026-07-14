@@ -11,12 +11,16 @@ local degraded_warning = require('bar.components.degraded_warning')
 print("[bar/init.lua] degraded_warning loaded")
 local mode_indicator = require('bar.components.mode_indicator')
 print("[bar/init.lua] mode_indicator loaded")
+local pomodoro = require('bar.components.pomodoro')
+print("[bar/init.lua] pomodoro loaded")
 local workspace_indicator = require('bar.components.workspace_indicator')
 print("[bar/init.lua] workspace_indicator loaded")
 local clock = require('bar.components.clock')
 print("[bar/init.lua] clock loaded")
 local wifi = require('bar.components.wifi')
 print("[bar/init.lua] wifi loaded")
+local weather = require('bar.components.weather')
+print("[bar/init.lua] weather loaded")
 local cpu_temp = require('bar.components.cpu_temp')
 print("[bar/init.lua] cpu_temp loaded")
 local ram_usage = require('bar.components.ram_usage')
@@ -63,9 +67,9 @@ function M.setup()
       padding_right = 4,
     },
 
-    left = { apple, degraded_warning, mode_indicator },
+    left = { apple, degraded_warning, mode_indicator, pomodoro },
     center = { workspace_indicator },
-    right = { clock, wifi, cpu_temp, ram_usage, battery, swap_warning },
+    right = { clock, weather, wifi, cpu_temp, ram_usage, battery, swap_warning },
   })
 end
 

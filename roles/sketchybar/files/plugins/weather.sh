@@ -1,27 +1,32 @@
 #!/bin/bash
 
-sketchybar --set $NAME \
-  label="Loading..." \
-  icon.color=0xff5ef1ff
+set -euo pipefail
 
-# fetch weather data
-LOCATION="Seoul"
-REGION=""
-LANG="ko"
+LOCATION="${WEATHER_LOCATION:-}"
+LOCATION_ESCAPED="${LOCATION// /+}"
+URL="https://wttr.in/${LOCATION_ESCAPED}?format=%t%7C%C&u"
 
-# Line below replaces spaces with +
-LOCATION_ESCAPED="${LOCATION// /+}+${REGION// /+}"
-WEATHER_JSON=$(curl -s "https://wttr.in/$LOCATION_ESCAPED?0pq&format=j1&lang=$LANG")
+WEATHER=$(curl --fail --silent --show-error --max-time 5 "$URL" 2>/dev/null || true)
 
-# Fallback if empty
-if [ -z $WEATHER_JSON ]; then
-  sketchybar --set $NAME label="$LOCATION"
-  return
+if [ -z "$WEATHER" ] || [ "$WEATHER" = "Unknown location" ]; then
+  sketchybar --set "$NAME" icon="󰖐" label="Weather unavailable"
+  exit 0
 fi
 
-TEMPERATURE=$(echo $WEATHER_JSON | jq '.current_condition[0].temp_C' | tr -d '"')
-#WEATHER_DESCRIPTION=$(echo $WEATHER_JSON | jq '.current_condition[0].weatherDesc[0].value' | tr -d '"' | sed 's/\(.\{16\}\).*/\1.../')
-WEATHER_DESCRIPTION=$(echo $WEATHER_JSON | jq '.current_condition[0].lang_ko[0].value' | tr -d '"' | sed 's/\(.\{16\}\).*/\1.../')
+IFS='|' read -r TEMPERATURE CONDITION <<< "$WEATHER"
+CONDITION=${CONDITION:-Unknown}
+CONDITION_LOWER=$(printf '%s' "$CONDITION" | tr '[:upper:]' '[:lower:]')
 
-sketchybar --set $NAME \
-  label="$TEMPERATURE$(echo '°')C • $WEATHER_DESCRIPTION"
+case "$CONDITION_LOWER" in
+  *thunder*|*storm*) ICON="󰖓" ;;
+  *snow*|*sleet*|*blizzard*) ICON="󰖘" ;;
+  *rain*|*drizzle*|*shower*) ICON="󰖗" ;;
+  *fog*|*mist*|*haze*) ICON="󰖑" ;;
+  *cloud*|*overcast*) ICON="󰖐" ;;
+  *clear*|*sunny*) ICON="󰖙" ;;
+  *) ICON="󰖕" ;;
+esac
+
+sketchybar --set "$NAME" \
+  icon="$ICON" \
+  label="$TEMPERATURE • $CONDITION"
