@@ -9,17 +9,9 @@ vim.keymap.set("n", "<leader>fy", function()
   vim.notify("Copied to clipboard: " .. path, vim.log.levels.INFO)
 end, { desc = "Copy file path" })
 
--- Diffview keybindings (replaces lazygit)
-vim.keymap.set("n", "<leader>gg", function()
-  local lib = require("diffview.lib")
-  local view = lib.get_current_view()
-  if view then
-    vim.cmd("DiffviewClose")
-  else
-    vim.cmd("DiffviewOpen")
-  end
-end, { desc = "Toggle Diffview" })
+-- CodeDiff keybindings (replaces lazygit)
+vim.keymap.set("n", "<leader>gg", "<cmd>CodeDiff<cr>", { desc = "CodeDiff" })
 vim.keymap.set("n", "<leader>gh", function()
-  vim.cmd("DiffviewFileHistory %")
-end, { desc = "File History (current)" })
-vim.keymap.set("n", "<leader>gH", "<cmd>DiffviewFileHistory<cr>", { desc = "File History (all)" })
+  vim.cmd("CodeDiff history %")
+end, { desc = "CodeDiff History (current)" })
+vim.keymap.set("n", "<leader>gH", "<cmd>CodeDiff history<cr>", { desc = "CodeDiff History (all)" })

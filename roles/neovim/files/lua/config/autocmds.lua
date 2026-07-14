@@ -18,7 +18,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
   end,
 })
 
--- Detach LSP clients from non-file buffers (e.g. diffview://) to prevent crashes
+-- Detach LSP clients from non-file buffers to prevent crashes
 vim.api.nvim_create_autocmd("LspAttach", {
   group = vim.api.nvim_create_augroup("detach_lsp_from_non_file", { clear = true }),
   callback = function(args)

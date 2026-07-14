@@ -3,7 +3,20 @@ return {
     'folke/snacks.nvim',
     lazy = false,
     priority = 1000,
-    opts = {},
+    opts = {
+      dashboard = {
+        preset = {
+          header = [[
+ ███▄    █ ▓█████  ▒█████   ██▒   █▓ ██▓ ███▄ ▄███▓
+ ██ ▀█   █ ▓█   ▀ ▒██▒  ██▒▓██░   █▒▓██▒▓██▒▀█▀ ██▒
+▓██  ▀█ ██▒▒███   ▒██░  ██▒ ▓██  █▒░▒██▒▓██    ▓██░
+▓██▒  ▐▌██▒▒▓█  ▄ ▒██   ██░  ▒██ █░░░██░▒██    ▒██
+▒██░   ▓██░░▒████▒░ ████▓▒░   ▒▀█░  ░██░▒██▒   ░██▒
+░ ▒░   ▒ ▒ ░░ ▒░ ░░ ▒░▒░▒░    ░ ▐░  ░▓  ░ ▒░   ░  ░
+]],
+        },
+      },
+    },
     keys = {
       -- Disable the default <leader>n notification history keymap
       { '<leader>n', false },
@@ -15,7 +28,7 @@ return {
         end,
         desc = 'Notification History',
       },
-      -- Disable lazygit keybindings (replaced by diffview)
+      -- Disable lazygit keybindings (replaced by CodeDiff)
       { '<leader>gg', false },
       { '<leader>gG', false },
       { '<leader>gf', false },
