@@ -1,1 +1,246 @@
-git branch | grep -v "master\|develop" | xargs git branch -D
+#!/usr/bin/env bash
+set -euo pipefail
+
+dry_run=false
+sync_stacks=true
+remote="origin"
+
+usage() {
+  cat <<'USAGE'
+Usage: git cleanup [--dry-run|-n] [--no-sync]
+
+Removes local branches whose remote pull request or upstream branch has been
+merged. Before deleting merged branches, any unmerged child branch is reparented
+to the nearest surviving ancestor with git-town, then its stack is synced.
+
+Options:
+  -n, --dry-run   Print actions without changing branches
+      --no-sync   Reparent/delete only; skip git town sync --stack
+  -h, --help      Show this help
+USAGE
+}
+
+die() {
+  echo "error: $1" >&2
+  exit 1
+}
+
+log() {
+  echo "$*"
+}
+
+run() {
+  if $dry_run; then
+    printf '[dry-run]'
+    printf ' %q' "$@"
+    printf '\n'
+  else
+    "$@"
+  fi
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    -n|--dry-run)
+      dry_run=true
+      ;;
+    --no-sync)
+      sync_stacks=false
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      die "Unknown option: $arg"
+      ;;
+  esac
+done
+
+command -v git-town >/dev/null 2>&1 || die "git-town is not installed"
+git rev-parse --git-dir >/dev/null 2>&1 || die "not inside a git repository"
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  die "worktree has uncommitted changes; commit, stash, or reset them before cleanup"
+fi
+
+main_branch=$(git config --get git-town.main-branch 2>/dev/null || echo "main")
+current_branch=$(git branch --show-current)
+[[ -n "$current_branch" ]] || die "detached HEAD is not supported"
+
+if git remote get-url "$remote" >/dev/null 2>&1; then
+  run git fetch --prune "$remote"
+else
+  die "remote '$remote' does not exist"
+fi
+
+remote_main="$remote/$main_branch"
+if ! git show-ref --verify --quiet "refs/remotes/$remote/$main_branch"; then
+  die "remote main branch '$remote_main' does not exist"
+fi
+
+local_branches=()
+while IFS= read -r branch; do
+  local_branches+=("$branch")
+done < <(git for-each-ref --format='%(refname:short)' refs/heads)
+
+contains_branch() {
+  local needle="$1"
+  shift
+  local branch
+
+  for branch in "$@"; do
+    [[ "$branch" == "$needle" ]] && return 0
+  done
+
+  return 1
+}
+
+is_perennial() {
+  local branch="$1"
+  local perennial
+
+  [[ "$branch" == "$main_branch" ]] && return 0
+  [[ "$branch" == "master" || "$branch" == "develop" ]] && return 0
+
+  while IFS= read -r perennial; do
+    [[ -z "$perennial" ]] && continue
+    [[ "$branch" == "$perennial" ]] && return 0
+  done < <(git config --get-all git-town.perennial-branches 2>/dev/null || true)
+
+  return 1
+}
+
+pr_is_merged() {
+  local branch="$1"
+  local result
+
+  command -v gh >/dev/null 2>&1 || return 1
+
+  result=$(gh pr view "$branch" --json state,mergedAt --jq 'if .state == "MERGED" or .mergedAt != null then "true" else "false" end' 2>/dev/null || true)
+  [[ "$result" == "true" ]]
+}
+
+upstream_is_merged() {
+  local branch="$1"
+  local upstream
+
+  upstream=$(git for-each-ref --format='%(upstream:short)' "refs/heads/$branch")
+  if [[ -z "$upstream" ]] && git show-ref --verify --quiet "refs/remotes/$remote/$branch"; then
+    upstream="$remote/$branch"
+  fi
+
+  [[ -n "$upstream" ]] || return 1
+  git merge-base --is-ancestor "$upstream" "$remote_main" >/dev/null 2>&1
+}
+
+branch_is_merged_remotely() {
+  local branch="$1"
+
+  is_perennial "$branch" && return 1
+  pr_is_merged "$branch" || upstream_is_merged "$branch"
+}
+
+merged_branches=()
+
+for branch in "${local_branches[@]}"; do
+  if branch_is_merged_remotely "$branch"; then
+    merged_branches+=("$branch")
+  fi
+done
+
+if [[ ${#merged_branches[@]} -eq 0 ]]; then
+  log "No merged local branches found."
+  exit 0
+fi
+
+log "Merged local branches:"
+for branch in "${merged_branches[@]}"; do
+  log "  $branch"
+done
+
+parent_of() {
+  local branch="$1"
+  git config --get "git-town-branch.$branch.parent" 2>/dev/null || true
+}
+
+nearest_surviving_parent() {
+  local parent="$1"
+  local next_parent
+
+  while [[ -n "$parent" ]] && contains_branch "$parent" "${merged_branches[@]}"; do
+    next_parent=$(parent_of "$parent")
+    if [[ -z "$next_parent" ]]; then
+      parent="$main_branch"
+    else
+      parent="$next_parent"
+    fi
+  done
+
+  echo "$parent"
+}
+
+declare -a reparented_branches=()
+
+for branch in "${local_branches[@]}"; do
+  ! contains_branch "$branch" "${merged_branches[@]}" || continue
+
+  parent=$(parent_of "$branch")
+  [[ -n "$parent" ]] || continue
+  contains_branch "$parent" "${merged_branches[@]}" || continue
+
+  new_parent=$(nearest_surviving_parent "$parent")
+  [[ -n "$new_parent" ]] || new_parent="$main_branch"
+  [[ "$new_parent" != "$parent" ]] || continue
+
+  log "Reparenting $branch: $parent -> $new_parent"
+  if $dry_run; then
+    log "[dry-run] git switch $branch"
+    log "[dry-run] git town set-parent $new_parent"
+  else
+    git switch "$branch"
+    git town set-parent "$new_parent"
+  fi
+  reparented_branches+=("$branch")
+done
+
+if contains_branch "$current_branch" "${merged_branches[@]}"; then
+  run git switch "$main_branch"
+else
+  run git switch "$current_branch"
+fi
+
+for branch in "${local_branches[@]}"; do
+  contains_branch "$branch" "${merged_branches[@]}" || continue
+
+  log "Deleting local branch $branch"
+  run git branch -D "$branch"
+  if ! $dry_run; then
+    git config --remove-section "git-town-branch.$branch" >/dev/null 2>&1 || true
+  fi
+done
+
+if $sync_stacks && [[ ${#reparented_branches[@]} -gt 0 ]]; then
+  synced=()
+  for branch in "${reparented_branches[@]}"; do
+    ! contains_branch "$branch" "${synced[@]}" || continue
+    synced+=("$branch")
+
+    log "Syncing stack from $branch"
+    if $dry_run; then
+      log "[dry-run] git switch $branch"
+      log "[dry-run] git town sync --stack"
+    else
+      git switch "$branch"
+      git town sync --stack
+    fi
+  done
+elif [[ ${#reparented_branches[@]} -gt 0 ]]; then
+  log "Skipping git town sync --stack because --no-sync was provided."
+fi
+
+if contains_branch "$current_branch" "${local_branches[@]}" && ! contains_branch "$current_branch" "${merged_branches[@]}"; then
+  run git switch "$current_branch"
+fi
+
+log "Done."
