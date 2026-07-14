@@ -75,15 +75,16 @@ SHIM_SRC="$HOME/.local/share/lima/xdg-open"
 if [ -f "$SHIM_SRC" ]; then
   limactl shell "$VM_NAME" -- sh -c '
     set -e
-    src="$HOME/.local/share/lima/xdg-open"
+    host_home="$1"
+    src="$host_home/.local/share/lima/xdg-open"
     dst=/usr/local/bin/xdg-open
     if [ ! -e "$dst" ] || ! cmp -s "$src" "$dst" 2>/dev/null; then
       sudo install -m 0755 "$src" "$dst"
     fi
-    : > "$HOME/.lima-open-queue" 2>/dev/null || {
-      echo "warning: $HOME is not writable from the VM; recreate with writable mount" >&2
+    : > "$host_home/.lima-open-queue" 2>/dev/null || {
+      echo "warning: $host_home is not writable from the VM; recreate with writable mount" >&2
     }
-  ' >/dev/null || true
+  ' sh "$HOME" >/dev/null || true
 fi
 
 exec limactl shell "$VM_NAME" "$@"

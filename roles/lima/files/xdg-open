@@ -12,4 +12,11 @@
 set -eu
 
 [ $# -ge 1 ] || { echo "usage: xdg-open <url|path>" >&2; exit 1; }
-printf '%s\n' "$1" >> "$HOME/.lima-open-queue"
+
+queue_home=${LIMA_HOST_HOME:-}
+if [ -z "$queue_home" ] && [ -d "/Users/$(id -un)" ]; then
+  queue_home="/Users/$(id -un)"
+fi
+queue_home=${queue_home:-$HOME}
+
+printf '%s\n' "$1" >> "$queue_home/.lima-open-queue"
