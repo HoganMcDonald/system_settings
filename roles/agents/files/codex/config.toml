@@ -4,7 +4,7 @@ notify = ["/Users/hoganmcdonald/system/roles/agents/files/codex/computer-use/Cod
 trust_level = "trusted"
 
 [marketplaces.openai-bundled]
-last_updated = "2026-06-22T16:36:34Z"
+last_updated = "2026-07-16T19:15:07Z"
 source_type = "local"
 source = "/Users/hoganmcdonald/system/roles/agents/files/codex/.tmp/bundled-marketplaces/openai-bundled"
 
