@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Print the current OpenCode state for a tmux session or window.
+
+set -e
+
+SESSION="${1:-}"
+WINDOW="${2:-}"
+STATE="$HOME/.cache/opencode-sessions/state.json"
+
+[ -n "$SESSION" ] || exit 0
+[ -f "$STATE" ] || exit 0
+
+TARGET="$SESSION"
+[ -n "$WINDOW" ] && TARGET="$SESSION:$WINDOW"
+
+# Do not display a cached state after OpenCode has exited the target pane.
+tmux list-panes -t "$TARGET" -F '#{pane_current_command}' 2>/dev/null \
+  | grep -qx 'opencode' || exit 0
+
+STATUS=$(jq -r --arg session "$SESSION" '.[$session].status // "idle"' "$STATE" 2>/dev/null || true)
+case "$STATUS" in
+  working) printf '🌀' ;;
+  waiting) printf '🔔' ;;
+esac

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#
+# opencode-session-state - Persist the OpenCode state for the current tmux
+# session. Invoked by the OpenCode agent-state plugin.
+
+set -e
+
+STATUS="${1:-}"
+[ -z "$STATUS" ] && exit 0
+[ -z "$TMUX" ] && exit 0
+
+SESSION=$(tmux display-message -p '#S' 2>/dev/null || true)
+[ -z "$SESSION" ] && exit 0
+
+CACHE_DIR="$HOME/.cache/opencode-sessions"
+STATE="$CACHE_DIR/state.json"
+mkdir -p "$CACHE_DIR"
+[ -f "$STATE" ] || echo '{}' > "$STATE"
+
+if [ "$STATUS" = "end" ]; then
+  jq --arg session "$SESSION" 'del(.[$session])' "$STATE" > "$STATE.tmp" && mv "$STATE.tmp" "$STATE"
+else
+  case "$STATUS" in
+    working|waiting) ;;
+    *) exit 0 ;;
+  esac
+
+  now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  jq --arg session "$SESSION" --arg status "$STATUS" --arg now "$now" \
+    '.[$session] = {status: $status, updated_at: $now}' "$STATE" > "$STATE.tmp" && mv "$STATE.tmp" "$STATE"
+fi
+
+tmux refresh-client -S 2>/dev/null || true
+command -v palette-sessions-regen >/dev/null && palette-sessions-regen || true
