@@ -1,3 +1,5 @@
 claude_config_dir: "{{ ansible_facts.env.HOME }}/.claude"
 codex_config_dir: "{{ ansible_facts.env.HOME }}/.codex"
 opencode_config_dir: "{{ ansible_facts.env.HOME }}/.config/opencode"
+agents_skills_dir: "{{ ansible_facts.env.HOME }}/.agents/skills"
+shared_skills_dir: "{{ dotfiles_home }}/roles/agents/files/skills"

@@ -106,13 +106,14 @@ Typical loop: edit a role, commit, `dotfiles sync` to push, then on any machine 
 Built around git-town stacked branches, git worktrees, and tmux. Worktrees live under `<repo>/.worktrees/<adjective-animal>/`.
 
 ```sh
-hack feat/add-auth     # git-town append → worktree → tmux session (nvim/claude/zsh)
+hack feat/add-auth     # git-town append → worktree → tmux session (nvim/opencode/zsh)
 hacks                  # list active hack worktrees and their session state
 rehack                 # recreate tmux sessions for orphaned worktrees (post-reboot)
 unhack feat/add-auth   # tear down session + worktree, delegate branch cleanup to `git merged`
 ```
 
-The tmux session is named `<parent>/<branch>` so stacks nest cleanly inside an outer session.
+The plan agent renames the tmux session to `<repo>/<type>(<summary>)`, grouping
+sessions by source repository in tmux pickers.
 
 ![hack --help](docs/cli/hack-help.png)
 

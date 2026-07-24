@@ -2,8 +2,7 @@
 name: hack
 description: >
   Extract Linear ticket ID from the current git branch, fetch ticket details
-  via MCP, rename the tmux session to match the work, and enter plan mode
-  to create an implementation plan.
+  via MCP, delegate tmux session naming, and create an implementation plan.
 disable-model-invocation: true
 ---
 
@@ -36,21 +35,16 @@ You are a planning assistant that connects git branches to Linear tickets and cr
    - Parent issue (if this is a sub-task)
    - Related issues
 
-4. **Rename the tmux session**
-   Generate a short, descriptive name from the ticket title (2-3 words, kebab-case). The current session name
-   has a `<parent>:<worktree>` format (e.g., `hex-dev:bold-crane`). Replace only the worktree suffix, keeping
-   the parent prefix:
-   ```bash
-   CURRENT_SESSION="$(tmux display-message -p '#S')"
-   PREFIX="${CURRENT_SESSION%%:*}"
-   tmux rename-session -t "$CURRENT_SESSION" "${PREFIX}:<new-name>"
-   ```
-   For example, ticket "Implement user authentication" renames `hex-dev:bold-crane` to `hex-dev:user-auth`.
-   If the session name has no `:` prefix, just rename the whole thing.
-   Keep it short and recognizable — this shows in the tmux status bar.
+4. **Delegate tmux session naming**
+   Before planning, use the task tool to spawn the `tmux-session-namer`
+   subagent with the Linear ticket title, identifier, labels, and any relevant
+   context. It must rename the active session to
+   `<source_repo>/<type>(<short_snake_case_summary>)`.
+   This format is required so tmux session pickers group work by repository.
+   If not inside tmux, skip this step.
 
-5. **Enter plan mode**
-   Once you have the ticket context, use `EnterPlanMode` to create an implementation plan that:
+5. **Create the implementation plan**
+   Once you have the ticket context, create an implementation plan that:
    - Breaks down the ticket requirements into concrete tasks
    - Identifies files that need to be created or modified
    - Considers edge cases mentioned in the ticket
@@ -69,7 +63,7 @@ Before entering plan mode, summarize what you found:
 ```
 Branch: feature/ENG-123-user-authentication
 Ticket: ENG-123
-Session: hex-dev:user-auth
+Session: system/feat(user_authentication)
 
 Title: Implement user authentication
 Priority: High

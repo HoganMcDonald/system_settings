@@ -19,10 +19,10 @@ Options:
   -cs, --codespace  Use a GitHub codespace instead of a local worktree
 
 Default mode creates a stacked branch (via git-town append), a worktree, and a
-tmux session with three windows: nvim, claude, and zsh.
+tmux session with three windows: nvim, opencode, and zsh.
 
 With --codespace, creates (or reuses) a codespace for the branch and builds a
-tmux session whose windows SSH into the codespace: nvim, claude, and a shell
+tmux session whose windows SSH into the codespace: nvim, opencode, and a shell
 that runs $HACK_CS_START (default: 'hdev dev:tmux --first-time') then drops
 into zsh.
 
@@ -135,6 +135,9 @@ if [ "$USE_CODESPACE" -eq 1 ]; then
   CS_DIR="/workspaces/$REPO_NAME"
   START_CMD="${HACK_CS_START:-hdev dev:tmux --first-time}"
 
+  # Trust the worktree environment before starting tools that may depend on it.
+  gh cs ssh -c "$NAME" -- -t "cd \"$CS_DIR\" && if [ -f .envrc ]; then direnv allow; fi"
+
   # Tmux session
   if [ -n "$TMUX" ]; then
     PARENT_SESSION=$(tmux display-message -p '#S')
@@ -148,8 +151,8 @@ if [ "$USE_CODESPACE" -eq 1 ]; then
   else
     tmux new-session -d -s "$SESSION" -n "nvim" \
       "gh cs ssh -c $NAME -- -t 'cd $CS_DIR && nvim'"
-    tmux new-window -t "$SESSION" -n "claude" \
-      "gh cs ssh -c $NAME -- -t \"cd $CS_DIR && claude --permission-mode plan '/hack'\""
+    tmux new-window -t "$SESSION" -n "opencode" \
+      "gh cs ssh -c $NAME -- -t \"cd $CS_DIR && opencode --agent plan '/hack'\""
     tmux new-window -t "$SESSION" -n "shell" \
       "gh cs ssh -c $NAME -- -t 'cd $CS_DIR && $START_CMD; exec zsh -l'"
     tmux select-window -t "$SESSION:nvim"
@@ -212,6 +215,19 @@ find_session_for_worktree() {
         ;;
     esac
   done
+}
+
+allow_direnv() {
+  local worktree_path="$1"
+
+  [ -f "$worktree_path/.envrc" ] || return 0
+
+  if ! command -v direnv &>/dev/null; then
+    echo "Error: direnv is required for worktrees with an .envrc"
+    exit 1
+  fi
+
+  direnv allow "$worktree_path"
 }
 
 # --- Branch ------------------------------------------------------------------
@@ -278,18 +294,6 @@ else
 
   WORKTREE_PATH="$REPO_ROOT/.worktrees/$WORKTREE_NAME"
 
-  # Symlink .claude so the worktree inherits permissions and settings
-  if [ -d "$REPO_ROOT/.claude" ] && [ ! -e "$WORKTREE_PATH/.claude" ]; then
-    ln -s "$REPO_ROOT/.claude" "$WORKTREE_PATH/.claude"
-  fi
-
-  # Symlink ~/.claude/projects/ entry so worktree shares approval state with main repo
-  CLAUDE_PROJECTS_DIR="$HOME/.claude/projects"
-  MAIN_PROJECT_KEY=$(echo "$REPO_ROOT" | tr '/' '-')
-  WT_PROJECT_KEY=$(echo "$WORKTREE_PATH" | tr '/' '-')
-  if [ -d "$CLAUDE_PROJECTS_DIR/$MAIN_PROJECT_KEY" ] && [ ! -e "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY" ]; then
-    ln -s "$CLAUDE_PROJECTS_DIR/$MAIN_PROJECT_KEY" "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY"
-  fi
 fi
 
 # --- Tmux session ------------------------------------------------------------
@@ -312,6 +316,9 @@ if [ -n "$EXISTING_SESSION" ]; then
   exit 0
 fi
 
+# Complete environment setup before Neovim and OpenCode begin in this worktree.
+allow_direnv "$WORKTREE_PATH"
+
 if [ -n "$TMUX" ]; then
   PARENT_SESSION=$(tmux display-message -p '#S')
   SESSION="${PARENT_SESSION}/${BRANCH}"
@@ -322,8 +329,8 @@ fi
 tmux new-session -d -s "$SESSION" -n "nvim" -c "$WORKTREE_PATH"
 tmux send-keys -t "$SESSION:nvim" "nvim" Enter
 
-tmux new-window -t "$SESSION" -n "claude" -c "$WORKTREE_PATH"
-tmux send-keys -t "$SESSION:claude" "claude --permission-mode plan '/hack'" Enter
+tmux new-window -t "$SESSION" -n "opencode" -c "$WORKTREE_PATH"
+tmux send-keys -t "$SESSION:opencode" "opencode --agent plan '/hack'" Enter
 
 tmux new-window -t "$SESSION" -n "zsh" -c "$WORKTREE_PATH"
 

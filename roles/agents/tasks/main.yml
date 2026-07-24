@@ -28,6 +28,13 @@
     state: link
     force: yes
 
+- name: Symlink shared skills for Claude
+  file:
+    src: "{{ shared_skills_dir }}"
+    dest: "{{ claude_config_dir }}/skills"
+    state: link
+    force: yes
+
 - name: Check if Codex config exists
   stat: path="{{ codex_config_dir }}"
   register: codex_config_stat
@@ -42,6 +49,18 @@
   file:
     src: "{{ dotfiles_home }}/roles/agents/files/codex"
     dest: "{{ codex_config_dir }}"
+    state: link
+    force: yes
+
+- name: Create shared agent skills parent directory
+  file:
+    path: "{{ agents_skills_dir | dirname }}"
+    state: directory
+
+- name: Symlink shared skills for Codex
+  file:
+    src: "{{ shared_skills_dir }}"
+    dest: "{{ agents_skills_dir }}"
     state: link
     force: yes
 
@@ -78,6 +97,20 @@
   file:
     src: "{{ dotfiles_home }}/roles/agents/files/opencode/opencode.json"
     dest: "{{ opencode_config_dir }}/opencode.json"
+    state: link
+    force: yes
+
+- name: Symlink opencode agents
+  file:
+    src: "{{ dotfiles_home }}/roles/agents/files/opencode/agent"
+    dest: "{{ opencode_config_dir }}/agent"
+    state: link
+    force: yes
+
+- name: Symlink shared skills for opencode
+  file:
+    src: "{{ shared_skills_dir }}"
+    dest: "{{ opencode_config_dir }}/skills"
     state: link
     force: yes
 
