@@ -152,7 +152,7 @@ if [ "$USE_CODESPACE" -eq 1 ]; then
     tmux new-session -d -s "$SESSION" -n "nvim" \
       "gh cs ssh -c $NAME -- -t 'cd $CS_DIR && nvim'"
     tmux new-window -t "$SESSION" -n "opencode" \
-      "gh cs ssh -c $NAME -- -t \"cd $CS_DIR && opencode --agent plan --prompt '/hack'\""
+      "gh cs ssh -c $NAME -- -t \"cd $CS_DIR && opencode run --agent plan --command hack --interactive\""
     tmux new-window -t "$SESSION" -n "shell" \
       "gh cs ssh -c $NAME -- -t 'cd $CS_DIR && $START_CMD; exec zsh -l'"
     tmux select-window -t "$SESSION:nvim"
@@ -330,7 +330,7 @@ tmux new-session -d -s "$SESSION" -n "nvim" -c "$WORKTREE_PATH"
 tmux send-keys -t "$SESSION:nvim" "nvim" Enter
 
 tmux new-window -t "$SESSION" -n "opencode" -c "$WORKTREE_PATH"
-tmux send-keys -t "$SESSION:opencode" "opencode --agent plan --prompt '/hack'" Enter
+tmux send-keys -t "$SESSION:opencode" "opencode run --agent plan --command hack --interactive" Enter
 
 tmux new-window -t "$SESSION" -n "zsh" -c "$WORKTREE_PATH"
 

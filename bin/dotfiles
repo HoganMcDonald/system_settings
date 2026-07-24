@@ -19,7 +19,8 @@ _require_jq() {
 }
 
 _list_roles() {
-  find "$DOTFILES_REPO/roles" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort
+  awk '$1 == "-" && $2 == "role:" { print tolower($3) }' \
+    "$DOTFILES_REPO/dotfiles.yml" | sort -u
 }
 
 _role_hash() {

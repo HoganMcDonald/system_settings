@@ -153,7 +153,7 @@ for wt_dir in "$WORKTREES_DIR"/*/; do
   tmux send-keys -t "$SESSION:nvim" "nvim" Enter
 
   tmux new-window -t "$SESSION" -n "opencode" -c "$wt_dir"
-  tmux send-keys -t "$SESSION:opencode" "opencode --agent plan --prompt '/hack'" Enter
+  tmux send-keys -t "$SESSION:opencode" "opencode run --agent plan --command hack --interactive" Enter
 
   tmux new-window -t "$SESSION" -n "zsh" -c "$wt_dir"
 
