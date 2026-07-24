@@ -1,0 +1,23 @@
+enter_accept = true
+search_mode = "fuzzy"
+workspaces = true
+filter_mode = "workspace"
+style = "compact"
+show_preview = true
+auto_sync = true
+sync_frequency = "10m"
+keymap_mode = "auto"
+show_numeric_shortcuts = true
+command_chaining = true
+secrets_filter = true
+
+[sync]
+records = true
+
+[tmux]
+enabled = true
+width = "85%"
+height = "70%"
+
+[ui]
+columns = ["duration", { type = "directory", width = 28 }, "command"]
