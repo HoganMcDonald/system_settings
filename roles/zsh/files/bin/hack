@@ -9,7 +9,7 @@ set -e
 # --- Help -------------------------------------------------------------------
 
 display_help() {
-  cat << 'EOF'
+  cat <<'EOF'
 hack - Set up a stacked branch worktree with a full tmux session
 
 Usage: hack [options] <branch-name>
@@ -44,26 +44,26 @@ BRANCH=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    -h|--help)
-      display_help
-      ;;
-    -cs|--codespace)
-      USE_CODESPACE=1
-      shift
-      ;;
-    -*)
-      echo "Error: unknown option '$1'"
-      echo "Usage: hack [-cs] <branch-name>"
+  -h | --help)
+    display_help
+    ;;
+  -cs | --codespace)
+    USE_CODESPACE=1
+    shift
+    ;;
+  -*)
+    echo "Error: unknown option '$1'"
+    echo "Usage: hack [-cs] <branch-name>"
+    exit 1
+    ;;
+  *)
+    if [ -n "$BRANCH" ]; then
+      echo "Error: expected exactly one branch name"
       exit 1
-      ;;
-    *)
-      if [ -n "$BRANCH" ]; then
-        echo "Error: expected exactly one branch name"
-        exit 1
-      fi
-      BRANCH="$1"
-      shift
-      ;;
+    fi
+    BRANCH="$1"
+    shift
+    ;;
   esac
 done
 
@@ -152,7 +152,7 @@ if [ "$USE_CODESPACE" -eq 1 ]; then
     tmux new-session -d -s "$SESSION" -n "nvim" \
       "gh cs ssh -c $NAME -- -t 'cd $CS_DIR && nvim'"
     tmux new-window -t "$SESSION" -n "opencode" \
-      "gh cs ssh -c $NAME -- -t \"cd $CS_DIR && opencode run --agent plan --command hack --interactive\""
+      "gh cs ssh -c $NAME -- -t \"cd $CS_DIR && opencoden --agent plan --prompt '/hack'\""
     tmux new-window -t "$SESSION" -n "shell" \
       "gh cs ssh -c $NAME -- -t 'cd $CS_DIR && $START_CMD; exec zsh -l'"
     tmux select-window -t "$SESSION:nvim"
@@ -183,21 +183,21 @@ find_worktree_for_branch() {
 
   while IFS= read -r line; do
     case "$line" in
-      "worktree "*)
-        wt_path="${line#worktree }"
+    "worktree "*)
+      wt_path="${line#worktree }"
+      ;;
+    "branch refs/heads/$target_branch")
+      # Only match worktrees under .worktrees/, not the main worktree
+      case "$wt_path" in
+      "$REPO_ROOT/.worktrees/"*)
+        echo "$wt_path"
+        return 0
         ;;
-      "branch refs/heads/$target_branch")
-        # Only match worktrees under .worktrees/, not the main worktree
-        case "$wt_path" in
-          "$REPO_ROOT/.worktrees/"*)
-            echo "$wt_path"
-            return 0
-            ;;
-        esac
-        ;;
-      "")
-        wt_path=""
-        ;;
+      esac
+      ;;
+    "")
+      wt_path=""
+      ;;
     esac
   done < <(git worktree list --porcelain)
 
@@ -209,10 +209,10 @@ find_session_for_worktree() {
 
   tmux list-panes -a -F '#{session_name} #{pane_current_path}' 2>/dev/null | while IFS=' ' read -r session pane_path; do
     case "$pane_path" in
-      "$wt_path"|"$wt_path"/*)
-        echo "$session"
-        return 0
-        ;;
+    "$wt_path" | "$wt_path"/*)
+      echo "$session"
+      return 0
+      ;;
     esac
   done
 }
