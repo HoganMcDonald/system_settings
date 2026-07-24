@@ -6,6 +6,10 @@
   homebrew_tap:
     name: FelixKratz/formulae
 
+- name: Trust sketchybar tap
+  command: brew trust --tap FelixKratz/formulae
+  changed_when: false
+
 - name: Install SF-Symbols
   community.general.homebrew_cask:
     name: sf-symbols

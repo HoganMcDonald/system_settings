@@ -1,3 +1,12 @@
+- name: Tap Aerospace repository
+  homebrew_tap:
+    name: nikitabobko/tap
+    state: present
+
+- name: Trust Aerospace tap
+  command: brew trust --tap nikitabobko/tap
+  changed_when: false
+
 - name: Install Aerospace
   homebrew_cask:
     name: nikitabobko/tap/aerospace

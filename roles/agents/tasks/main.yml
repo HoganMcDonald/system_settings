@@ -69,6 +69,10 @@
     name: anomalyco/tap
     state: present
 
+- name: Trust opencode tap
+  command: brew trust --tap anomalyco/tap
+  changed_when: false
+
 - name: Install opencode
   homebrew:
     name: anomalyco/tap/opencode
