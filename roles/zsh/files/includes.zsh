@@ -20,5 +20,6 @@ if command -v zoxide &>/dev/null; then
 fi
 
 if command -v atuin &>/dev/null; then
+  export ATUIN_TMUX_POPUP=true
   eval "$(atuin init zsh)"
 fi
