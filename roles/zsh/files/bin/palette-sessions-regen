@@ -21,8 +21,14 @@ OPENCODE_STATE_FILE="$HOME/.cache/opencode-sessions/state.json"
 mkdir -p "$(dirname "$CLAUDE_STATE_FILE")" "$(dirname "$OPENCODE_STATE_FILE")"
 [ -f "$CLAUDE_STATE_FILE" ] || echo '{}' > "$CLAUDE_STATE_FILE"
 [ -f "$OPENCODE_STATE_FILE" ] || echo '{}' > "$OPENCODE_STATE_FILE"
-CLAUDE_STATE=$(jq -c . "$CLAUDE_STATE_FILE" 2>/dev/null || echo '{}')
-OPENCODE_STATE=$(jq -c . "$OPENCODE_STATE_FILE" 2>/dev/null || echo '{}')
+if ! CLAUDE_STATE=$(jq -c . "$CLAUDE_STATE_FILE" 2>/dev/null); then
+  CLAUDE_STATE='{}'
+  printf '%s\n' "$CLAUDE_STATE" > "$CLAUDE_STATE_FILE"
+fi
+if ! OPENCODE_STATE=$(jq -c . "$OPENCODE_STATE_FILE" 2>/dev/null); then
+  OPENCODE_STATE='{}'
+  printf '%s\n' "$OPENCODE_STATE" > "$OPENCODE_STATE_FILE"
+fi
 
 # Build a sessions JSON array from tmux + state cache. Each entry switches
 # the client to that session.

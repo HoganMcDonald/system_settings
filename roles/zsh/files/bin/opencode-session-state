@@ -16,9 +16,13 @@ CACHE_DIR="$HOME/.cache/opencode-sessions"
 STATE="$CACHE_DIR/state.json"
 mkdir -p "$CACHE_DIR"
 [ -f "$STATE" ] || echo '{}' > "$STATE"
+if ! jq empty "$STATE" 2>/dev/null; then
+  echo '{}' > "$STATE"
+fi
 
 if [ "$STATUS" = "end" ]; then
-  jq --arg session "$SESSION" 'del(.[$session])' "$STATE" > "$STATE.tmp" && mv "$STATE.tmp" "$STATE"
+  tmp=$(mktemp "$CACHE_DIR/state.XXXXXX")
+  jq --arg session "$SESSION" 'del(.[$session])' "$STATE" > "$tmp" && mv "$tmp" "$STATE"
 else
   case "$STATUS" in
     working|waiting) ;;
@@ -26,8 +30,9 @@ else
   esac
 
   now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  tmp=$(mktemp "$CACHE_DIR/state.XXXXXX")
   jq --arg session "$SESSION" --arg status "$STATUS" --arg now "$now" \
-    '.[$session] = {status: $status, updated_at: $now}' "$STATE" > "$STATE.tmp" && mv "$STATE.tmp" "$STATE"
+    '.[$session] = {status: $status, updated_at: $now}' "$STATE" > "$tmp" && mv "$tmp" "$STATE"
 fi
 
 tmux refresh-client -S 2>/dev/null || true

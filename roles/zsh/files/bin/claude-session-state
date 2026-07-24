@@ -23,6 +23,9 @@ CACHE_DIR="$HOME/.cache/claude-sessions"
 STATE="$CACHE_DIR/state.json"
 mkdir -p "$CACHE_DIR"
 [ -f "$STATE" ] || echo '{}' > "$STATE"
+if ! jq empty "$STATE" 2>/dev/null; then
+  echo '{}' > "$STATE"
+fi
 
 case "$EVENT" in
   notification) STATUS="waiting" ;;
@@ -30,7 +33,8 @@ case "$EVENT" in
   tool|prompt)  STATUS="working" ;;
   end)
     # Drop the entry entirely on session end.
-    jq --arg s "$SESSION" 'del(.[$s])' "$STATE" > "$STATE.tmp" && mv "$STATE.tmp" "$STATE"
+    tmp=$(mktemp "$CACHE_DIR/state.XXXXXX")
+    jq --arg s "$SESSION" 'del(.[$s])' "$STATE" > "$tmp" && mv "$tmp" "$STATE"
     # Regenerate so the palette no longer shows the dead session.
     command -v palette-sessions-regen >/dev/null && palette-sessions-regen || true
     exit 0
@@ -39,7 +43,8 @@ case "$EVENT" in
 esac
 
 NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+tmp=$(mktemp "$CACHE_DIR/state.XXXXXX")
 jq --arg s "$SESSION" --arg st "$STATUS" --arg t "$NOW" \
-  '.[$s] = {status: $st, updated_at: $t}' "$STATE" > "$STATE.tmp" && mv "$STATE.tmp" "$STATE"
+  '.[$s] = {status: $st, updated_at: $t}' "$STATE" > "$tmp" && mv "$tmp" "$STATE"
 
 command -v palette-sessions-regen >/dev/null && palette-sessions-regen || true
