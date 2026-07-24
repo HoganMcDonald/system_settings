@@ -17,6 +17,8 @@ export default (async () => {
     event: async ({ event }) => {
       if (event.type === "session.status") {
         await update(event.properties.status.type === "idle" ? "waiting" : "working")
+      } else if (event.type === "session.created") {
+        await update("waiting")
       } else if (event.type === "session.idle") {
         await update("waiting")
       } else if (event.type === "session.deleted") {

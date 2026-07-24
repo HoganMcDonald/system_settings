@@ -34,8 +34,8 @@ fi
 # the client to that session.
 SESSIONS=$(tmux list-sessions -F '#S' 2>/dev/null || true)
 CURRENT=$(tmux display-message -p '#S' 2>/dev/null || echo '')
-OPENCODE_SESSIONS=$(tmux list-panes -a -F '#{session_name}\t#{pane_current_command}' 2>/dev/null \
-  | awk -F '\t' '$2 == "opencode" { print $1 }' | sort -u)
+OPENCODE_SESSIONS=$(tmux list-panes -a -F '#{session_name}|#{pane_current_command}' 2>/dev/null \
+  | awk -F '|' '$2 == "opencode" { print $1 }' | sort -u)
 
 SESSION_ITEMS=$(jq -n --arg current "$CURRENT" --argjson claude "$CLAUDE_STATE" \
   --argjson opencode "$OPENCODE_STATE" --rawfile sessions <(echo "$SESSIONS") \
@@ -45,7 +45,7 @@ SESSION_ITEMS=$(jq -n --arg current "$CURRENT" --argjson claude "$CLAUDE_STATE" 
     | $names | map(
         . as $name
         | (if $opencode_active | index($name)
-           then $opencode[$name].status // "idle"
+           then $opencode[$name].status // "waiting"
            else $claude[$name].status // "idle"
            end) as $st
         | {
