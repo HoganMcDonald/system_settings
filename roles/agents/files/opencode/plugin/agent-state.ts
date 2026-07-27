@@ -6,11 +6,11 @@ export default (async () => {
   const update = async (status: "idle" | "working" | "waiting" | "end") => {
     if (!process.env.TMUX) return
 
-    const process = Bun.spawn([stateScript, status], {
+    const child = Bun.spawn([stateScript, status], {
       stdout: "ignore",
       stderr: "ignore",
     })
-    await process.exited
+    await child.exited
   }
 
   return {
