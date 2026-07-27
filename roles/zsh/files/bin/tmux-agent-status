@@ -17,8 +17,9 @@ TARGET="$SESSION"
 tmux list-panes -t "$TARGET" -F '#{pane_current_command}' 2>/dev/null \
   | grep -qx 'opencode' || exit 0
 
-STATUS=$(jq -r --arg session "$SESSION" '.[$session].status // "waiting"' "$STATE" 2>/dev/null || true)
+STATUS=$(jq -r --arg session "$SESSION" '.[$session].status // "idle"' "$STATE" 2>/dev/null || true)
 case "$STATUS" in
   working) printf '🌀' ;;
   waiting) printf '🔔' ;;
+  idle) printf '🤖' ;;
 esac

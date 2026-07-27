@@ -37,6 +37,25 @@ CURRENT=$(tmux display-message -p '#S' 2>/dev/null || echo '')
 OPENCODE_SESSIONS=$(tmux list-panes -a -F '#{session_name}|#{pane_current_command}' 2>/dev/null \
   | awk -F '|' '$2 == "opencode" { print $1 }' | sort -u)
 
+# Native tmux session pickers cannot run shell commands in their display
+# format, so cache each session's icon in a tmux user option for prefix + s.
+while IFS= read -r session; do
+  [ -n "$session" ] || continue
+
+  if printf '%s\n' "$OPENCODE_SESSIONS" | grep -Fqx "$session"; then
+    status=$(jq -r --arg session "$session" '.[$session].status // "idle"' <<< "$OPENCODE_STATE")
+    case "$status" in
+      working) icon='🌀' ;;
+      waiting) icon='🔔' ;;
+      *)       icon='🤖' ;;
+    esac
+  else
+    icon=''
+  fi
+
+  tmux set-option -q -t "$session" @opencode-status "$icon"
+done <<< "$SESSIONS"
+
 SESSION_ITEMS=$(jq -n --arg current "$CURRENT" --argjson claude "$CLAUDE_STATE" \
   --argjson opencode "$OPENCODE_STATE" --rawfile sessions <(echo "$SESSIONS") \
   --rawfile opencode_sessions <(echo "$OPENCODE_SESSIONS") '
@@ -45,19 +64,19 @@ SESSION_ITEMS=$(jq -n --arg current "$CURRENT" --argjson claude "$CLAUDE_STATE" 
     | $names | map(
         . as $name
         | (if $opencode_active | index($name)
-           then $opencode[$name].status // "waiting"
+           then $opencode[$name].status // "idle"
            else $claude[$name].status // "idle"
            end) as $st
         | {
-            icon: "●",
+            icon: (if $st == "working" then "🌀"
+                   elif $st == "waiting" then "🔔"
+                   elif ($opencode_active | index($name)) then "🤖"
+                   else "●" end),
             iconColor: (if $st == "waiting" then "#f1ff5e"
                         elif $st == "working" then "#5ea1ff"
                         else "#5a6272" end),
             title: ($name
-                     + (if $name == $current then "  (current)" else "" end)
-                     + (if $st == "working" then "  🌀"
-                        elif $st == "waiting" then "  🔔"
-                        else "" end)),
+                     + (if $name == $current then "  (current)" else "" end)),
             description: ("session — " + $st),
             category: "Sessions",
             aliases: ["session", "s"],

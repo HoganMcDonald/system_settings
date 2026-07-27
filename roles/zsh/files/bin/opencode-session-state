@@ -7,10 +7,11 @@ set -e
 
 STATUS="${1:-}"
 [ -z "$STATUS" ] && exit 0
-[ -z "$TMUX" ] && exit 0
 
-SESSION=$(tmux display-message -p '#S' 2>/dev/null || true)
+SESSION="${2:-}"
+[ -n "$SESSION" ] || SESSION=$(tmux display-message -p '#S' 2>/dev/null || true)
 [ -z "$SESSION" ] && exit 0
+PANE="${3:-}"
 
 CACHE_DIR="$HOME/.cache/opencode-sessions"
 STATE="$CACHE_DIR/state.json"
@@ -20,12 +21,23 @@ if ! jq empty "$STATE" 2>/dev/null; then
   echo '{}' > "$STATE"
 fi
 
-if [ "$STATUS" = "end" ]; then
+if [ "$STATUS" = "seen" ]; then
+  if [ -n "$PANE" ]; then
+    tmux display-message -p -t "$PANE" '#{pane_current_command}' 2>/dev/null | grep -qx 'opencode' || exit 0
+  else
+    tmux display-message -p '#{pane_current_command}' 2>/dev/null | grep -qx 'opencode' || exit 0
+  fi
+
+  tmp=$(mktemp "$CACHE_DIR/state.XXXXXX")
+  jq --arg session "$SESSION" \
+    'if .[$session].status == "waiting" then .[$session].status = "idle" else . end' \
+    "$STATE" > "$tmp" && mv "$tmp" "$STATE"
+elif [ "$STATUS" = "end" ]; then
   tmp=$(mktemp "$CACHE_DIR/state.XXXXXX")
   jq --arg session "$SESSION" 'del(.[$session])' "$STATE" > "$tmp" && mv "$tmp" "$STATE"
 else
   case "$STATUS" in
-    working|waiting) ;;
+    idle|working|waiting) ;;
     *) exit 0 ;;
   esac
 
