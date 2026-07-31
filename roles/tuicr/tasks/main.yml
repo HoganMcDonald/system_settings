@@ -1,4 +1,9 @@
 ---
+- name: Tap tui-cr repository
+  homebrew_tap:
+    name: agavra/tap
+    state: present
+
 - name: Install tui-cr
   homebrew:
     name: agavra/tap/tuicr
