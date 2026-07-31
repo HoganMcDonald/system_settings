@@ -59,6 +59,9 @@
     - role: yazi
       tags:
         - yazi
+    - role: tuicr
+      tags:
+        - tuicr
 
     # ====================
     #   Apps
