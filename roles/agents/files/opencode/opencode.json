@@ -15,6 +15,11 @@
       "type": "remote",
       "url": "https://mcp.linear.app/mcp",
       "oauth": {}
+    },
+    "notion": {
+      "type": "remote",
+      "url": "https://mcp.notion.com/mcp",
+      "oauth": {}
     }
   },
   "agent": {

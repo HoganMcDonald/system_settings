@@ -330,7 +330,7 @@ tmux new-session -d -s "$SESSION" -n "nvim" -c "$WORKTREE_PATH"
 tmux send-keys -t "$SESSION:nvim" "nvim" Enter
 
 tmux new-window -t "$SESSION" -n "opencode" -c "$WORKTREE_PATH"
-tmux send-keys -t "$SESSION:opencode" "opencode run --agent plan --command hack --interactive" Enter
+tmux send-keys -t "$SESSION:opencode" "opencode --agent plan --prompt '/hack'" Enter
 
 tmux new-window -t "$SESSION" -n "zsh" -c "$WORKTREE_PATH"
 
