@@ -9,117 +9,192 @@ die() {
 dry_run=false
 merged_branch=""
 
-# Parse arguments
 for arg in "$@"; do
   case "$arg" in
-    --dry-run|-n)
-      dry_run=true
-      ;;
-    -*)
-      die "Unknown option: $arg"
-      ;;
-    *)
-      merged_branch="$arg"
-      ;;
+  --dry-run | -n)
+    dry_run=true
+    ;;
+  -*)
+    die "Unknown option: $arg"
+    ;;
+  *)
+    [[ -z "$merged_branch" ]] || die "Specify only one merged branch"
+    merged_branch="$arg"
+    ;;
   esac
 done
 
 main_branch=$(git config --get git-town.main-branch 2>/dev/null || echo "main")
+remote=$(git config --get git-town.development-remote 2>/dev/null || echo "origin")
 
-# Default to current branch if none specified
 if [[ -z "$merged_branch" ]]; then
   merged_branch=$(git branch --show-current)
-  [[ -z "$merged_branch" ]] && die "Not on a branch (detached HEAD)"
+  [[ -n "$merged_branch" ]] || die "Not on a branch (detached HEAD)"
 fi
 
-# Fail if trying to merge the main branch
-[[ "$merged_branch" == "$main_branch" ]] && die "Cannot use this on the main branch ($main_branch)"
+[[ "$merged_branch" != "$main_branch" ]] || die "Cannot use this on the main branch ($main_branch)"
+git show-ref --verify --quiet "refs/heads/$merged_branch" || die "Local branch does not exist: $merged_branch"
+
+if ! $dry_run && [[ -n "$(git status --porcelain)" ]]; then
+  die "Working tree is not clean"
+fi
+
+merged_tip=$(git rev-parse "$merged_branch")
 
 if $dry_run; then
-  echo "[dry-run] Would process merged branch: $merged_branch"
-  echo "[dry-run] Main branch: $main_branch"
-fi
-
-# Fetch and update main branch
-current=$(git branch --show-current)
-if [[ "$current" == "$merged_branch" ]]; then
-  # Need to switch off merged branch - checkout main and pull
-  if $dry_run; then
-    echo "[dry-run] Would checkout $main_branch (currently on $merged_branch)"
-    echo "[dry-run] Would pull latest $main_branch"
-  else
-    echo "Switching to $main_branch and pulling latest..."
-    git checkout "$main_branch"
-    git pull --ff-only
-  fi
-elif [[ "$current" == "$main_branch" ]]; then
-  # Already on main, just pull
-  if $dry_run; then
-    echo "[dry-run] Would pull latest $main_branch"
-  else
-    echo "Pulling latest $main_branch..."
-    git pull --ff-only
-  fi
+  echo "[dry-run] Would fetch $remote and fast-forward $main_branch"
 else
-  # On a different branch, fetch main directly
-  if $dry_run; then
-    echo "[dry-run] Would fetch origin $main_branch:$main_branch"
-  else
-    echo "Fetching latest from origin..."
-    git fetch origin "$main_branch:$main_branch"
-  fi
+  echo "Fetching latest branches from $remote..."
+  git fetch --prune "$remote"
+  git checkout "$main_branch"
+  git merge --ff-only "$remote/$main_branch"
 fi
 
-# Find direct children of the merged branch
-# git-town stores parent in: git-town-branch.<branch>.parent
-children=()
-while IFS= read -r branch; do
-  parent=$(git config --get "git-town-branch.$branch.parent" 2>/dev/null || true)
-  [[ "$parent" == "$merged_branch" ]] && children+=("$branch")
-done < <(git branch --format='%(refname:short)')
+descendants=()
+old_parents=()
 
-echo "Found ${#children[@]} child branch(es): ${children[*]:-none}"
+already_collected() {
+  local candidate=$1
+  local branch
 
-# Rebase each direct child onto main
-for child in "${children[@]}"; do
+  for branch in "${descendants[@]:-}"; do
+    [[ "$branch" != "$candidate" ]] || return 0
+  done
+  return 1
+}
+
+collect_descendants() {
+  local parent=$1
+  local branch
+  local configured_parent
+
+  while IFS= read -r branch; do
+    configured_parent=$(git config --get "git-town-branch.$branch.parent" 2>/dev/null || true)
+    if [[ "$configured_parent" == "$parent" ]] && ! already_collected "$branch"; then
+      descendants+=("$branch")
+      old_parents+=("$parent")
+      collect_descendants "$branch"
+    fi
+  done < <(git branch --format='%(refname:short)')
+}
+
+collect_descendants "$merged_branch"
+echo "Found ${#descendants[@]} descendant branch(es): ${descendants[*]:-none}"
+
+backup_timestamp=$(date +%Y%m%d-%H%M%S)
+if ! $dry_run; then
+  git update-ref "refs/backup/git-merged/$backup_timestamp/merged/$merged_branch" "$merged_tip"
+fi
+
+if [[ ${#descendants[@]} -eq 0 ]]; then
   if $dry_run; then
-    echo "[dry-run] Would rebase $child onto $main_branch: git rebase --onto $main_branch $merged_branch $child"
-    echo "[dry-run] Would update $child parent to $main_branch"
+    echo "[dry-run] Would delete $merged_branch and checkout $main_branch"
   else
-    echo "Rebasing $child onto $main_branch..."
-    git rebase --onto "$main_branch" "$merged_branch" "$child"
-    git config "git-town-branch.$child.parent" "$main_branch"
-    echo "Updated $child parent to $main_branch"
+    git branch -D "$merged_branch"
+    git checkout "$main_branch"
+  fi
+  echo "Done!"
+  exit 0
+fi
+
+source_tips=()
+remote_tips=()
+old_bases=()
+
+source_tip_for_branch() {
+  local target=$1
+  local i
+
+  for ((i = 0; i < ${#descendants[@]}; i++)); do
+    if [[ "${descendants[$i]}" == "$target" ]]; then
+      echo "${source_tips[$i]}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+for ((i = 0; i < ${#descendants[@]}; i++)); do
+  branch=${descendants[$i]}
+  parent=${old_parents[$i]}
+  local_tip=$(git rev-parse "$branch")
+  remote_ref="refs/remotes/$remote/$branch"
+  remote_tip=""
+  source_tip=$local_tip
+
+  if git show-ref --verify --quiet "$remote_ref"; then
+    remote_tip=$(git rev-parse "$remote_ref")
+    if git merge-base --is-ancestor "$local_tip" "$remote_tip"; then
+      source_tip=$remote_tip
+    elif ! git merge-base --is-ancestor "$remote_tip" "$local_tip"; then
+      die "$branch has diverged from $remote/$branch; reconcile it before rerunning"
+    fi
+  fi
+
+  if [[ "$parent" == "$merged_branch" ]]; then
+    parent_source_tip=$merged_tip
+  else
+    parent_source_tip=$(source_tip_for_branch "$parent") || die "Could not find source tip for parent $parent"
+  fi
+
+  old_base=$(git merge-base "$source_tip" "$parent_source_tip")
+  source_tips+=("$source_tip")
+  remote_tips+=("$remote_tip")
+  old_bases+=("$old_base")
+
+  if $dry_run; then
+    echo "[dry-run] Would back up and rebase $branch from $source_tip"
+  else
+    git update-ref "refs/backup/git-merged/$backup_timestamp/local/$branch" "$local_tip"
+    if [[ -n "$remote_tip" ]]; then
+      git update-ref "refs/backup/git-merged/$backup_timestamp/remote/$branch" "$remote_tip"
+    fi
   fi
 done
 
-# Delete the merged branch locally
+for ((i = 0; i < ${#descendants[@]}; i++)); do
+  branch=${descendants[$i]}
+  parent=${old_parents[$i]}
+  new_parent=$parent
+  [[ "$parent" != "$merged_branch" ]] || new_parent=$main_branch
+
+  if $dry_run; then
+    echo "[dry-run] Would rebase $branch onto $new_parent from ${old_bases[$i]}"
+    echo "[dry-run] Would set $branch parent to $new_parent"
+  else
+    echo "Rebasing $branch onto $new_parent..."
+    git checkout "$main_branch"
+    git branch -f "$branch" "${source_tips[$i]}"
+    git checkout "$branch"
+    git rebase --onto "$new_parent" "${old_bases[$i]}"
+    git config "git-town-branch.$branch.parent" "$new_parent"
+  fi
+done
+
+for ((i = 0; i < ${#descendants[@]}; i++)); do
+  branch=${descendants[$i]}
+  remote_tip=${remote_tips[$i]}
+
+  if $dry_run; then
+    echo "[dry-run] Would push $branch with an explicit force-with-lease"
+  elif [[ -n "$remote_tip" ]]; then
+    echo "Pushing rewritten branch $branch..."
+    git push "$remote" \
+      "--force-with-lease=refs/heads/$branch:$remote_tip" \
+      "refs/heads/$branch:refs/heads/$branch"
+  else
+    echo "Publishing new branch $branch..."
+    git push -u "$remote" "refs/heads/$branch:refs/heads/$branch"
+  fi
+done
+
+new_top=${descendants[0]}
 if $dry_run; then
-  echo "[dry-run] Would delete branch: git branch -D $merged_branch"
+  echo "[dry-run] Would delete $merged_branch and checkout $new_top"
 else
   echo "Deleting $merged_branch locally..."
   git branch -D "$merged_branch"
-fi
-
-# Switch to the first child (new top-level feature branch) and sync
-if [[ ${#children[@]} -gt 0 ]]; then
-  new_top="${children[0]}"
-  if $dry_run; then
-    echo "[dry-run] Would checkout $new_top"
-    echo "[dry-run] Would run: git town sync --stack"
-  else
-    echo "Switching to $new_top..."
-    git checkout "$new_top"
-    echo "Running git sync --stack..."
-    git town sync --stack
-  fi
-else
-  if $dry_run; then
-    echo "[dry-run] No child branches found. Would checkout $main_branch"
-  else
-    echo "No child branches found. Switching to $main_branch."
-    git checkout "$main_branch"
-  fi
+  git checkout "$new_top"
 fi
 
 echo "Done!"
