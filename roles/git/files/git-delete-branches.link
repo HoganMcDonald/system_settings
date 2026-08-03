@@ -3,7 +3,6 @@ set -euo pipefail
 
 dry_run=false
 sync_stacks=true
-remote="origin"
 
 usage() {
   cat <<'USAGE'
@@ -60,11 +59,12 @@ done
 command -v git-town >/dev/null 2>&1 || die "git-town is not installed"
 git rev-parse --git-dir >/dev/null 2>&1 || die "not inside a git repository"
 
-if ! git diff --quiet || ! git diff --cached --quiet; then
+if ! $dry_run && [[ -n "$(git status --porcelain)" ]]; then
   die "worktree has uncommitted changes; commit, stash, or reset them before cleanup"
 fi
 
 main_branch=$(git config --get git-town.main-branch 2>/dev/null || echo "main")
+remote=$(git config --get git-town.development-remote 2>/dev/null || echo "origin")
 current_branch=$(git branch --show-current)
 [[ -n "$current_branch" ]] || die "detached HEAD is not supported"
 
@@ -111,17 +111,18 @@ is_perennial() {
   return 1
 }
 
-pr_is_merged() {
+merged_pr_tip() {
   local branch="$1"
   local result
 
   command -v gh >/dev/null 2>&1 || return 1
 
-  result=$(gh pr view "$branch" --json state,mergedAt --jq 'if .state == "MERGED" or .mergedAt != null then "true" else "false" end' 2>/dev/null || true)
-  [[ "$result" == "true" ]]
+  result=$(gh pr view "$branch" --json state,mergedAt,headRefOid --jq 'if .state == "MERGED" or .mergedAt != null then .headRefOid else empty end' 2>/dev/null || true)
+  [[ -n "$result" ]] || return 1
+  printf '%s\n' "$result"
 }
 
-upstream_is_merged() {
+upstream_for_branch() {
   local branch="$1"
   local upstream
 
@@ -131,14 +132,35 @@ upstream_is_merged() {
   fi
 
   [[ -n "$upstream" ]] || return 1
-  git merge-base --is-ancestor "$upstream" "$remote_main" >/dev/null 2>&1
+  printf '%s\n' "$upstream"
+}
+
+branch_and_remote_are_covered_by() {
+  local branch="$1"
+  local source_tip="$2"
+  local remote_ref="refs/remotes/$remote/$branch"
+
+  git merge-base --is-ancestor "$branch" "$source_tip" >/dev/null 2>&1 || return 1
+  if git show-ref --verify --quiet "$remote_ref"; then
+    git merge-base --is-ancestor "$remote_ref" "$source_tip" >/dev/null 2>&1 || return 1
+  fi
 }
 
 branch_is_merged_remotely() {
   local branch="$1"
+  local pr_tip
+  local upstream
 
   is_perennial "$branch" && return 1
-  pr_is_merged "$branch" || upstream_is_merged "$branch"
+
+  if pr_tip=$(merged_pr_tip "$branch"); then
+    branch_and_remote_are_covered_by "$branch" "$pr_tip"
+    return
+  fi
+
+  upstream=$(upstream_for_branch "$branch") || return 1
+  git merge-base --is-ancestor "$upstream" "$remote_main" >/dev/null 2>&1 || return 1
+  branch_and_remote_are_covered_by "$branch" "$upstream"
 }
 
 merged_branches=()
@@ -158,6 +180,23 @@ log "Merged local branches:"
 for branch in "${merged_branches[@]}"; do
   log "  $branch"
 done
+
+backup_timestamp=$(date +%Y%m%d-%H%M%S)
+if $dry_run; then
+  log "[dry-run] Would back up local and remote branch tips before cleanup"
+else
+  log "Backing up local and remote branch tips..."
+  for branch in "${local_branches[@]}"; do
+    local_tip=$(git rev-parse "$branch")
+    git update-ref "refs/backup/git-cleanup/$backup_timestamp/local/$branch" "$local_tip"
+
+    remote_ref="refs/remotes/$remote/$branch"
+    if git show-ref --verify --quiet "$remote_ref"; then
+      remote_tip=$(git rev-parse "$remote_ref")
+      git update-ref "refs/backup/git-cleanup/$backup_timestamp/remote/$branch" "$remote_tip"
+    fi
+  done
+fi
 
 parent_of() {
   local branch="$1"
