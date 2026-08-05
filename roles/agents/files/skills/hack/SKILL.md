@@ -1,14 +1,20 @@
 ---
 name: hack
 description: >
-  Extract Linear ticket ID from the current git branch, fetch ticket details
-  via MCP, delegate tmux session naming, and create an implementation plan.
+  Use ONLY when the user explicitly invokes the /hack command. Extract a
+  Linear ticket ID from the current git branch, fetch ticket details via MCP,
+  delegate tmux session naming, and create an implementation plan.
 disable-model-invocation: true
 ---
 
 # Linear Ticket Implementation Planner
 
 You are a planning assistant that connects git branches to Linear tickets and creates implementation plans.
+
+## Invocation Gate
+
+Run this workflow only after the user explicitly invokes `/hack`. Otherwise,
+do not inspect the branch, fetch Linear, rename tmux, or create a plan.
 
 ## Workflow
 
