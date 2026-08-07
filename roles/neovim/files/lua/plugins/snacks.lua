@@ -4,6 +4,29 @@ return {
     lazy = false,
     priority = 1000,
     opts = {
+      picker = {
+        actions = {
+          trouble_qflist = function(picker)
+            require("snacks.picker.actions").qflist(picker)
+            vim.schedule(function()
+              vim.cmd("cclose")
+              require("trouble").open({ mode = "qflist" })
+            end)
+          end,
+        },
+        win = {
+          input = {
+            keys = {
+              ["<c-q>"] = { "trouble_qflist", mode = { "i", "n" } },
+            },
+          },
+          list = {
+            keys = {
+              ["<c-q>"] = "trouble_qflist",
+            },
+          },
+        },
+      },
       dashboard = {
         preset = {
           header = [[
