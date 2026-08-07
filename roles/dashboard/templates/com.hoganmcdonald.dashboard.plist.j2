@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.hoganmcdonald.dashboard</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>{{ dashboard_python_path }}</string>
+    <string>{{ ansible_facts.user_dir }}/.local/libexec/dashboard/generate.py</string>
+    <string>--interval</string>
+    <string>{{ dashboard_refresh_interval }}</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>{{ ansible_facts.user_dir }}</string>
+    <key>PATH</key>
+    <string>{{ dashboard_tool_path }}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>{{ dashboard_refresh_interval }}</integer>
+  <key>StandardOutPath</key>
+  <string>{{ ansible_facts.user_dir }}/.local/state/dashboard/dashboard.log</string>
+  <key>StandardErrorPath</key>
+  <string>{{ ansible_facts.user_dir }}/.local/state/dashboard/dashboard.log</string>
+</dict>
+</plist>

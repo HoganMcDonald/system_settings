@@ -1,0 +1,124 @@
+{
+  "viewerTeamIds": ["TEAM-1"],
+  "data": {
+    "viewer": { "login": "Me" },
+    "authored": {
+      "issueCount": 3,
+      "nodes": [
+        {
+          "number": 1,
+          "title": "Escape <script>alert(1)</script>",
+          "url": "https://github.com/acme/app/pull/1",
+          "updatedAt": "2026-08-07T10:00:00Z",
+          "isDraft": false,
+          "mergeable": "MERGEABLE",
+          "mergeStateStatus": "BLOCKED",
+          "reviewDecision": "CHANGES_REQUESTED",
+          "author": { "login": "Me" },
+          "repository": { "nameWithOwner": "acme/app" },
+          "comments": { "totalCount": 4 },
+          "statusCheckRollup": { "state": "FAILURE" },
+          "latestReviews": { "nodes": [] },
+          "reviewRequests": { "nodes": [] },
+          "timelineItems": { "nodes": [] }
+        },
+        {
+          "number": 2,
+          "title": "Conflicting work",
+          "url": "https://github.com/acme/app/pull/2",
+          "updatedAt": "2026-08-07T11:00:00Z",
+          "isDraft": false,
+          "mergeable": "CONFLICTING",
+          "mergeStateStatus": "DIRTY",
+          "reviewDecision": "APPROVED",
+          "author": { "login": "Me" },
+          "repository": { "nameWithOwner": "acme/app" },
+          "comments": { "totalCount": 0 },
+          "statusCheckRollup": { "state": "SUCCESS" },
+          "latestReviews": { "nodes": [] },
+          "reviewRequests": { "nodes": [] },
+          "timelineItems": { "nodes": [] }
+        },
+        {
+          "number": 3,
+          "title": "Ready work",
+          "url": "https://github.com/acme/app/pull/3",
+          "updatedAt": "2026-08-07T12:00:00Z",
+          "isDraft": false,
+          "mergeable": "MERGEABLE",
+          "mergeStateStatus": "CLEAN",
+          "reviewDecision": "APPROVED",
+          "author": { "login": "Me" },
+          "repository": { "nameWithOwner": "acme/app" },
+          "comments": { "totalCount": 1 },
+          "statusCheckRollup": { "state": "SUCCESS" },
+          "latestReviews": { "nodes": [] },
+          "reviewRequests": { "nodes": [] },
+          "timelineItems": { "nodes": [] }
+        }
+      ]
+    },
+    "requested": {
+      "issueCount": 2,
+      "nodes": [
+        {
+          "number": 10,
+          "title": "Direct request",
+          "url": "https://github.com/acme/api/pull/10",
+          "updatedAt": "2026-08-07T12:00:00Z",
+          "isDraft": false,
+          "mergeable": "MERGEABLE",
+          "mergeStateStatus": "CLEAN",
+          "reviewDecision": "REVIEW_REQUIRED",
+          "author": { "login": "author-one" },
+          "repository": { "nameWithOwner": "acme/api" },
+          "comments": { "totalCount": 2 },
+          "statusCheckRollup": { "state": "SUCCESS" },
+          "latestReviews": { "nodes": [] },
+          "reviewRequests": {
+            "nodes": [
+              { "requestedReviewer": { "id": "USER-1", "login": "Me" } },
+              { "requestedReviewer": { "id": "USER-2", "login": "Other" } }
+            ]
+          },
+          "timelineItems": {
+            "nodes": [
+              { "createdAt": "2026-08-01T10:00:00Z", "requestedReviewer": { "id": "USER-1", "login": "Me" } },
+              { "createdAt": "2026-08-06T10:00:00Z", "requestedReviewer": { "id": "USER-2", "login": "Other" } }
+            ]
+          }
+        },
+        {
+          "number": 11,
+          "title": "Team request",
+          "url": "https://github.com/acme/api/pull/11",
+          "updatedAt": "2026-08-07T13:00:00Z",
+          "isDraft": false,
+          "mergeable": "MERGEABLE",
+          "mergeStateStatus": "CLEAN",
+          "reviewDecision": "REVIEW_REQUIRED",
+          "author": { "login": "author-two" },
+          "repository": { "nameWithOwner": "acme/api" },
+          "comments": { "totalCount": 3 },
+          "statusCheckRollup": { "state": "PENDING" },
+          "latestReviews": {
+            "nodes": [
+              { "author": { "login": "reviewer" }, "state": "APPROVED", "submittedAt": "2026-08-06T11:00:00Z" },
+              { "author": { "login": "commenter" }, "state": "COMMENTED", "submittedAt": "2026-08-06T12:00:00Z" }
+            ]
+          },
+          "reviewRequests": {
+            "nodes": [
+              { "requestedReviewer": { "id": "TEAM-1", "slug": "platform", "organization": { "login": "acme" } } }
+            ]
+          },
+          "timelineItems": {
+            "nodes": [
+              { "createdAt": "2026-08-03T09:00:00Z", "requestedReviewer": { "id": "TEAM-1", "slug": "platform", "organization": { "login": "acme" } } }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

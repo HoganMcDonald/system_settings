@@ -1,0 +1,78 @@
+---
+- name: Locate dashboard runtime tools
+  shell: "command -v {{ item }}"
+  loop:
+    - gh
+    - python3
+  register: dashboard_tools
+  changed_when: false
+
+- name: Set dashboard runtime paths
+  set_fact:
+    dashboard_python_path: "{{ dashboard_tools.results[1].stdout }}"
+    dashboard_tool_path: "{{ dashboard_tools.results | map(attribute='stdout') | map('dirname') | unique | join(':') }}"
+
+- name: Verify GitHub CLI authentication
+  command: gh auth status
+  changed_when: false
+
+- name: Create dashboard directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ ansible_facts.user_dir }}/.local/bin"
+    - "{{ ansible_facts.user_dir }}/.local/libexec/dashboard"
+    - "{{ ansible_facts.user_dir }}/.local/share/dashboard"
+    - "{{ ansible_facts.user_dir }}/.local/state/dashboard"
+    - "{{ ansible_facts.user_dir }}/Library/LaunchAgents"
+
+- name: Install dashboard generator
+  copy:
+    src: generate.py
+    dest: "{{ ansible_facts.user_dir }}/.local/libexec/dashboard/generate.py"
+    mode: '0755'
+
+- name: Install dashboard CLI
+  copy:
+    src: dash
+    dest: "{{ ansible_facts.user_dir }}/.local/bin/dash"
+    mode: '0755'
+
+- name: Ensure dashboard log exists
+  file:
+    path: "{{ ansible_facts.user_dir }}/.local/state/dashboard/dashboard.log"
+    state: touch
+    mode: '0644'
+    modification_time: preserve
+    access_time: preserve
+
+- name: Install dashboard LaunchAgent
+  template:
+    src: com.hoganmcdonald.dashboard.plist.j2
+    dest: "{{ ansible_facts.user_dir }}/Library/LaunchAgents/com.hoganmcdonald.dashboard.plist"
+    mode: '0644'
+  register: dashboard_agent
+
+- name: Check dashboard LaunchAgent status
+  command: launchctl print "gui/{{ ansible_facts.user_uid }}/com.hoganmcdonald.dashboard"
+  register: dashboard_agent_status
+  changed_when: false
+  failed_when: false
+
+- name: Unload changed dashboard LaunchAgent
+  command: launchctl bootout "gui/{{ ansible_facts.user_uid }}/com.hoganmcdonald.dashboard"
+  when: dashboard_agent.changed and dashboard_agent_status.rc == 0
+
+- name: Load dashboard LaunchAgent
+  command: launchctl bootstrap "gui/{{ ansible_facts.user_uid }}" "{{ ansible_facts.user_dir }}/Library/LaunchAgents/com.hoganmcdonald.dashboard.plist"
+  when: dashboard_agent.changed or dashboard_agent_status.rc != 0
+
+- name: Generate initial dashboard
+  command: "{{ dashboard_python_path }} {{ ansible_facts.user_dir }}/.local/libexec/dashboard/generate.py --interval {{ dashboard_refresh_interval }}"
+  changed_when: false
+
+- name: Record role in lockfile
+  command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
+  changed_when: false

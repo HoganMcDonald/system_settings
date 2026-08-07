@@ -1,0 +1,90 @@
+#!/bin/bash
+
+set -o pipefail
+
+LABEL="com.hoganmcdonald.dashboard"
+DOMAIN="gui/$(id -u)"
+TARGET="$DOMAIN/$LABEL"
+PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+GENERATOR="$HOME/.local/libexec/dashboard/generate.py"
+PAGE="$HOME/.local/share/dashboard/index.html"
+LOG="$HOME/.local/state/dashboard/dashboard.log"
+
+usage() {
+  cat <<'EOF'
+Usage: dash <command>
+
+Commands:
+  start    Start the background refresh schedule
+  stop     Stop the background refresh schedule
+  status   Show scheduler and generated page status
+  logs     Show recent logs and follow new output
+  update   Refresh the dashboard immediately
+  open     Open the dashboard in the default browser
+  help     Show this help
+EOF
+}
+
+is_loaded() {
+  launchctl print "$TARGET" >/dev/null 2>&1
+}
+
+case "${1:-help}" in
+  start)
+    if is_loaded; then
+      echo "Dashboard refresh is already scheduled"
+    else
+      launchctl bootstrap "$DOMAIN" "$PLIST"
+      echo "Dashboard refresh scheduled"
+    fi
+    ;;
+  stop)
+    if is_loaded; then
+      launchctl bootout "$TARGET"
+      echo "Dashboard refresh stopped"
+    else
+      echo "Dashboard refresh is already stopped"
+    fi
+    ;;
+  status)
+    if is_loaded; then
+      details=$(launchctl print "$TARGET")
+      state=$(printf '%s\n' "$details" | awk -F'= ' '/^[[:space:]]*state = / { print $2; exit }')
+      exit_code=$(printf '%s\n' "$details" | awk -F'= ' '/^[[:space:]]*last exit code = / { print $2; exit }')
+      echo "Scheduler: loaded (${state:-idle})"
+      [ -n "$exit_code" ] && echo "Last exit: $exit_code"
+    else
+      echo "Scheduler: stopped"
+    fi
+    if [ -f "$PAGE" ]; then
+      echo "Page:      $PAGE"
+      echo "Updated:   $(stat -f '%Sm' -t '%Y-%m-%d %H:%M:%S' "$PAGE")"
+    else
+      echo "Page:      not generated"
+    fi
+    echo "Logs:      $LOG"
+    ;;
+  logs)
+    mkdir -p "$(dirname "$LOG")"
+    touch "$LOG"
+    tail -n 100 -f "$LOG"
+    ;;
+  update)
+    mkdir -p "$(dirname "$LOG")"
+    "$GENERATOR" 2>&1 | tee -a "$LOG"
+    exit "${PIPESTATUS[0]}"
+    ;;
+  open)
+    if [ ! -f "$PAGE" ]; then
+      "$0" update || exit $?
+    fi
+    open "$PAGE"
+    ;;
+  help|-h|--help)
+    usage
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

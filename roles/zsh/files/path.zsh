@@ -1,7 +1,7 @@
 export PATH=${PATH}:$ZSH/bin
 export PATH="$HOME/system/bin:$PATH"
 export PATH=$PATH:/$HOME/.dotfiles/bin
-export PATH="/Users/hogan.mcdonald/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/.cargo/bin:$PATH"
 export PATH="$HOME/.config/zsh/bin:$PATH"
 

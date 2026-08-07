@@ -46,6 +46,9 @@
     - role: agents
       tags:
         - agents
+    - role: dashboard
+      tags:
+        - dashboard
 
     - role: neovim
       tags:
