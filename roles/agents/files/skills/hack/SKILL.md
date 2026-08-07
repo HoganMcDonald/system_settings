@@ -3,7 +3,8 @@ name: hack
 description: >
   Use ONLY when the user explicitly invokes the /hack command. Extract a
   Linear ticket ID from the current git branch, fetch ticket details via MCP,
-  delegate tmux session naming, and create an implementation plan.
+  rename the tmux session through the tmux-session-naming skill, and create an
+  implementation plan.
 disable-model-invocation: true
 ---
 
@@ -41,13 +42,10 @@ do not inspect the branch, fetch Linear, rename tmux, or create a plan.
    - Parent issue (if this is a sub-task)
    - Related issues
 
-4. **Delegate tmux session naming**
-   Before planning, use the task tool to spawn the `tmux-session-namer`
-   subagent with the Linear ticket title, identifier, labels, and any relevant
-   context. It must rename the active session to
-   `<source_repo>/<type>(<short_snake_case_summary>)`.
-   This format is required so tmux session pickers group work by repository.
-   If not inside tmux, skip this step.
+4. **Rename the tmux session**
+   Follow the `tmux-session-naming` skill, supplying the fetched Linear ticket
+   title, identifier, labels, and relevant context. If not inside a tmux
+   session, skip this step.
 
 5. **Create the implementation plan**
    Once you have the ticket context, create an implementation plan that:

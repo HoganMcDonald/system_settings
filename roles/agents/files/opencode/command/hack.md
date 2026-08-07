@@ -3,6 +3,6 @@ description: Plan the Linear ticket in the current branch and name its tmux sess
 agent: plan
 ---
 
-Use the `hack` skill for this request. Follow its workflow completely,
-including spawning `tmux-session-namer` before producing the implementation
-plan.
+Use the `hack` and `tmux-session-naming` skills for this request. Follow the
+hack workflow completely, including the tmux-session-naming workflow before
+producing the implementation plan.

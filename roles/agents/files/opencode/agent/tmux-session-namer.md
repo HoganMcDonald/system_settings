@@ -1,5 +1,5 @@
 ---
-description: Renames the current tmux session for a Linear-backed worktree. Use only as a subagent from the hack skill.
+description: Renames the current tmux session for a Linear-backed worktree. Use only as a subagent from the tmux-session-naming skill.
 mode: subagent
 model: openai/gpt-5.6-luna
 permission:
