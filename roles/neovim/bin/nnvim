@@ -1,0 +1,4 @@
+#!/bin/sh
+
+export NVIM_APPNAME=nnvim
+exec nvim "$@"

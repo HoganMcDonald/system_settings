@@ -21,6 +21,25 @@
     state: link
     force: yes
 
+- name: Link new Neovim config
+  file:
+    src: "{{ dotfiles_home }}/roles/neovim/files-nnvim/"
+    dest: "{{ config }}/nnvim"
+    state: link
+    force: yes
+
+- name: Ensure local bin directory exists
+  file:
+    path: "{{ dotfiles_user_home }}/.local/bin"
+    state: directory
+    mode: "0755"
+
+- name: Install nnvim launcher
+  copy:
+    src: "{{ role_path }}/bin/nnvim"
+    dest: "{{ dotfiles_user_home }}/.local/bin/nnvim"
+    mode: "0755"
+
 - name: Decrypt neovim environment variables
   ansible.builtin.include_vars:
     file: "{{ dotfiles_home }}/vault/secrets.yml"
