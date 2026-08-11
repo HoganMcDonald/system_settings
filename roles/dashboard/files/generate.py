@@ -280,12 +280,12 @@ def requested_row(pr):
 def comment_controls(pr):
     title = html.escape(pr["title"], quote=True)
     return f"""
-        <button class="comment-toggle" type="button" aria-expanded="false" aria-label="Show local comments for {title}">
+        <button class="comment-toggle" type="button" aria-expanded="false" aria-label="Add a local comment for {title}">
           Comment <span class="local-comment-count">0</span>
         </button>
         <div class="jawbone" hidden>
           <div class="local-comments"></div>
-          <form class="comment-form">
+          <form class="comment-form" hidden>
             <label class="visually-hidden">Add a local comment for {title}</label>
             <textarea maxlength="2000" rows="3" placeholder="Add a local comment..."></textarea>
             <div class="comment-form-footer">
@@ -320,6 +320,7 @@ def render(model, generated_at, interval):
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2316181a'/%3E%3Cpath d='M13 13h17v17H13z' fill='%235ef1ff'/%3E%3Cpath d='M34 13h17v17H34z' fill='%23bd5eff'/%3E%3Cpath d='M13 34h17v17H13z' fill='%23ff6e5e'/%3E%3Cpath d='M34 34h17v17H34z' fill='%235eff6c'/%3E%3C/svg%3E">
   <script>document.documentElement.dataset.theme = localStorage.getItem("dashboard-theme") || "dark";</script>
   <style>
     :root {{
@@ -376,11 +377,13 @@ def render(model, generated_at, interval):
     .jawbone[hidden] {{ display: none; }}
     .jawbone::before {{ content: ""; position: absolute; right: 64px; bottom: 100%; border-right: 8px solid transparent; border-bottom: 8px solid var(--cyan); border-left: 8px solid transparent; }}
     .local-comments {{ display: grid; gap: 8px; margin-bottom: 12px; }}
+    .local-comments:has(+ .comment-form[hidden]) {{ margin-bottom: 0; }}
     .local-comment {{ padding: 10px 11px; color: var(--fg); background: var(--panel); border-left: 2px solid var(--purple); }}
     .local-comment p {{ margin: 0; font-size: .82rem; font-weight: 650; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }}
     .local-comment time {{ display: block; margin-top: 7px; color: var(--muted); font: 700 .62rem/1 monospace; }}
     .no-comments {{ margin: 0 0 12px; color: var(--muted); font-size: .76rem; font-weight: 750; }}
     .comment-form {{ display: grid; gap: 8px; }}
+    .comment-form[hidden] {{ display: none; }}
     .comment-form textarea {{ width: 100%; resize: vertical; padding: 9px 10px; color: var(--fg); background: var(--bg); border: 1px solid var(--muted); border-radius: 0; font: inherit; font-size: .82rem; font-weight: 650; line-height: 1.4; }}
     .comment-form textarea:focus {{ border-color: var(--cyan); outline: none; }}
     .comment-form textarea::placeholder {{ color: var(--muted); }}
@@ -448,10 +451,13 @@ def render(model, generated_at, interval):
       const comments = commentsFor(item.dataset.prKey);
       const count = item.querySelector(".local-comment-count");
       const container = item.querySelector(".local-comments");
+      const form = item.querySelector(".comment-form");
+      const jawbone = item.querySelector(".jawbone");
       count.textContent = comments.length;
       container.replaceChildren();
       if (!comments.length) {{
         const empty = document.createElement("p"); empty.className = "no-comments"; empty.textContent = "No local comments yet."; container.append(empty);
+        jawbone.hidden = form.hidden;
         return;
       }}
       comments.forEach((comment) => {{
@@ -460,6 +466,7 @@ def render(model, generated_at, interval):
         const time = document.createElement("time"); time.dateTime = comment.createdAt;
         entry.append(body, time); container.append(entry);
       }});
+      jawbone.hidden = false;
     }}
     function renderAllComments() {{ document.querySelectorAll(".pr-item").forEach(renderComments); updateTimes(); }}
     document.querySelectorAll(".pr-item").forEach((item) => {{
@@ -469,7 +476,8 @@ def render(model, generated_at, interval):
       const textarea = form.querySelector("textarea");
       const status = form.querySelector(".comment-status");
       toggle.addEventListener("click", () => {{
-        const opening = jawbone.hidden; jawbone.hidden = !opening; toggle.setAttribute("aria-expanded", String(opening));
+        const opening = form.hidden; form.hidden = !opening; jawbone.hidden = !opening && !commentsFor(item.dataset.prKey).length;
+        toggle.setAttribute("aria-expanded", String(opening));
         if (opening) textarea.focus();
       }});
       form.addEventListener("submit", (event) => {{
@@ -480,7 +488,8 @@ def render(model, generated_at, interval):
         retained.unshift({{ pr: item.dataset.prKey, body, createdAt: new Date().toISOString() }});
         try {{
           localStorage.setItem(commentStorageKey, JSON.stringify(retained));
-          textarea.value = ""; status.textContent = "Stored only in this browser"; renderAllComments();
+          textarea.value = ""; status.textContent = "Stored only in this browser"; form.hidden = true;
+          toggle.setAttribute("aria-expanded", "false"); renderAllComments();
         }} catch {{ status.textContent = "Could not save comment"; }}
       }});
     }});

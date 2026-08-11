@@ -75,6 +75,13 @@ class DashboardGeneratorTest(unittest.TestCase):
         self.assertIn('const commentStorageKey = "dashboard-pr-comments"', page)
         self.assertIn(".slice(0, 49)", page)
         self.assertIn("body.textContent = comment.body", page)
+        self.assertIn('<form class="comment-form" hidden>', page)
+        self.assertIn("jawbone.hidden = false", page)
+
+    def test_page_embeds_a_cyberdream_favicon(self):
+        page = generate.render(self.model, datetime(2026, 8, 7, tzinfo=timezone.utc), 300)
+        self.assertIn('<link rel="icon" href="data:image/svg+xml,', page)
+        self.assertIn("fill='%235ef1ff'", page)
 
     def test_fixture_can_generate_a_page_without_github(self):
         fixture = Path(__file__).parent / "fixtures/dashboard.json"
