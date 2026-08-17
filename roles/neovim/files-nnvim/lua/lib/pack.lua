@@ -1,4 +1,4 @@
-local autocmd = require("utils.autocmd")
+local autocmd = require("lib.autocmd")
 local types = require("lib.types")
 
 local M = {}

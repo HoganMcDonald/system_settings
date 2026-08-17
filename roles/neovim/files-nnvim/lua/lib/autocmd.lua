@@ -1,17 +1,41 @@
+local types = require("lib.types")
+
 local M = {}
 
+---@alias NvimAutocmdEvent NvimBrand<string, "autocmd-event">
+
+local event, unwrap_event = types.create_brand("autocmd-event", types.is_string)
+
+---@param name string
+---@return NvimAutocmdEvent
+---@example autocmd.event("BufWritePre")
+function M.event(name)
+  assert(type(name) == "string" and name ~= "", "autocmd event must be a non-empty string")
+  return event(name)
+end
+
+---@param value NvimAutocmdEvent|NvimAutocmdEvent[]
+---@return string|string[]
+local function unwrap_events(value)
+  if type(value) == "table" and value._brand == "autocmd-event" then
+    return unwrap_event(value)
+  end
+
+  assert(type(value) == "table", "autocmd event must be a branded event or list of branded events")
+  return vim.tbl_map(unwrap_event, value)
+end
+
 ---@class NvimAutocmdSpec: vim.api.keyset.create_autocmd
----@field event string|string[]
+---@field event NvimAutocmdEvent|NvimAutocmdEvent[]
 
 ---@param definition NvimAutocmdSpec
 ---@param opts? { group: integer|string, before: fun(args: vim.api.keyset.create_autocmd.callback_args)? }
 ---@return integer
 function M.create(definition, opts)
   vim.validate("definition", definition, "table")
-  vim.validate("definition.event", definition.event, { "string", "table" })
 
   local autocmd_opts = vim.deepcopy(definition)
-  local event = autocmd_opts.event
+  local events = unwrap_events(autocmd_opts.event)
   local callback = autocmd_opts.callback
   local command = autocmd_opts.command
   autocmd_opts.event = nil
@@ -35,7 +59,7 @@ function M.create(definition, opts)
     end
   end
 
-  return vim.api.nvim_create_autocmd(event, autocmd_opts)
+  return vim.api.nvim_create_autocmd(events, autocmd_opts)
 end
 
 ---@param spec NvimPackSpec
