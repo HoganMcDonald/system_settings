@@ -1,5 +1,11 @@
 local M = {}
 
+---@param value any
+---@return boolean
+function M.is_string(value)
+  return type(value) == "string"
+end
+
 ---@class NvimBrand<T, B>
 ---@field _brand B
 ---@field _value T

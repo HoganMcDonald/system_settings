@@ -1,9 +1,9 @@
 local M = {}
 
----@class NnvimAutocmdSpec: vim.api.keyset.create_autocmd
+---@class NvimAutocmdSpec: vim.api.keyset.create_autocmd
 ---@field event string|string[]
 
----@param definition NnvimAutocmdSpec
+---@param definition NvimAutocmdSpec
 ---@param opts? { group: integer|string, before: fun(args: vim.api.keyset.create_autocmd.callback_args)? }
 ---@return integer
 function M.create(definition, opts)
@@ -38,17 +38,15 @@ function M.create(definition, opts)
   return vim.api.nvim_create_autocmd(event, autocmd_opts)
 end
 
----@param spec NnvimPackSpec
+---@param spec NvimPackSpec
+---@param name string
 ---@param before? fun(args: vim.api.keyset.create_autocmd.callback_args)
-function M.from_spec(spec, before)
+function M.from_spec(spec, name, before)
   if not spec.autocmds then
     return
   end
 
-  local source = spec.src:gsub("/+$", "")
-  source = source:gsub("%.git$", "")
-  local name = spec.name or vim.fs.basename(source)
-  local group = vim.api.nvim_create_augroup("NnvimPlugin_" .. name:gsub("[^%w_]", "_"), { clear = true })
+  local group = vim.api.nvim_create_augroup("NvimPlugin_" .. name:gsub("[^%w_]", "_"), { clear = true })
 
   for _, definition in ipairs(spec.autocmds) do
     M.create(definition, { group = group, before = before })

@@ -3,7 +3,7 @@ vim.g.maplocalleader = " "
 
 require("core")
 
-local pack = require("utils.pack")
+local pack = require("lib.pack")
 
 pack.setup({
   require("coding"),

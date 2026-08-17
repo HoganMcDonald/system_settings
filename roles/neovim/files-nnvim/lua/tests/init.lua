@@ -1,1 +1,1 @@
-return require("utils.pack").collect("tests")
+return require("lib.pack").collect("tests")

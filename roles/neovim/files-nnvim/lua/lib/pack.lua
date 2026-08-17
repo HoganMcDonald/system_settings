@@ -1,34 +1,92 @@
 local autocmd = require("utils.autocmd")
+local types = require("lib.types")
 
 local M = {}
 
----@class NnvimPackCommand
+---@alias NvimGitHubSource NvimBrand<string, "github">
+---@alias NvimCodebergSource NvimBrand<string, "codeberg">
+---@alias NvimUrlSource NvimBrand<string, "url">
+---@alias NvimPackSource NvimGitHubSource|NvimCodebergSource|NvimUrlSource
+
+local github, unwrap_github = types.create_brand("github", types.is_string)
+local codeberg, unwrap_codeberg = types.create_brand("codeberg", types.is_string)
+local url, unwrap_url = types.create_brand("url", types.is_string)
+
+local source_unwrappers = {
+  github = unwrap_github,
+  codeberg = unwrap_codeberg,
+  url = unwrap_url,
+}
+
+---@param path string
+---@return NvimGitHubSource
+---@example pack.github("owner/plugin")
+function M.github(path)
+  assert(type(path) == "string" and path ~= "", "github path must be a non-empty string")
+  return github("https://github.com/" .. path)
+end
+
+---@param path string
+---@return NvimCodebergSource
+---@example pack.codeberg("owner/plugin")
+function M.codeberg(path)
+  assert(type(path) == "string" and path ~= "", "codeberg path must be a non-empty string")
+  return codeberg("https://codeberg.org/" .. path)
+end
+
+---@param source string
+---@return NvimUrlSource
+---@example pack.url("https://git.example.com/owner/plugin.git")
+function M.url(source)
+  assert(type(source) == "string" and source ~= "", "url must be a non-empty string")
+  return url(source)
+end
+
+---@param value any
+---@return boolean
+local function is_source(value)
+  return type(value) == "table" and source_unwrappers[value._brand] ~= nil
+end
+
+---@param source NvimPackSource
+---@return string
+local function unwrap_source(source)
+  local unwrap = source_unwrappers[source._brand]
+  assert(unwrap, "invalid plugin source brand")
+  return unwrap(source)
+end
+
+---@class NvimPackCommand
 ---@field name string
 ---@field opts? vim.api.keyset.user_command
 
----@class NnvimPackEvent
+---@class NvimPackEvent
 ---@field event string|string[]
 ---@field pattern? string|string[]
 
----@class NnvimPackKeymap: vim.keymap.set.Opts
+---@class NvimPackKeymap: vim.keymap.set.Opts
 ---@field [1] string Left-hand side of the mapping
 ---@field [2]? string|function Right-hand side to install after loading
 ---@field mode? string|string[]
 
----@class NnvimPackSpec: vim.pack.Spec
----@field init? fun(spec: NnvimPackSpec)
----@field config? fun(spec: NnvimPackSpec)
----@field cmd? string|NnvimPackCommand|(string|NnvimPackCommand)[]
----@field event? string|NnvimPackEvent|(string|NnvimPackEvent)[]
----@field keys? NnvimPackKeymap[]
----@field autocmds? NnvimAutocmdSpec[]
+---@class NvimPackSpec
+---@field src NvimPackSource
+---@field name? string
+---@field version? string|vim.VersionRange
+---@field data? any
+---@field init? fun(spec: NvimPackSpec)
+---@field config? fun(spec: NvimPackSpec)
+---@field cmd? string|NvimPackCommand|(string|NvimPackCommand)[]
+---@field event? string|NvimPackEvent|(string|NvimPackEvent)[]
+---@field keys? NvimPackKeymap[]
+---@field autocmds? NvimAutocmdSpec[]
 
 local function is_spec(value)
-  return type(value) == "string" or (type(value) == "table" and type(value.src) == "string")
+  return is_source(value) or (type(value) == "table" and is_source(value.src))
 end
 
----@param ... NnvimPackSpec|string|(NnvimPackSpec|string)[]
----@return (NnvimPackSpec|string)[]
+---@param ... NvimPackSpec|NvimPackSource|(NvimPackSpec|NvimPackSource)[]
+---@return (NvimPackSpec|NvimPackSource)[]
 function M.flatten(...)
   local flattened = {}
 
@@ -42,7 +100,7 @@ function M.flatten(...)
       return
     end
 
-    if type(value) ~= "table" then
+    if type(value) ~= "table" or value.src ~= nil then
       error("invalid plugin spec: " .. vim.inspect(value))
     end
 
@@ -59,7 +117,7 @@ function M.flatten(...)
 end
 
 ---@param module string
----@return (NnvimPackSpec|string)[]
+---@return (NvimPackSpec|NvimPackSource)[]
 function M.collect(module)
   local module_path = module:gsub("%.", "/")
   local directory = vim.fs.joinpath(vim.fn.stdpath("config"), "lua", module_path)
@@ -77,10 +135,10 @@ function M.collect(module)
   return M.flatten(specs)
 end
 
----@param spec NnvimPackSpec
+---@param spec NvimPackSpec
 ---@return string
 local function plugin_name(spec)
-  local source = spec.src:gsub("/+$", "")
+  local source = unwrap_source(spec.src):gsub("/+$", "")
   source = source:gsub("%.git$", "")
   return spec.name or vim.fs.basename(source)
 end
@@ -113,7 +171,7 @@ local function normalize_triggers(value, object_key)
   return triggers
 end
 
----@param spec NnvimPackSpec
+---@param spec NvimPackSpec
 ---@param load fun()
 local function lazy_commands(spec, load)
   for _, command in ipairs(normalize_triggers(spec.cmd, "name")) do
@@ -136,14 +194,14 @@ local function lazy_commands(spec, load)
   end
 end
 
----@param spec NnvimPackSpec
+---@param spec NvimPackSpec
 ---@param load fun()
 local function lazy_events(spec, load)
   if not spec.event then
     return
   end
 
-  local group = vim.api.nvim_create_augroup("NnvimLazy_" .. plugin_name(spec):gsub("[^%w_]", "_"), { clear = true })
+  local group = vim.api.nvim_create_augroup("NvimLazy_" .. plugin_name(spec):gsub("[^%w_]", "_"), { clear = true })
 
   for _, trigger in ipairs(normalize_triggers(spec.event, "event")) do
     vim.api.nvim_create_autocmd(trigger.event, {
@@ -155,7 +213,7 @@ local function lazy_events(spec, load)
   end
 end
 
----@param spec NnvimPackSpec
+---@param spec NvimPackSpec
 ---@param load fun()
 local function lazy_keys(spec, load)
   for _, key in ipairs(spec.keys or {}) do
@@ -182,7 +240,7 @@ local function lazy_keys(spec, load)
   end
 end
 
----@param specs NnvimPackSpec|string|(NnvimPackSpec|string)[]
+---@param specs NvimPackSpec|NvimPackSource|(NvimPackSpec|NvimPackSource)[]
 function M.setup(specs)
   local normalized = M.flatten(specs)
   if vim.tbl_isempty(normalized) then
@@ -190,7 +248,7 @@ function M.setup(specs)
   end
 
   for index, spec in ipairs(normalized) do
-    if type(spec) == "string" then
+    if is_source(spec) then
       normalized[index] = { src = spec }
     end
   end
@@ -203,13 +261,13 @@ function M.setup(specs)
 
   local native_specs = vim.tbl_map(function(spec)
     return {
-      src = spec.src,
+      src = unwrap_source(spec.src),
       name = spec.name,
       version = spec.version,
       data = spec.data,
     }
   end, normalized)
-  vim.pack.add(native_specs, { load = false })
+  vim.pack.add(native_specs, { load = false, confirm = false })
 
   for _, spec in ipairs(normalized) do
     local loaded = false
@@ -228,7 +286,7 @@ function M.setup(specs)
     lazy_commands(spec, load)
     lazy_events(spec, load)
     lazy_keys(spec, load)
-    autocmd.from_spec(spec, load)
+    autocmd.from_spec(spec, plugin_name(spec), load)
 
     if not spec.cmd and not spec.event and not spec.keys and not spec.autocmds then
       load()
