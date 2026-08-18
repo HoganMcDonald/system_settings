@@ -1,0 +1,16 @@
+{
+  "plugins": {
+    "cyberdream.nvim": {
+      "rev": "3203b1673967e820231a9049a540fa8317bd270c",
+      "src": "https://github.com/scottmckendry/cyberdream.nvim.git"
+    },
+    "nvim-web-devicons": {
+      "rev": "2ae6958df7ced50baac5035cec0c15799eedfbf7",
+      "src": "https://github.com/nvim-tree/nvim-web-devicons"
+    },
+    "which-key.nvim": {
+      "rev": "3aab2147e74890957785941f0c1ad87d0a44c15a",
+      "src": "https://github.com/folke/which-key.nvim"
+    }
+  }
+}
