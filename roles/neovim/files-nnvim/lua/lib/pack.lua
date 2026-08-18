@@ -74,6 +74,7 @@ end
 ---@field name? string
 ---@field version? string|vim.VersionRange
 ---@field data? any
+---@field dependencies? NvimPackSpec|NvimPackSource|(NvimPackSpec|NvimPackSource)[]
 ---@field init? fun(spec: NvimPackSpec)
 ---@field config? fun(spec: NvimPackSpec)
 ---@field cmd? string|NvimPackCommand|(string|NvimPackCommand)[]
@@ -96,6 +97,9 @@ function M.flatten(...)
     end
 
     if is_spec(value) then
+      if not is_source(value) and value.dependencies then
+        visit(value.dependencies)
+      end
       table.insert(flattened, value)
       return
     end
@@ -132,7 +136,7 @@ function M.collect(module)
     end
   end
 
-  return M.flatten(specs)
+  return specs
 end
 
 ---@param spec NvimPackSpec
