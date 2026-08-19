@@ -7,6 +7,7 @@ local pack = require("lib.pack")
 
 pack.setup({
   require("coding"),
+  require("explore"),
   require("review"),
   require("tests"),
   require("style"),
