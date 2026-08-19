@@ -10,4 +10,5 @@ pack.setup({
   require("review"),
   require("tests"),
   require("style"),
+  require("core.which_key"),
 })
