@@ -257,6 +257,24 @@ function M.setup(specs)
     end
   end
 
+  local unique = {}
+  local by_name = {}
+  for _, spec in ipairs(normalized) do
+    local name = plugin_name(spec)
+    local existing = by_name[name]
+
+    if existing then
+      for key, value in pairs(spec) do
+        existing[key] = value
+      end
+    else
+      local merged = vim.tbl_extend("force", {}, spec)
+      by_name[name] = merged
+      table.insert(unique, merged)
+    end
+  end
+  normalized = unique
+
   for _, spec in ipairs(normalized) do
     if spec.init then
       spec.init(spec)
