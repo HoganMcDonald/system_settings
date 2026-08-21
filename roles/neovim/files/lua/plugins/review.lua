@@ -1,6 +1,7 @@
 return {
   {
     "vuki656/review.nvim",
+    branch = "fix/macos-watcher-close-lag",
     cmd = "Review",
     keys = {
       { "<leader>gR", "<cmd>Review<cr>", desc = "Review changes" },
