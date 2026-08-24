@@ -244,6 +244,52 @@ local function lazy_keys(spec, load)
   end
 end
 
+---@type table<string, true>
+local loaded_plugins = {}
+
+---Names of the plugins that have been loaded so far.
+---@return string[]
+function M.loaded()
+  return vim.tbl_keys(loaded_plugins)
+end
+
+---@param spec NvimPackSpec
+---@return boolean
+local function is_lazy(spec)
+  return (spec.cmd or spec.event or spec.keys or spec.autocmds) ~= nil
+end
+
+---`vim.pack.add` behaves like `:packadd!`: every plugin directory joins
+---'runtimepath', and Nvim's own startup pass then sources each `plugin/` script
+---it finds there. Taking lazy plugins back off the path keeps them dormant
+---until `load()` calls `:packadd`, which restores the entry and sources it then.
+---@param specs NvimPackSpec[]
+local function defer_lazy_plugins(specs)
+  local paths = {}
+  -- `info` defaults to true, which collects git branches and tags for every
+  -- plugin. Only the paths are needed here.
+  for _, plugin in ipairs(vim.pack.get(nil, { info = false })) do
+    paths[plugin.spec.name] = plugin.path
+  end
+
+  local deferred = {}
+  for _, spec in ipairs(specs) do
+    local path = is_lazy(spec) and paths[plugin_name(spec)] or nil
+    if path then
+      deferred[path] = true
+      deferred[vim.fs.joinpath(path, "after")] = true
+    end
+  end
+
+  if not next(deferred) then
+    return
+  end
+
+  vim.opt.runtimepath = vim.tbl_filter(function(path)
+    return not deferred[path]
+  end, vim.opt.runtimepath:get())
+end
+
 ---@param specs NvimPackSpec|NvimPackSource|(NvimPackSpec|NvimPackSource)[]
 function M.setup(specs)
   local normalized = M.flatten(specs)
@@ -290,6 +336,7 @@ function M.setup(specs)
     }
   end, normalized)
   vim.pack.add(native_specs, { load = false, confirm = false })
+  defer_lazy_plugins(normalized)
 
   for _, spec in ipairs(normalized) do
     local loaded = false
@@ -298,10 +345,12 @@ function M.setup(specs)
         return
       end
 
-      vim.cmd.packadd(plugin_name(spec))
+      local name = plugin_name(spec)
+      vim.cmd.packadd(name)
       if spec.config then
         spec.config(spec)
       end
+      loaded_plugins[name] = true
       loaded = true
     end
 

@@ -124,17 +124,28 @@ return {
   {
     src = pack.github("mason-org/mason.nvim"),
     config = function()
+      -- Kept on the critical path: this is what puts mason's bin directory on
+      -- PATH, which servers need before they resolve their executables.
       require("mason").setup()
 
-      local registry = require("mason-registry")
-      registry.refresh(function()
-        for _, name in ipairs(tools) do
-          local ok, package = pcall(registry.get_package, name)
-          if ok and not package:is_installed() then
-            package:install()
-          end
-        end
-      end)
+      -- Refreshing the registry and stat-ing each tool costs far more than the
+      -- setup above, and nothing needs it during startup.
+      require("lib.autocmd").create({
+        event = require("lib.autocmd").event("VimEnter"),
+        group = vim.api.nvim_create_augroup("Nvim_mason_tools", { clear = true }),
+        once = true,
+        callback = function()
+          local registry = require("mason-registry")
+          registry.refresh(function()
+            for _, name in ipairs(tools) do
+              local ok, package = pcall(registry.get_package, name)
+              if ok and not package:is_installed() then
+                package:install()
+              end
+            end
+          end)
+        end,
+      })
     end,
   },
 
@@ -257,12 +268,16 @@ return {
 
   {
     src = pack.github("smjonas/inc-rename.nvim"),
-    config = function()
-      require("inc_rename").setup({})
-
+    cmd = "IncRename",
+    -- Registered in `init` so the mapping exists before the plugin loads: it
+    -- only prefills the command line, and running it triggers the load.
+    init = function()
       vim.keymap.set("n", "<leader>cr", function()
         return ":IncRename " .. vim.fn.expand("<cword>")
       end, { expr = true, desc = "Rename" })
+    end,
+    config = function()
+      require("inc_rename").setup({})
     end,
   },
 

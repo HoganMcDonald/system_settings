@@ -176,6 +176,7 @@ return {
 
   {
     src = pack.github("nvim-treesitter/nvim-treesitter-context"),
+    event = { "BufReadPost", "BufNewFile" },
     config = function()
       require("treesitter-context").setup({
         max_lines = 3,
@@ -186,6 +187,8 @@ return {
 
   {
     src = pack.github("windwp/nvim-ts-autotag"),
+    -- Only relevant while typing tags.
+    event = "InsertEnter",
     config = function()
       require("nvim-ts-autotag").setup()
     end,
@@ -194,6 +197,7 @@ return {
   {
     src = pack.github("sustech-data/wildfire.nvim"),
     dependencies = pack.github("nvim-treesitter/nvim-treesitter"),
+    event = { "BufReadPost", "BufNewFile" },
     config = function()
       require("wildfire").setup()
     end,

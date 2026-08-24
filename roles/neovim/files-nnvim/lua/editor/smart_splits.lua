@@ -48,12 +48,24 @@ local keymaps = {
   { "<leader>wl", "swap_buf_right", "Swap buffer right" },
 }
 
--- Loaded eagerly: the plugin sources its own `plugin/` scripts during startup,
--- so deferring `setup` would leave it running on defaults until first use.
+---@type NvimPackKeymap[]
+local keys = {}
+for _, keymap in ipairs(keymaps) do
+  local lhs, action, description = keymap[1], keymap[2], keymap[3]
+  table.insert(keys, {
+    lhs,
+    function()
+      require("smart-splits")[action]()
+    end,
+    desc = description,
+  })
+end
+
 return {
   src = pack.github("mrjones2014/smart-splits.nvim"),
   version = vim.version.range(">=1.0.0"),
   init = track_tmux_pane,
+  keys = keys,
   config = function()
     require("smart-splits").setup({
       default_amount = 3,
@@ -63,12 +75,5 @@ return {
       -- Disabled because @pane-is-vim is managed in init above.
       multiplexer_integration = false,
     })
-
-    for _, keymap in ipairs(keymaps) do
-      local lhs, action, description = keymap[1], keymap[2], keymap[3]
-      vim.keymap.set("n", lhs, function()
-        require("smart-splits")[action]()
-      end, { desc = description })
-    end
   end,
 }
