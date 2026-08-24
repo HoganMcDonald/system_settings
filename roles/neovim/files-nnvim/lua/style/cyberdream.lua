@@ -9,6 +9,7 @@ return {
       terminal_colors = true,
       transparent = true,
       extensions = {
+        blinkcmp = true,
         whichkey = true,
       },
       -- The editor stays transparent while the edgy sidebar keeps an opaque
@@ -20,6 +21,7 @@ return {
         return {
           EdgyNormal = sidebar,
           EdgySeparator = seamless,
+          WinSeparator = seamless,
           EdgyIcon = { bg = colors.bg_solid, fg = colors.grey },
           EdgyIconActive = { bg = colors.bg_solid, fg = colors.cyan },
           EdgyTitle = { bg = colors.bg_solid, fg = colors.cyan, bold = true },

@@ -1,6 +1,7 @@
 local pack = require("lib.pack")
 
 local groups = {
+  { "<leader>a", group = "AI" },
   { "<leader><tab>", group = "Tabs" },
   { "<leader>b", group = "Buffers" },
   { "<leader>c", group = "Code" },

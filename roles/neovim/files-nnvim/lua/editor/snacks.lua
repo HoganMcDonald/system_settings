@@ -34,13 +34,15 @@ end
 ---@return snacks.dashboard.Section
 local function startup()
   local elapsed = (vim.uv.hrtime() - started_at) / 1e6
+  -- `info = false` skips a git query per plugin.
+  local managed = vim.pack.get(nil, { info = false })
 
   return {
     align = "center",
     text = {
       { "⚡ ", hl = "footer" },
-      { tostring(#vim.pack.get()), hl = "special" },
-      { " plugins in ", hl = "footer" },
+      { ("%d/%d"):format(#pack.loaded(), #managed), hl = "special" },
+      { " plugins loaded in ", hl = "footer" },
       { ("%.1fms"):format(elapsed), hl = "special" },
     },
   }
@@ -51,6 +53,9 @@ return {
   src = pack.github("folke/snacks.nvim"),
   config = function()
     require("snacks").setup({
+      -- Replaces `vim.ui.input`, which also gives opencode.nvim's `ask()` a
+      -- floating prompt instead of the command line.
+      input = { enabled = true },
       dashboard = {
         enabled = true,
         preset = {

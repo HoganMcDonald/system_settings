@@ -6,6 +6,7 @@ require("core")
 local pack = require("lib.pack")
 
 pack.setup({
+  require("ai"),
   require("coding"),
   require("editor"),
   require("explore"),

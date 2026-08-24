@@ -16,6 +16,14 @@ return {
       animate = { enabled = false },
       options = {
         left = { size = 40 },
+        right = { size = 70 },
+      },
+      -- The right edgebar hosts the AI chat, which opens as a vertical split.
+      right = {
+        {
+          title = "CodeCompanion",
+          ft = "codecompanion",
+        },
       },
       wo = {
         -- Separators are mapped to their own group so the colorscheme can blend
