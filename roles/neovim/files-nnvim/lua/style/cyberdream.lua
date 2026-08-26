@@ -31,6 +31,7 @@ return {
           NeoTreeNormalNC = sidebar,
           NeoTreeEndOfBuffer = sidebar,
           NeoTreeWinSeparator = seamless,
+          MasonNormal = sidebar,
         }
       end,
     })

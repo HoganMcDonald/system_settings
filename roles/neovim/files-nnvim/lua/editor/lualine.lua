@@ -29,6 +29,9 @@ return {
       options = {
         component_separators = "",
         section_separators = "",
+        disabled_filetypes = {
+          statusline = { "snacks_dashboard" },
+        },
         theme = {
           normal = { c = { fg = colors.fg, bg = colors.bg } },
           inactive = { c = { fg = colors.fg, bg = colors.bg } },
