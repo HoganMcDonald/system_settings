@@ -9,6 +9,15 @@ local function neo_tree_source(source)
   end
 end
 
+local function filesystem_open()
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if vim.b[vim.api.nvim_win_get_buf(win)].neo_tree_source == "filesystem" then
+      return true
+    end
+  end
+  return false
+end
+
 return {
   src = pack.github("folke/edgy.nvim"),
   config = function()
@@ -23,6 +32,10 @@ return {
         {
           title = "CodeCompanion",
           ft = "codecompanion",
+        },
+        {
+          title = "Tests",
+          ft = "neotest-summary",
         },
       },
       wo = {
@@ -50,7 +63,7 @@ return {
           filter = neo_tree_source("git_status"),
           -- Opened at another position so neo-tree creates a dedicated window
           -- that edgy then relocates into this sidebar slot.
-          open = "Neotree position=right git_status",
+          open = "Neotree show position=right git_status",
           pinned = true,
           size = { height = 0.25 },
         },
@@ -65,7 +78,15 @@ return {
     })
 
     vim.keymap.set("n", "<leader>e", function()
-      require("edgy").toggle("left")
+      local edgy = require("edgy")
+      if filesystem_open() then
+        edgy.close("left")
+      else
+        edgy.open("left")
+        vim.schedule(function()
+          vim.cmd("Neotree focus position=left filesystem")
+        end)
+      end
     end, { desc = "Explorer sidebar" })
   end,
 }

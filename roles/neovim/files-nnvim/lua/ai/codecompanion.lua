@@ -20,7 +20,15 @@ return {
     },
   },
   keys = {
-    { "<leader>ac", "<cmd>CodeCompanionChat Toggle<cr>", mode = { "n", "x" }, desc = "Chat" },
+    {
+      "<leader>ac",
+      function()
+        require("lib.edgy").close_filetype("neotest-summary")
+        vim.cmd("CodeCompanionChat Toggle")
+      end,
+      mode = { "n", "x" },
+      desc = "Chat",
+    },
     { "<leader>ax", "<cmd>CodeCompanionActions<cr>", mode = { "n", "x" }, desc = "Actions" },
     { "<leader>ai", "<cmd>CodeCompanion<cr>", mode = { "n", "x" }, desc = "Inline prompt" },
     { "<leader>aA", "<cmd>CodeCompanionChat Add<cr>", mode = "x", desc = "Add selection to chat" },

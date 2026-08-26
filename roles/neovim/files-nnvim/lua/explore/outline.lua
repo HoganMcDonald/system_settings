@@ -12,6 +12,7 @@ return {
         position = "left",
         auto_close = false,
         auto_jump = false,
+        focus_on_open = false,
         -- Outline blanks winhighlight by default, which drops the styling edgy
         -- applies to its sidebar windows.
         winhl = table.concat({
@@ -23,6 +24,9 @@ return {
       },
       preview_window = { auto_preview = false },
       symbol_folding = { autofold_depth = 2 },
+      keymaps = {
+        up_and_jump = {},
+      },
     })
   end,
 }
