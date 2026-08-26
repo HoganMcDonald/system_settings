@@ -64,6 +64,7 @@ return {
             { icon = " ", key = "f", desc = "Find file", action = ":Telescope find_files" },
             { icon = " ", key = "g", desc = "Grep text", action = ":Telescope live_grep" },
             { icon = " ", key = "r", desc = "Recent files", action = ":Telescope oldfiles" },
+            { icon = " ", key = "s", desc = "Restore previous session", action = ":PersistenceLoadLast" },
             { icon = " ", key = "n", desc = "New file", action = ":enew | startinsert" },
             {
               icon = " ",
