@@ -6,7 +6,12 @@ local groups = {
   { "<leader>b", group = "Buffers" },
   { "<leader>c", group = "Code" },
   { "<leader>f", group = "Files" },
-  { "<leader>q", group = "Quit" },
+  { "<leader>g", group = "Git" },
+  { "<leader>m", group = "Marks" },
+  { "<leader>n", group = "Notes" },
+  { "<leader>q", group = "Quit / sessions" },
+  { "<leader>s", group = "Search" },
+  { "<leader>t", group = "Tests" },
   { "<leader>w", group = "Windows" },
   { "<leader>x", group = "Lists" },
 }
