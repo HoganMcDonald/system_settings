@@ -148,11 +148,6 @@
       "rev": "2ae6958df7ced50baac5035cec0c15799eedfbf7",
       "src": "https://github.com/nvim-tree/nvim-web-devicons"
     },
-    "opencode.nvim": {
-      "rev": "4576b372034495b8868e6cbe878e85c717998867",
-      "src": "https://github.com/nickjvandyke/opencode.nvim",
-      "version": ">=0.0.0"
-    },
     "outline.nvim": {
       "rev": "2a132953b944561d45b52e4541ebfff71934a742",
       "src": "https://github.com/hedyhli/outline.nvim"

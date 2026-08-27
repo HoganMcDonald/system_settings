@@ -53,8 +53,7 @@ return {
   src = pack.github("folke/snacks.nvim"),
   config = function()
     require("snacks").setup({
-      -- Replaces `vim.ui.input`, which also gives opencode.nvim's `ask()` a
-      -- floating prompt instead of the command line.
+      -- Gives `vim.ui.input` a floating prompt instead of the command line.
       input = { enabled = true },
       dashboard = {
         enabled = true,

@@ -21,7 +21,7 @@ return {
   },
   keys = {
     {
-      "<leader>ac",
+      "<leader>aa",
       function()
         require("lib.edgy").close_filetype("neotest-summary")
         vim.cmd("CodeCompanionChat Toggle")
