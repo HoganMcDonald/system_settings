@@ -1,3 +1,4 @@
+local autocmd = require("lib.autocmd")
 local pack = require("lib.pack")
 
 local function jest_root(file)
@@ -12,6 +13,34 @@ return {
     pack.github("nvim-neotest/neotest-python"),
     pack.github("nvim-neotest/nvim-nio"),
     pack.github("nvim-lua/plenary.nvim"),
+  },
+  autocmds = {
+    {
+      event = autocmd.event("BufReadPost"),
+      pattern = { "*.test.*", "*.spec.*", "test_*.py", "*_test.py" },
+      -- Deferred so the read finishes before the layout changes underneath it.
+      callback = function()
+        vim.schedule(function()
+          -- The chat holds the same edgebar slot. Opening a test file should not
+          -- throw a conversation away, so `<leader>ts` stays the way to take the
+          -- slot back.
+          if require("lib.edgy").has_filetype("codecompanion") then
+            return
+          end
+
+          require("neotest").summary.open()
+        end)
+      end,
+    },
+    {
+      -- Fired by neotest after the window exists, which covers `summary.open`
+      -- above as well as the async `summary.toggle` behind `<leader>ts`.
+      event = autocmd.event("User"),
+      pattern = "NeotestSummaryOpen",
+      callback = function()
+        vim.schedule(require("lib.which_key").resync)
+      end,
+    },
   },
   keys = {
     { "<leader>tt", function() require("neotest").run.run() end, desc = "Run nearest test" },
