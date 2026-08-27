@@ -83,11 +83,8 @@ if [ -n "$PASSWORD" ]; then
     chmod 600 "$PGPASS_FILE"
     echo "Created new .pgpass file with secure permissions"
   else
-    PERMS=$(stat -f "%OLp" "$PGPASS_FILE")
-    if [ "$PERMS" != "600" ]; then
-      chmod 600 "$PGPASS_FILE"
-      echo "Fixed permissions on .pgpass file"
-    fi
+    # chmod is idempotent and avoids platform-specific stat format strings.
+    chmod 600 "$PGPASS_FILE"
   fi
 
   PGPASS_LINE="$HOST:$PORT:$DB:$USER:$PASSWORD"
