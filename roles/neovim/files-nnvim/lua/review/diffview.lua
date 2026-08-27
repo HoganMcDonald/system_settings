@@ -1,5 +1,26 @@
 local pack = require("lib.pack")
 
+---Diffview lives in its own tabpage, and both `get_current_view` and
+---`:DiffviewClose` only ever consider the current one. Tracking every view
+---instead is what stops a second `<leader>gg` from stacking another tab.
+local function toggle()
+  local lib = require("diffview.lib")
+
+  -- Views whose tabpage was closed by hand linger in `lib.views`, and would
+  -- otherwise count as open forever.
+  lib.dispose_stray_views()
+
+  local view = lib.views[1]
+
+  if not view then
+    vim.cmd.DiffviewOpen()
+  elseif view.tabpage == vim.api.nvim_get_current_tabpage() then
+    vim.cmd.DiffviewClose()
+  else
+    vim.api.nvim_set_current_tabpage(view.tabpage)
+  end
+end
+
 return {
   src = pack.github("sindrets/diffview.nvim"),
   dependencies = pack.github("nvim-lua/plenary.nvim"),
@@ -12,18 +33,7 @@ return {
     "DiffviewToggleFiles",
   },
   keys = {
-    { "<leader>gg", "<cmd>DiffviewOpen<cr>", desc = "Open diffview" },
-    {
-      "<leader>gv",
-      function()
-        if require("diffview.lib").get_current_view() then
-          vim.cmd("DiffviewClose")
-        else
-          vim.cmd("DiffviewOpen")
-        end
-      end,
-      desc = "Diffview",
-    },
+    { "<leader>gg", toggle, desc = "Diffview" },
     { "<leader>gV", "<cmd>DiffviewFileHistory %<cr>", desc = "Diffview file history" },
   },
   config = function()
