@@ -5,20 +5,6 @@ local function jest_root(file)
   return match or vim.fn.getcwd()
 end
 
-local function refresh_which_key(buffer)
-  local function refresh()
-    if vim.api.nvim_buf_is_valid(buffer) then
-      require("which-key.buf").get({ buf = buffer, mode = "n", update = true })
-    end
-  end
-
-  if vim.v.vim_did_enter == 1 then
-    refresh()
-  else
-    vim.api.nvim_create_autocmd("VimEnter", { once = true, callback = refresh })
-  end
-end
-
 return {
   src = pack.github("nvim-neotest/neotest"),
   dependencies = {
@@ -26,20 +12,6 @@ return {
     pack.github("nvim-neotest/neotest-python"),
     pack.github("nvim-neotest/nvim-nio"),
     pack.github("nvim-lua/plenary.nvim"),
-  },
-  autocmds = {
-    {
-      event = require("lib.autocmd").event("BufReadPost"),
-      pattern = { "*.test.*", "*.spec.*", "test_*.py", "*_test.py" },
-      callback = function(args)
-        local buffer = args.buf
-        vim.schedule(function()
-          require("lib.edgy").close_filetype("codecompanion")
-          require("neotest").summary.open()
-          refresh_which_key(buffer)
-        end)
-      end,
-    },
   },
   keys = {
     { "<leader>tt", function() require("neotest").run.run() end, desc = "Run nearest test" },

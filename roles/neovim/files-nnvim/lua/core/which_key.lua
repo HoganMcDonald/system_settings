@@ -23,9 +23,6 @@ return {
     require("which-key").setup({
       spec = groups,
       preset = "modern",
-      triggers = {
-        { "<leader>", mode = { "n", "v" } },
-      },
     })
   end,
 }
