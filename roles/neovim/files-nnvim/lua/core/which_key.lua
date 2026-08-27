@@ -23,14 +23,9 @@ return {
     require("which-key").setup({
       spec = groups,
       preset = "modern",
-      triggers = {},
-    })
-
-    vim.keymap.set({ "n", "x" }, "<leader>", function()
-      require("which-key").show({ keys = "<leader>" })
-    end, {
-      desc = "WhichKey",
-      nowait = true,
+      triggers = {
+        { "<leader>", mode = { "n", "v" } },
+      },
     })
   end,
 }
