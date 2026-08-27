@@ -83,6 +83,12 @@ map("n", "<leader><tab>]", "<cmd>tabnext<cr>", { desc = "Next tab" })
 map("n", "<leader><tab>d", "<cmd>tabclose<cr>", { desc = "Close tab" })
 map("n", "<leader><tab>[", "<cmd>tabprevious<cr>", { desc = "Previous tab" })
 
+-- Mapped here rather than alongside the fugitive keys: the commit float is
+-- self-contained, and routing it through a plugin spec would load fugitive.
+map("n", "<leader>gc", function()
+  require("lib.git_commit").open()
+end, { desc = "Create commit" })
+
 map("n", "<leader>fy", function()
   local path = vim.fn.expand("%:p")
   vim.fn.setreg("+", path)

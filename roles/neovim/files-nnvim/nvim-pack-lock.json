@@ -4,6 +4,10 @@
       "rev": "cef8d093b63c9be7e8b49f7dc341e8447fc4c300",
       "src": "https://github.com/b0o/SchemaStore.nvim"
     },
+    "blink-cmp-conventional-commits": {
+      "rev": "28f46593ef5e03ba7525bdf6075be0c56c6ceb55",
+      "src": "https://github.com/disrupted/blink-cmp-conventional-commits"
+    },
     "blink.cmp": {
       "rev": "78336bc89ee5365633bcf754d93df01678b5c08f",
       "src": "https://github.com/saghen/blink.cmp",

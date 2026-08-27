@@ -1,47 +1,5 @@
 local pack = require("lib.pack")
 
-local commit_types = {
-  "feat",
-  "fix",
-  "docs",
-  "style",
-  "refactor",
-  "perf",
-  "test",
-  "build",
-  "ci",
-  "chore",
-}
-
-local function commit()
-  vim.ui.select(commit_types, {
-    prompt = "Commit type",
-    format_item = function(kind)
-      return kind .. ":"
-    end,
-  }, function(kind)
-    if not kind then
-      return
-    end
-
-    vim.ui.input({ prompt = kind .. ": " }, function(subject)
-      if not subject or subject == "" then
-        return
-      end
-
-      vim.system({ "git", "commit", "-m", kind .. ": " .. subject }, { text = true }, function(result)
-        vim.schedule(function()
-          if result.code == 0 then
-            vim.notify("Commit successful")
-          else
-            vim.notify(result.stderr, vim.log.levels.ERROR)
-          end
-        end)
-      end)
-    end)
-  end)
-end
-
 return {
   {
     src = pack.github("lewis6991/gitsigns.nvim"),
@@ -91,7 +49,6 @@ return {
       "Gedit",
     },
     keys = {
-      { "<leader>gc", commit, desc = "Create commit" },
       { "<leader>gs", "<cmd>Git<cr>", desc = "Git status" },
       { "<leader>gp", "<cmd>Git push<cr>", desc = "Git push" },
       { "<leader>gP", "<cmd>Git pull<cr>", desc = "Git pull" },

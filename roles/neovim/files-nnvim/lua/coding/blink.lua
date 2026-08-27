@@ -8,7 +8,10 @@ return {
   -- when the checkout is on a git tag, and otherwise falls back to a slower
   -- Lua implementation.
   version = vim.version.range("1"),
-  dependencies = pack.github("rafamadriz/friendly-snippets"),
+  dependencies = {
+    pack.github("rafamadriz/friendly-snippets"),
+    pack.github("disrupted/blink-cmp-conventional-commits"),
+  },
   config = function()
     local blink = require("blink.cmp")
 
@@ -23,6 +26,15 @@ return {
       signature = { enabled = true },
       sources = {
         default = { "lsp", "path", "snippets", "buffer" },
+        -- Commit messages have no LSP or snippets to offer, so the list is
+        -- replaced rather than extended. Scopes are read out of `git log`.
+        per_filetype = { gitcommit = { "conventional_commits", "buffer" } },
+        providers = {
+          conventional_commits = {
+            name = "Conventional Commits",
+            module = "blink-cmp-conventional-commits",
+          },
+        },
       },
     })
 
