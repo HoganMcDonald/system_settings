@@ -25,6 +25,12 @@ map("n", "<leader>bd", "<cmd>bdelete<cr>", { desc = "Delete buffer" })
 
 map({ "i", "n", "s" }, "<esc>", function()
   vim.cmd.nohlsearch()
+  -- hlslens marks itself inactive after a `nohlsearch`; mirror that so its
+  -- lens is rebuilt on the next `n`/`N` jump instead of going stale.
+  local ok, hlslens = pcall(require, "hlslens")
+  if ok then
+    hlslens.stop()
+  end
   return "<esc>"
 end, { expr = true, desc = "Escape and clear search" })
 
