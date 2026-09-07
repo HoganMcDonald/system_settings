@@ -14,6 +14,11 @@
   debug:
     msg: "{{ nvim_version.stdout }} is installed via devbox global"
 
+- name: Add tree-sitter CLI to devbox global
+  command: devbox global add tree-sitter@latest
+  register: tree_sitter_add
+  changed_when: "'already' not in tree_sitter_add.stderr"
+
 - name: Make sure config is up to date
   file:
     src: "{{ dotfiles_home }}/roles/neovim/files/"

@@ -95,7 +95,8 @@ This is a macOS system setup repository containing an Ansible playbook for autom
 - 
 
 ### neovim
-- 
+- Neovim installed via devbox global; `nnvim` launcher uses `NVIM_APPNAME=nnvim` with config from `roles/neovim/files-nnvim/`
+- Requires the `tree-sitter` CLI (installed via devbox global) for nvim-treesitter main branch parser builds
 
 ### pgcli
 - 
