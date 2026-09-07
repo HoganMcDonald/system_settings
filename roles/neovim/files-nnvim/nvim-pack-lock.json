@@ -97,6 +97,10 @@
       "rev": "662f26883831f269d3cd6b3b87a2460517310b58",
       "src": "https://github.com/nvim-neo-tree/neo-tree.nvim"
     },
+    "neogen": {
+      "rev": "23e7e9f883d01289ebd90e98025acc860ea26366",
+      "src": "https://github.com/danymat/neogen"
+    },
     "neotest": {
       "rev": "1c529a1ef9c82e8131e872368415cecc2bb86ea2",
       "src": "https://github.com/nvim-neotest/neotest"
