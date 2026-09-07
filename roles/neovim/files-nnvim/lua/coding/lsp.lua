@@ -226,6 +226,17 @@ return {
       for lhs, picker in pairs(pickers) do
         vim.keymap.set("n", lhs, "<cmd>Glance " .. picker .. "<cr>", { desc = "Glance " .. picker })
       end
+
+      -- The classic `gd`/`gr` shortcuts open the same Glance pickers, scoped to
+      -- LSP buffers so non-LSP files keep their stock behavior.
+      require("lib.autocmd").create({
+        event = require("lib.autocmd").event("LspAttach"),
+        group = vim.api.nvim_create_augroup("Nvim_glance", { clear = true }),
+        callback = function(args)
+          vim.keymap.set("n", "gd", "<cmd>Glance definitions<cr>", { buffer = args.buf, desc = "Goto definition" })
+          vim.keymap.set("n", "gr", "<cmd>Glance references<cr>", { buffer = args.buf, desc = "Goto references" })
+        end,
+      })
     end,
   },
 
