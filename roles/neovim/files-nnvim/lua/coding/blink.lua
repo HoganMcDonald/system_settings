@@ -16,12 +16,19 @@ return {
     local blink = require("blink.cmp")
 
     blink.setup({
-      keymap = { preset = "default" },
+      keymap = {
+        preset = "default",
+        -- Tab/S-Tab walk the completion list, Enter accepts the selection.
+        ["<Tab>"] = { "select_next", "snippet_forward", "fallback" },
+        ["<S-Tab>"] = { "select_prev", "snippet_backward", "fallback" },
+        ["<CR>"] = { "accept", "fallback" },
+      },
       appearance = { nerd_font_variant = "mono" },
       completion = {
         accept = { auto_brackets = { enabled = true } },
         documentation = { auto_show = true, auto_show_delay_ms = 200 },
-        list = { selection = { preselect = false, auto_insert = true } },
+        -- First item is selected automatically; Enter inserts it as-is.
+        list = { selection = { preselect = true, auto_insert = false } },
       },
       signature = { enabled = true },
       sources = {
