@@ -25,7 +25,16 @@ function M.setup(servers)
         return
       end
 
-      vim.keymap.set({ "n", "x" }, "<leader>ca", vim.lsp.buf.code_action, {
+      vim.keymap.set({ "n", "x" }, "<leader>ca", function()
+        -- Falls back to the built-in code-action prompt if tiny-code-action
+        -- has not loaded yet (it attaches on the same LspAttach event).
+        local ok, tca = pcall(require, "tiny-code-action")
+        if ok then
+          tca.code_action()
+        else
+          vim.lsp.buf.code_action()
+        end
+      end, {
         buffer = args.buf,
         desc = "Code action",
       })
