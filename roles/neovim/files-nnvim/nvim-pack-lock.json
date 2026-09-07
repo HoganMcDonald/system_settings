@@ -117,6 +117,10 @@
       "rev": "a25dd472316d806eb38a5dd667c2e40da5570c75",
       "src": "https://github.com/MunifTanjim/nui.nvim"
     },
+    "nvim-chainsaw": {
+      "rev": "c38210b379d5a61b3e1bf918cf787212fa1eedd9",
+      "src": "https://github.com/chrisgrieser/nvim-chainsaw"
+    },
     "nvim-hlslens": {
       "rev": "be2d7b2be01860b5445a007ff2bc72b29896db6b",
       "src": "https://github.com/kevinhwang91/nvim-hlslens"

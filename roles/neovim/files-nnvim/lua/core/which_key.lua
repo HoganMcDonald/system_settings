@@ -5,6 +5,7 @@ local groups = {
   { "<leader><tab>", group = "Tabs" },
   { "<leader>b", group = "Buffers" },
   { "<leader>c", group = "Code" },
+  { "<leader>d", group = "Debug / log" },
   { "<leader>f", group = "Files" },
   { "<leader>g", group = "Git" },
   { "<leader>m", group = "Marks" },
