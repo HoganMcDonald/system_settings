@@ -2,7 +2,9 @@ local pack = require("lib.pack")
 
 return {
   src = pack.github("fnune/recall.nvim"),
-  version = "*",
+  -- A VersionRange tracks the latest semver tag; the "*" string is treated
+  -- as a literal ref by vim.pack and fails to resolve on (re)install.
+  version = vim.version.range("*"),
   keys = {
     { "<leader>mm", function() require("recall").toggle() end, desc = "Toggle mark" },
     { "<leader>mn", function() require("recall").goto_next() end, desc = "Next mark" },

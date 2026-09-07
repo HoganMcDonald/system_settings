@@ -124,7 +124,7 @@
     "nvim-surround": {
       "rev": "2e93e154de9ff326def6480a4358bfc149d5da2c",
       "src": "https://github.com/kylechui/nvim-surround",
-      "version": "'*'"
+      "version": ">=0.0.0"
     },
     "nvim-treesitter": {
       "rev": "074aa4422bf029908338e855d0c0f71470a971bb",
@@ -163,7 +163,7 @@
     "recall.nvim": {
       "rev": "812b3b0ec40568fa6f1a62f5baf052a4e3c60367",
       "src": "https://github.com/fnune/recall.nvim",
-      "version": "'*'"
+      "version": ">=0.0.0"
     },
     "review.nvim": {
       "rev": "394e2b7b20fa2512a3c7900afb5f8c6235802c9c",
