@@ -40,10 +40,22 @@ run_sync() {
 
 case "${1:-help}" in
   auth)
+    cat <<'EOF'
+Paste your Todoist personal API token at the Keychain prompt.
+
+Find it in Todoist under Settings > Integrations > Developer.
+Do not enter your Mac password or Todoist account password.
+macOS asks twice to confirm the token before storing it.
+EOF
     security add-generic-password -U -a "$USER" -s "$KEYCHAIN_SERVICE" -w
-    echo "Todoist token stored in macOS Keychain"
-    if [ -f "$PLIST" ]; then
+    if "$SYNC" --check-auth; then
+      echo "Todoist token validated and stored in macOS Keychain"
       "$0" start
+    else
+      security delete-generic-password -a "$USER" -s "$KEYCHAIN_SERVICE" >/dev/null 2>&1 || true
+      "$0" stop >/dev/null
+      echo "The value was not a valid Todoist API token; it was removed from Keychain." >&2
+      exit 1
     fi
     ;;
   sync)

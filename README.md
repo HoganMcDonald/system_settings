@@ -196,6 +196,8 @@ bin/bootstrap github_gtd  # installs the CLI and inactive LaunchAgent
 github-gtd auth           # stores the token in Keychain and starts synchronization
 ```
 
+At the Keychain prompt, paste the Todoist personal API token rather than your Mac password or Todoist account password. The command validates the token before starting synchronization and removes it if Todoist rejects it.
+
 The token is read from Keychain at runtime and is never written to this repository or the LaunchAgent plist.
 
 ```sh

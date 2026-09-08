@@ -520,6 +520,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Synchronize actionable GitHub PRs into Todoist")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--doctor", action="store_true")
+    parser.add_argument("--check-auth", action="store_true")
     parser.add_argument("--status", action="store_true")
     parser.add_argument("--github-input", type=Path, help="Use saved GitHub JSON instead of gh")
     parser.add_argument("--sla-hours", type=int, default=24)
@@ -542,6 +543,10 @@ def main(argv=None):
             return 0
 
         client = TodoistClient(read_token())
+        if args.check_auth:
+            client.labels()
+            print("Todoist authentication: ok")
+            return 0
         if args.doctor:
             return doctor(client)
 
