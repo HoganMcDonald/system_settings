@@ -51,10 +51,10 @@ Roles are tagged one-to-one with their role name — see `dotfiles.yml` for the 
 ## What's in the box
 
 **Tools**
-`homebrew`, `git`, `asdf`, `devbox`, `direnv`, `lima`, `cli`, `zsh`, `tmux`, `pgcli`, `mycli`, `agents`, `nanobot`, `neovim`, `helix`, `zellij`
+`homebrew`, `git`, `asdf`, `devbox`, `direnv`, `lima`, `cli`, `zsh`, `tmux`, `pgcli`, `mycli`, `agents`, `dashboard`, `github_gtd`, `nanobot`, `neovim`, `helix`, `zellij`
 
 **Apps** (Homebrew casks)
-`apps` (Linear, Figma, Brain.fm), `aerospace`, `browsers`, `kitty`, `ghostty`, `sol`
+`apps` (Linear, Figma, Brain.fm), `aerospace`, `browsers`, `kitty`, `ghostty`
 
 **Languages**
 `lua`, `ruby`, `rust`, `javascript`
@@ -129,13 +129,101 @@ unswap --force        # skip branch verification
 
 Uncommitted changes flow in both directions, so it's safe to keep editing during a swap.
 
-### `review` / `unreview` — dedicated review worktrees
+### `review` — dedicated review worktrees with an SLA-aware queue
 
-For reviewing someone else's branch without disturbing your own stack. Checks out the branch in a linked worktree and opens a tmux session with Claude running the `/review` skill.
+For reviewing someone else's PR without disturbing your own stack. The PR head is checked out **detached** in `.worktrees/reviews/pr-<number>` — no branch is created or moved — and gets a tmux session with two windows: `tuicr` (the review TUI) and `opencode`.
+
+Any ref shape works, all resolved in the current repository:
 
 ```sh
-review feat/their-branch   # worktree + tmux session at review/<branch>
-unreview feat/their-branch # tear down session + worktree (never deletes the branch)
+review HEAD                                    # next-up PR (see below)
+review 1234                                    # PR number
+review https://github.com/o/r/pull/1234        # PR URL
+review HEX-4821                                # Linear ticket
+review https://linear.app/t/issue/HEX-4821/x   # Linear link → newest matching PR
+review feat/their-branch                       # branch name
+```
+
+"Next up" is the oldest PR whose review is still requested from you and that you haven't submitted a review for. Drafts and snoozed PRs are never auto-selected.
+
+```sh
+review log             # queue with author, LOC, age, and SLA
+review status          # active review worktrees + tmux/tree health
+review snooze 1234     # bottom of the stack until end of day
+review unsnooze 1234   # back into the HEAD rotation immediately
+review unsnooze --all  # clear every snooze
+review clear           # tear down every review worktree + session
+review clear 1234      # tear down just one
+```
+
+`review log` tracks a 24-hour SLA measured in **Monday–Friday hours only**, counted from when the review was requested (a re-request restarts the clock). A Friday 3pm request is due Monday 3pm. Override with `REVIEW_SLA_HOURS`.
+
+Snoozes expire at local midnight. Snoozed PRs stay visible in `review log`, sorted to the bottom, and can still be opened explicitly — only `review HEAD` skips them. `review unsnooze` ends one early; with no ref it lists what's snoozed rather than guessing.
+
+`review clear` refuses dirty worktrees unless given `--force`, and never deletes branches. `unreview` remains as a deprecated alias.
+
+Tables are box-drawn and colour-coded: SLA is green when comfortable, yellow inside the last 4 hours, red once breached; `review status` colours tmux/worktree health the same way. Colour follows `NO_COLOR` and switches off when piped — override with `REVIEW_COLOR=always|never` and `REVIEW_BORDER=utf8|ascii`.
+
+If the queue looks wrong, `REVIEW_DEBUG=1 review log` prints the resolved repo, your login, and the PR numbers GitHub matched. GitHub API failures are reported rather than being reported as an empty queue.
+
+Everything works under both BSD and GNU `date`/`awk`, so a `nix-shell` that puts GNU coreutils ahead of `/bin` behaves identically.
+
+Tests for the ref parsing and business-hour math:
+
+```sh
+roles/zsh/tests/test_review.sh
+```
+
+### GitHub GTD — actionable pull requests in Todoist
+
+The `github_gtd` role installs a five-minute LaunchAgent that puts actionable pull-request work in the native Todoist Inbox. Todoist is the task-management source of truth: moving, renaming, prioritizing, scheduling, or completing a generated task is preserved. GitHub supplies action state and the automation-owned context label.
+
+Generated tasks use these labels:
+
+- `@needs-review` for direct and team review requests
+- `@fixup` for authored PRs with changes requested, conflicts, or failing CI
+- `@needs-merge` for authored PRs that are approved, mergeable, and passing CI
+- `@github` for the combined queue
+
+Authored drafts and authored PRs waiting on CI or another reviewer do not create tasks. Requested reviews arrive whenever the PR is not a draft. A completed task is not recreated for the same action. A re-requested review or a later transition back into an actionable state creates a new task.
+
+Review requests are due after 24 hours of Monday-Friday time. The due datetime is set only when the task is created, so manually rescheduling it remains authoritative. A Friday 3pm request is due Monday 3pm.
+
+Get a personal API token from **Todoist Settings → Integrations → Developer**, then install the role:
+
+```sh
+bin/bootstrap github_gtd  # installs the CLI and inactive LaunchAgent
+github-gtd auth           # stores the token in Keychain and starts synchronization
+```
+
+The token is read from Keychain at runtime and is never written to this repository or the LaunchAgent plist.
+
+```sh
+github-gtd dry-run  # preview reconciliation
+github-gtd sync     # synchronize now
+github-gtd doctor   # verify GitHub, Todoist, and labels
+github-gtd status   # inspect launchd and the last successful sync
+github-gtd logs     # follow the service log
+```
+
+The synchronizer creates its labels automatically. Recommended Todoist filters:
+
+| Name | Query |
+| --- | --- |
+| GitHub Actions | `@github & (@needs-review \| @fixup \| @needs-merge)` |
+| Reviews | `@needs-review` |
+| Fixups | `@fixup` |
+| Ready to Merge | `@needs-merge` |
+| GitHub Today | `@github & today` |
+| Overdue Reviews | `@needs-review & overdue` |
+| Unscheduled GitHub | `@github & no date` |
+
+Favorite `GitHub Actions` and `Reviews`. During inbox processing, move generated tasks into normal GTD projects and add labels such as `@computer` or `@deep-work`; the daemon preserves those choices. Manually created tasks may use the same labels because only tasks carrying a `GTD Sync` marker are managed.
+
+Tests:
+
+```sh
+python3 -m unittest roles/github_gtd/tests/test_sync.py
 ```
 
 ### `linux` — Lima-backed Linux VM with host passthrough
