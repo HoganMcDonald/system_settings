@@ -1,0 +1,104 @@
+#!/bin/bash
+
+set -o pipefail
+
+LABEL="com.hoganmcdonald.github-gtd"
+DOMAIN="gui/$(id -u)"
+TARGET="$DOMAIN/$LABEL"
+PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+SYNC="$HOME/.local/libexec/github-gtd/sync.py"
+STATE="$HOME/.local/state/github-gtd/state.json"
+LOG="$HOME/.local/state/github-gtd/github-gtd.log"
+KEYCHAIN_SERVICE="com.hoganmcdonald.github-gtd.todoist"
+
+usage() {
+  cat <<'EOF'
+Usage: github-gtd <command>
+
+Commands:
+  auth      Store a Todoist personal API token in macOS Keychain
+  sync      Synchronize immediately
+  dry-run   Show changes without modifying Todoist
+  doctor    Verify GitHub, Todoist, and label setup
+  start     Start the background synchronization schedule
+  stop      Stop the background synchronization schedule
+  status    Show scheduler and last synchronization status
+  logs      Show recent logs and follow new output
+  help      Show this help
+EOF
+}
+
+is_loaded() {
+  launchctl print "$TARGET" >/dev/null 2>&1
+}
+
+run_sync() {
+  mkdir -p "$(dirname "$LOG")"
+  "$SYNC" "$@" 2>&1 | tee -a "$LOG"
+  return "${PIPESTATUS[0]}"
+}
+
+case "${1:-help}" in
+  auth)
+    security add-generic-password -U -a "$USER" -s "$KEYCHAIN_SERVICE" -w
+    echo "Todoist token stored in macOS Keychain"
+    if [ -f "$PLIST" ]; then
+      "$0" start
+    fi
+    ;;
+  sync)
+    run_sync
+    ;;
+  dry-run)
+    run_sync --dry-run
+    ;;
+  doctor)
+    run_sync --doctor
+    ;;
+  start)
+    if is_loaded; then
+      echo "GitHub GTD synchronization is already scheduled"
+    else
+      launchctl bootstrap "$DOMAIN" "$PLIST"
+      echo "GitHub GTD synchronization scheduled"
+    fi
+    ;;
+  stop)
+    if is_loaded; then
+      launchctl bootout "$TARGET"
+      echo "GitHub GTD synchronization stopped"
+    else
+      echo "GitHub GTD synchronization is already stopped"
+    fi
+    ;;
+  status)
+    if is_loaded; then
+      details=$(launchctl print "$TARGET")
+      service_state=$(printf '%s\n' "$details" | awk -F'= ' '/^[[:space:]]*state = / { print $2; exit }')
+      exit_code=$(printf '%s\n' "$details" | awk -F'= ' '/^[[:space:]]*last exit code = / { print $2; exit }')
+      echo "Scheduler: loaded (${service_state:-idle})"
+      [ -n "$exit_code" ] && echo "Last exit: $exit_code"
+    else
+      echo "Scheduler: stopped"
+    fi
+    if [ -f "$STATE" ]; then
+      last_success=$("$SYNC" --status)
+      echo "Last sync: $last_success"
+    else
+      echo "Last sync: never"
+    fi
+    echo "Logs:      $LOG"
+    ;;
+  logs)
+    mkdir -p "$(dirname "$LOG")"
+    touch "$LOG"
+    tail -n 100 -f "$LOG"
+    ;;
+  help|-h|--help)
+    usage
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac

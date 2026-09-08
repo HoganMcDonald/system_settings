@@ -1,0 +1,112 @@
+---
+- name: Locate GitHub GTD runtime tools
+  shell: "command -v {{ item }}"
+  loop:
+    - gh
+    - python3
+  register: github_gtd_tools
+  changed_when: false
+
+- name: Set GitHub GTD runtime paths
+  set_fact:
+    github_gtd_python_path: "{{ github_gtd_tools.results[1].stdout }}"
+    github_gtd_tool_path: "{{ github_gtd_tools.results | map(attribute='stdout') | map('dirname') | unique | join(':') }}"
+
+- name: Verify GitHub CLI authentication
+  command: gh auth status
+  changed_when: false
+
+- name: Create GitHub GTD directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ ansible_facts.user_dir }}/.local/bin"
+    - "{{ ansible_facts.user_dir }}/.local/libexec/github-gtd"
+    - "{{ ansible_facts.user_dir }}/Library/LaunchAgents"
+
+- name: Create private GitHub GTD state directory
+  file:
+    path: "{{ ansible_facts.user_dir }}/.local/state/github-gtd"
+    state: directory
+    mode: '0700'
+
+- name: Install GitHub GTD synchronizer
+  copy:
+    src: sync.py
+    dest: "{{ ansible_facts.user_dir }}/.local/libexec/github-gtd/sync.py"
+    mode: '0755'
+
+- name: Install GitHub GTD service runner
+  template:
+    src: run.j2
+    dest: "{{ ansible_facts.user_dir }}/.local/libexec/github-gtd/run"
+    mode: '0755'
+
+- name: Install GitHub GTD CLI
+  copy:
+    src: github-gtd
+    dest: "{{ ansible_facts.user_dir }}/.local/bin/github-gtd"
+    mode: '0755'
+
+- name: Ensure GitHub GTD log exists
+  file:
+    path: "{{ ansible_facts.user_dir }}/.local/state/github-gtd/github-gtd.log"
+    state: touch
+    mode: '0600'
+    modification_time: preserve
+    access_time: preserve
+
+- name: Check Todoist Keychain credential
+  command:
+    argv:
+      - /usr/bin/security
+      - find-generic-password
+      - -a
+      - "{{ ansible_facts.user_id }}"
+      - -s
+      - com.hoganmcdonald.github-gtd.todoist
+  register: github_gtd_todoist_credential
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Explain Todoist authentication requirement
+  debug:
+    msg: "GitHub GTD installed but stopped. Run `github-gtd auth` to store the Todoist token and start synchronization."
+  when: github_gtd_todoist_credential.rc != 0
+
+- name: Install GitHub GTD LaunchAgent
+  template:
+    src: com.hoganmcdonald.github-gtd.plist.j2
+    dest: "{{ ansible_facts.user_dir }}/Library/LaunchAgents/com.hoganmcdonald.github-gtd.plist"
+    mode: '0644'
+  register: github_gtd_agent
+
+- name: Check GitHub GTD LaunchAgent status
+  command: launchctl print "gui/{{ ansible_facts.user_uid }}/com.hoganmcdonald.github-gtd"
+  register: github_gtd_agent_status
+  changed_when: false
+  failed_when: false
+
+- name: Unload changed GitHub GTD LaunchAgent
+  command: launchctl bootout "gui/{{ ansible_facts.user_uid }}/com.hoganmcdonald.github-gtd"
+  when:
+    - github_gtd_agent.changed or github_gtd_todoist_credential.rc != 0
+    - github_gtd_agent_status.rc == 0
+
+- name: Load GitHub GTD LaunchAgent
+  command: launchctl bootstrap "gui/{{ ansible_facts.user_uid }}" "{{ ansible_facts.user_dir }}/Library/LaunchAgents/com.hoganmcdonald.github-gtd.plist"
+  when:
+    - github_gtd_todoist_credential.rc == 0
+    - github_gtd_agent.changed or github_gtd_agent_status.rc != 0
+
+- name: Synchronize GitHub GTD inbox
+  command: "{{ github_gtd_python_path }} {{ ansible_facts.user_dir }}/.local/libexec/github-gtd/sync.py --sla-hours {{ github_gtd_sla_hours }}"
+  changed_when: false
+  when: github_gtd_todoist_credential.rc == 0
+
+- name: Record role in lockfile
+  command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
+  changed_when: false
