@@ -19,6 +19,7 @@ def pr(**overrides):
         "number": 123,
         "title": "Make the change",
         "url": "https://github.com/acme/app/pull/123",
+        "createdAt": "2026-08-27T19:00:00Z",
         "updatedAt": "2026-08-28T19:00:00Z",
         "isDraft": False,
         "mergeable": "MERGEABLE",
@@ -27,6 +28,7 @@ def pr(**overrides):
         "author": {"login": "alice"},
         "repository": {"nameWithOwner": "acme/app"},
         "statusCheckRollup": {"state": "SUCCESS"},
+        "reviews": {"totalCount": 1},
         "reviewRequests": {"nodes": []},
         "timelineItems": {"nodes": []},
     }
@@ -50,15 +52,15 @@ class GitHubGtdSyncTest(unittest.TestCase):
     def test_authored_context_only_returns_actionable_work(self):
         self.assertEqual(
             sync.authored_context(pr(reviewDecision="CHANGES_REQUESTED")),
-            ("fixup", "changes requested"),
+            ("github-fixup", "changes requested"),
         )
         self.assertEqual(
             sync.authored_context(pr(statusCheckRollup={"state": "FAILURE"})),
-            ("fixup", "failing CI"),
+            ("github-fixup", "failing CI"),
         )
         self.assertEqual(
             sync.authored_context(pr(reviewDecision="APPROVED")),
-            ("needs-merge", "approved and ready"),
+            ("github-merge", "approved and ready"),
         )
         self.assertEqual(sync.authored_context(pr(isDraft=True)), (None, None))
         self.assertEqual(sync.authored_context(pr()), (None, None))
@@ -108,6 +110,42 @@ class GitHubGtdSyncTest(unittest.TestCase):
         due_dates = sorted(action["due_datetime"] for action in actions.values())
         self.assertEqual(due_dates, ["2026-08-31T19:00:00Z", "2026-09-01T13:00:00Z"])
 
+    def test_draft_review_request_is_excluded(self):
+        requested = pr(isDraft=True)
+        payload = {"viewer": "me", "viewerTeamIds": [], "requested": [requested], "authored": []}
+        self.assertEqual(sync.build_actions(payload, sync.default_state()), {})
+
+    def test_authored_pr_without_review_becomes_stale_after_sla(self):
+        authored = pr(reviews={"totalCount": 0})
+        payload = {"viewer": "me", "requested": [], "authored": [authored]}
+        actions = sync.build_actions(
+            payload,
+            sync.default_state(),
+            local_timezone=timezone.utc,
+            now=datetime(2026, 8, 28, 19, tzinfo=timezone.utc),
+        )
+        action = next(iter(actions.values()))
+        self.assertEqual(action["context"], "github-stale")
+        self.assertEqual(action["due_datetime"], "2026-08-28T19:00:00Z")
+
+    def test_authored_pr_is_not_stale_before_sla_or_after_a_review(self):
+        payload = {"viewer": "me", "requested": [], "authored": [pr(reviews={"totalCount": 0})]}
+        actions = sync.build_actions(
+            payload,
+            sync.default_state(),
+            local_timezone=timezone.utc,
+            now=datetime(2026, 8, 28, 18, 59, tzinfo=timezone.utc),
+        )
+        self.assertEqual(actions, {})
+        payload["authored"][0]["reviews"] = {"totalCount": 1}
+        actions = sync.build_actions(
+            payload,
+            sync.default_state(),
+            local_timezone=timezone.utc,
+            now=datetime(2026, 8, 31, 19, tzinfo=timezone.utc),
+        )
+        self.assertEqual(actions, {})
+
     def test_missing_review_request_event_fails_instead_of_using_mutable_update_time(self):
         requested = pr(
             reviewRequests={"nodes": [{"requestedReviewer": {"id": "USER_1", "login": "me"}}]},
@@ -144,7 +182,7 @@ class GitHubGtdSyncTest(unittest.TestCase):
                 "id": action_id,
                 "content": "generated title",
                 "description": "generated description",
-                "context": "fixup",
+                "context": "github-fixup",
                 "due_datetime": None,
             }
         }
@@ -166,7 +204,7 @@ class GitHubGtdSyncTest(unittest.TestCase):
                     "operation": "update-labels",
                     "task_id": "todoist-1",
                     "action_id": action_id,
-                    "labels": ["deep-work", "fixup", "github"],
+                    "labels": ["deep-work", "github", "github-fixup"],
                 }
             ],
         )
@@ -178,7 +216,7 @@ class GitHubGtdSyncTest(unittest.TestCase):
                 "id": action_id,
                 "content": "Review acme/app#123",
                 "description": "",
-                "context": "needs-review",
+                "context": "github-review",
                 "due_datetime": None,
             }
         }

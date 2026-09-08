@@ -180,14 +180,15 @@ The `github_gtd` role installs a five-minute LaunchAgent that puts actionable pu
 
 Generated tasks use these labels:
 
-- `@needs-review` for direct and team review requests
-- `@fixup` for authored PRs with changes requested, conflicts, or failing CI
-- `@needs-merge` for authored PRs that are approved, mergeable, and passing CI
+- `@github-review` for direct and team review requests
+- `@github-fixup` for authored PRs with changes requested, conflicts, or failing CI
+- `@github-merge` for authored PRs that are approved, mergeable, and passing CI
+- `@github-stale` for authored PRs that have gone 24 weekday hours without a review
 - `@github` for the combined queue
 
-Authored drafts and authored PRs waiting on CI or another reviewer do not create tasks. Requested reviews arrive whenever the PR is not a draft. A completed task is not recreated for the same action. A re-requested review or a later transition back into an actionable state creates a new task.
+Draft PRs do not create tasks. Requested reviews arrive whenever the PR is not a draft. Completing a review task manually dismisses that request, so a teammate's review can make your own review unnecessary without the task being recreated. A re-requested review or a later transition back into an actionable authored state creates a new task.
 
-Review requests are due after 24 hours of Monday-Friday time. The due datetime is set only when the task is created, so manually rescheduling it remains authoritative. A Friday 3pm request is due Monday 3pm.
+Review requests are due after 24 hours of Monday-Friday time. Authored PRs become stale at the same threshold when nobody has submitted a review. The due datetime is set only when the task is created, so manually rescheduling it remains authoritative. A Friday 3pm request is due Monday 3pm.
 
 Get a personal API token from **Todoist Settings → Integrations → Developer**, then install the role:
 
@@ -212,12 +213,13 @@ The synchronizer creates its labels automatically. Recommended Todoist filters:
 
 | Name | Query |
 | --- | --- |
-| GitHub Actions | `@github & (@needs-review \| @fixup \| @needs-merge)` |
-| Reviews | `@needs-review` |
-| Fixups | `@fixup` |
-| Ready to Merge | `@needs-merge` |
+| GitHub Actions | `@github` |
+| Reviews | `@github-review` |
+| Fixups | `@github-fixup` |
+| Ready to Merge | `@github-merge` |
+| Stale Authored PRs | `@github-stale` |
 | GitHub Today | `@github & today` |
-| Overdue Reviews | `@needs-review & overdue` |
+| Overdue Reviews | `@github-review & overdue` |
 | Unscheduled GitHub | `@github & no date` |
 
 Favorite `GitHub Actions` and `Reviews`. During inbox processing, move generated tasks into normal GTD projects and add labels such as `@computer` or `@deep-work`; the daemon preserves those choices. Manually created tasks may use the same labels because only tasks carrying a `GTD Sync` marker are managed.

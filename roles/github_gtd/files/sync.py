@@ -17,7 +17,19 @@ from pathlib import Path
 
 API_URL = "https://api.todoist.com/api/v1"
 SOURCE_LABEL = "github"
-CONTEXT_LABELS = {"needs-review", "fixup", "needs-merge"}
+CONTEXT_LABELS = {"github-review", "github-fixup", "github-merge", "github-stale"}
+LEGACY_CONTEXT_LABELS = {"needs-review", "fixup", "needs-merge"}
+OWNED_LABELS = CONTEXT_LABELS | LEGACY_CONTEXT_LABELS
+LABEL_RENAMES = {
+    "needs-review": "github-review",
+    "fixup": "github-fixup",
+    "needs-merge": "github-merge",
+}
+MARKER_CONTEXTS = {
+    "github-fixup": "fixup",
+    "github-merge": "needs-merge",
+    "github-stale": "stale",
+}
 MARKER_RE = re.compile(r"^GTD Sync: (github-gtd:v1:[^\s]+)$", re.MULTILINE)
 
 SEARCH_QUERY = r"""
@@ -32,6 +44,7 @@ query PullRequests($searchQuery: String!, $cursor: String) {
         number
         title
         url
+        createdAt
         updatedAt
         isDraft
         mergeable
@@ -40,6 +53,7 @@ query PullRequests($searchQuery: String!, $cursor: String) {
         author { login }
         repository { nameWithOwner }
         statusCheckRollup { state }
+        reviews(first: 1) { totalCount }
         reviewRequests(first: 100) {
           nodes {
             requestedReviewer {
@@ -136,18 +150,18 @@ def authored_context(pr):
     if pr.get("isDraft"):
         return None, None
     if pr.get("reviewDecision") == "CHANGES_REQUESTED":
-        return "fixup", "changes requested"
+        return "github-fixup", "changes requested"
     if pr.get("mergeable") == "CONFLICTING" or pr.get("mergeStateStatus") == "DIRTY":
-        return "fixup", "merge conflicts"
+        return "github-fixup", "merge conflicts"
     if ci_state(pr) in {"FAILURE", "ERROR"}:
-        return "fixup", "failing CI"
+        return "github-fixup", "failing CI"
     if (
         pr.get("reviewDecision") == "APPROVED"
         and pr.get("mergeable") == "MERGEABLE"
         and ci_state(pr) in {"SUCCESS", "NONE"}
         and pr.get("mergeStateStatus") in {"CLEAN", "HAS_HOOKS", "UNSTABLE"}
     ):
-        return "needs-merge", "approved and ready"
+        return "github-merge", "approved and ready"
     return None, None
 
 
@@ -166,7 +180,7 @@ def hydrate_state_from_tasks(state, active_tasks, completed_tasks):
         marker = task_marker(task)
         if not marker:
             continue
-        match = re.match(r"^github-gtd:v1:([^:]+):(fixup|needs-merge):(\d+)$", marker)
+        match = re.match(r"^github-gtd:v1:([^:]+):(fixup|needs-merge|stale):(\d+)$", marker)
         if not match:
             continue
         node_id, context, generation = match.groups()
@@ -175,12 +189,13 @@ def hydrate_state_from_tasks(state, active_tasks, completed_tasks):
         episode["generation"] = max(int(episode.get("generation", 0)), int(generation))
 
 
-def build_actions(payload, state, sla_hours=24, local_timezone=None):
+def build_actions(payload, state, sla_hours=24, local_timezone=None, now=None):
     viewer = payload.get("viewer")
     if not viewer:
         raise ValueError("GitHub response did not include the authenticated viewer")
 
     actions = {}
+    now = now or datetime.now(timezone.utc)
     team_ids = set(payload.get("viewerTeamIds") or [])
     for pr in payload.get("requested", []):
         if pr.get("isDraft"):
@@ -193,7 +208,7 @@ def build_actions(payload, state, sla_hours=24, local_timezone=None):
         actions[action_id] = make_action(
             action_id,
             pr,
-            "needs-review",
+            "github-review",
             "Review",
             f"Review requested {requested_at}",
             due_datetime=format_time(add_weekday_hours(requested, sla_hours, local_timezone)),
@@ -203,17 +218,28 @@ def build_actions(payload, state, sla_hours=24, local_timezone=None):
     contexts = state.setdefault("contexts", {})
     for pr in payload.get("authored", []):
         context, reason = authored_context(pr)
+        due_datetime = None
+        if not context and not pr.get("isDraft") and int((pr.get("reviews") or {}).get("totalCount") or 0) == 0:
+            created = parse_time(pr.get("createdAt"))
+            if not created:
+                raise ValueError(f"Authored pull request {pr.get('url')} has no creation timestamp")
+            stale_at = add_weekday_hours(created, sla_hours, local_timezone)
+            if now >= stale_at.astimezone(timezone.utc):
+                context = "github-stale"
+                reason = f"no review since {format_time(created)}"
+                due_datetime = format_time(stale_at)
         if not context:
             continue
-        base = f"{pr['id']}:{context}"
+        marker_context = MARKER_CONTEXTS[context]
+        base = f"{pr['id']}:{marker_context}"
         active_contexts.add(base)
         episode = contexts.setdefault(base, {"active": False, "generation": 0})
         if not episode.get("active"):
             episode["generation"] = int(episode.get("generation", 0)) + 1
         episode["active"] = True
-        action_id = f"github-gtd:v1:{pr['id']}:{context}:{episode['generation']}"
-        verb = "Fix" if context == "fixup" else "Merge"
-        actions[action_id] = make_action(action_id, pr, context, verb, reason)
+        action_id = f"github-gtd:v1:{pr['id']}:{marker_context}:{episode['generation']}"
+        verb = {"github-fixup": "Fix", "github-merge": "Merge", "github-stale": "Follow up"}[context]
+        actions[action_id] = make_action(action_id, pr, context, verb, reason, due_datetime)
 
     for base, episode in contexts.items():
         if base not in active_contexts:
@@ -270,7 +296,7 @@ def plan_reconciliation(actions, active_tasks, completed_tasks, state):
             operations.append({"operation": "close", "task_id": task["id"], "action_id": action_id})
             continue
         current_labels = set(task.get("labels") or [])
-        desired_labels = (current_labels - CONTEXT_LABELS) | {SOURCE_LABEL, action["context"]}
+        desired_labels = (current_labels - OWNED_LABELS) | {SOURCE_LABEL, action["context"]}
         if desired_labels != current_labels:
             operations.append(
                 {
@@ -371,6 +397,9 @@ class TodoistClient:
 
     def create_label(self, name):
         return self.request("POST", "/labels", {"name": name})
+
+    def update_label(self, label_id, name):
+        return self.request("POST", f"/labels/{label_id}", {"name": name})
 
     def create_task(self, action):
         body = {
@@ -476,8 +505,15 @@ def write_atomic(path, payload):
 
 
 def ensure_labels(client, dry_run=False):
-    existing = {label.get("name") for label in client.labels()}
-    for label in sorted(({SOURCE_LABEL} | CONTEXT_LABELS) - existing):
+    existing = {label.get("name"): label for label in client.labels()}
+    for old, new in LABEL_RENAMES.items():
+        if old not in existing or new in existing:
+            continue
+        print(f"rename label @{old} to @{new}")
+        if not dry_run:
+            client.update_label(existing[old]["id"], new)
+        existing[new] = existing.pop(old)
+    for label in sorted(({SOURCE_LABEL} | CONTEXT_LABELS) - existing.keys()):
         print(f"create label @{label}")
         if not dry_run:
             client.create_label(label)
