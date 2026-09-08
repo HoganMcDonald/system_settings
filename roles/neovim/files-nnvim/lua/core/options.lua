@@ -3,6 +3,7 @@ vim.g.markdown_recommended_style = 0
 
 local opt = vim.opt
 
+opt.autoread = true
 opt.autowrite = true
 opt.breakindent = true
 opt.clipboard = vim.env.SSH_CONNECTION and "" or "unnamedplus"

@@ -5,7 +5,13 @@ local function augroup(name)
 end
 
 autocmd.create({
-  event = { autocmd.event("FocusGained"), autocmd.event("TermClose"), autocmd.event("TermLeave") },
+  event = {
+    autocmd.event("BufEnter"),
+    autocmd.event("CursorHold"),
+    autocmd.event("FocusGained"),
+    autocmd.event("TermClose"),
+    autocmd.event("TermLeave"),
+  },
   group = augroup("checktime"),
   callback = function()
     if vim.o.buftype ~= "nofile" then
