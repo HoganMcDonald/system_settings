@@ -21,7 +21,7 @@ return {
         return {
           EdgyNormal = sidebar,
           EdgySeparator = seamless,
-          WinSeparator = seamless,
+          -- WinSeparator = seamless,
           EdgyIcon = { bg = colors.bg_solid, fg = colors.grey },
           EdgyIconActive = { bg = colors.bg_solid, fg = colors.cyan },
           EdgyTitle = { bg = colors.bg_solid, fg = colors.cyan, bold = true },
