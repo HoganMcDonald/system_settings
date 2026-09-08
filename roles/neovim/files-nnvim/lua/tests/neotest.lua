@@ -13,6 +13,7 @@ return {
     pack.github("nvim-neotest/neotest-python"),
     pack.github("nvim-neotest/nvim-nio"),
     pack.github("nvim-lua/plenary.nvim"),
+    pack.github("marilari88/neotest-vitest"),
   },
   autocmds = {
     {
@@ -43,10 +44,34 @@ return {
     },
   },
   keys = {
-    { "<leader>tt", function() require("neotest").run.run() end, desc = "Run nearest test" },
-    { "<leader>tT", function() require("neotest").run.run(vim.fn.expand("%")) end, desc = "Run test file" },
-    { "<leader>ta", function() require("neotest").run.run(vim.fn.getcwd()) end, desc = "Run all tests" },
-    { "<leader>tl", function() require("neotest").run.run_last() end, desc = "Run last test" },
+    {
+      "<leader>tt",
+      function()
+        require("neotest").run.run()
+      end,
+      desc = "Run nearest test",
+    },
+    {
+      "<leader>tT",
+      function()
+        require("neotest").run.run(vim.fn.expand("%"))
+      end,
+      desc = "Run test file",
+    },
+    {
+      "<leader>ta",
+      function()
+        require("neotest").run.run(vim.fn.getcwd())
+      end,
+      desc = "Run all tests",
+    },
+    {
+      "<leader>tl",
+      function()
+        require("neotest").run.run_last()
+      end,
+      desc = "Run last test",
+    },
     {
       "<leader>ts",
       function()
@@ -55,9 +80,27 @@ return {
       end,
       desc = "Test summary",
     },
-    { "<leader>to", function() require("neotest").output.open({ enter = true }) end, desc = "Test output" },
-    { "<leader>tO", function() require("neotest").output_panel.toggle() end, desc = "Test output panel" },
-    { "<leader>tS", function() require("neotest").run.stop() end, desc = "Stop tests" },
+    {
+      "<leader>to",
+      function()
+        require("neotest").output.open({ enter = true })
+      end,
+      desc = "Test output",
+    },
+    {
+      "<leader>tO",
+      function()
+        require("neotest").output_panel.toggle()
+      end,
+      desc = "Test output panel",
+    },
+    {
+      "<leader>tS",
+      function()
+        require("neotest").run.stop()
+      end,
+      desc = "Stop tests",
+    },
   },
   config = function()
     require("neotest").setup({
@@ -70,6 +113,7 @@ return {
           cwd = jest_root,
         }),
         require("neotest-python")({}),
+        require("neotest-vitest"),
       },
     })
   end,

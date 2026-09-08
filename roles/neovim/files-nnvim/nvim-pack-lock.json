@@ -113,6 +113,10 @@
       "rev": "1b56ca4ba51c6014f986d6548ee629bdc95589d1",
       "src": "https://github.com/nvim-neotest/neotest-python"
     },
+    "neotest-vitest": {
+      "rev": "c3c69715da4b158069fd4262083e7219a5c14cfb",
+      "src": "https://github.com/marilari88/neotest-vitest"
+    },
     "noice.nvim": {
       "rev": "7bfd942445fb63089b59f97ca487d605e715f155",
       "src": "https://github.com/folke/noice.nvim"
