@@ -78,6 +78,8 @@ map("n", "]q", vim.cmd.cnext, { desc = "Next quickfix" })
 
 map("n", "<leader>-", "<C-w>s", { remap = true, desc = "Split window below" })
 map("n", "<leader>|", "<C-w>v", { remap = true, desc = "Split window right" })
+map("n", "<leader>ws", "<C-w>s", { remap = true, desc = "Split window below" })
+map("n", "<leader>wv", "<C-w>v", { remap = true, desc = "Split window right" })
 map("n", "<leader>wd", "<C-w>c", { remap = true, desc = "Delete window" })
 map("n", "<leader>qq", "<cmd>quitall<cr>", { desc = "Quit all" })
 
