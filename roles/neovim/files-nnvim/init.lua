@@ -10,7 +10,7 @@ pack.setup({
   require("coding"),
   require("editor"),
   require("explore"),
-  require("review"),
+  require("review_tools"),
   require("tests"),
   require("style"),
   require("core.which_key"),
