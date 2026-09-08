@@ -39,20 +39,65 @@
   },
   {
     "icon": "󰊢",
-    "title": "review",
-    "description": "Spin up a Claude review session for a branch",
+    "title": "review HEAD",
+    "description": "Open the next-up PR awaiting your review",
     "category": "Worktrees",
     "action": {
-      "tmux": "display-popup -w 60% -h 5 -E 'zsh -lc \"read \\\"b?branch to review: \\\" && [ -n \\\"$b\\\" ] && palette-action review \\\"$b\\\"\"'"
+      "tmux": "run-shell -b 'zsh -lc \"palette-action review HEAD\"'"
+    }
+  },
+  {
+    "icon": "󰊢",
+    "title": "review",
+    "description": "Review a branch, PR number, PR URL, or Linear ticket",
+    "category": "Worktrees",
+    "action": {
+      "tmux": "display-popup -w 60% -h 5 -E 'zsh -lc \"read \\\"r?ref to review (branch/PR/Linear): \\\" && [ -n \\\"$r\\\" ] && palette-action review \\\"$r\\\"\"'"
+    }
+  },
+  {
+    "icon": "󰋼",
+    "title": "review log",
+    "description": "PRs awaiting your review, with 24h business-day SLA",
+    "category": "Worktrees",
+    "action": {
+      "tmux": "run-shell -b 'zsh -lc \"palette-action review log\"'"
+    }
+  },
+  {
+    "icon": "󰔟",
+    "title": "review snooze",
+    "description": "Drop a PR to the bottom of the stack until end of day",
+    "category": "Worktrees",
+    "action": {
+      "tmux": "display-popup -w 60% -h 5 -E 'zsh -lc \"read \\\"r?ref to snooze: \\\" && [ -n \\\"$r\\\" ] && palette-action review snooze \\\"$r\\\"\"'"
+    }
+  },
+  {
+    "icon": "󰀦",
+    "title": "review unsnooze",
+    "description": "Put a snoozed PR back in the review rotation",
+    "category": "Worktrees",
+    "action": {
+      "tmux": "display-popup -w 60% -h 5 -E 'zsh -lc \"read \\\"r?ref to unsnooze (blank for all): \\\" && if [ -n \\\"$r\\\" ]; then palette-action review unsnooze \\\"$r\\\"; else palette-action review unsnooze --all; fi\"'"
+    }
+  },
+  {
+    "icon": "󰈻",
+    "title": "review status",
+    "description": "Active review worktrees and tmux sessions",
+    "category": "Worktrees",
+    "action": {
+      "tmux": "run-shell -b 'zsh -lc \"palette-action review status\"'"
     }
   },
   {
     "icon": "󰗨",
-    "title": "unreview",
-    "description": "Tear down a review session",
+    "title": "review clear",
+    "description": "Tear down all review worktrees and tmux sessions",
     "category": "Worktrees",
     "action": {
-      "tmux": "display-popup -w 75% -h 60% -E 'zsh -lc \"palette-action unreview --pick\"'"
+      "tmux": "run-shell -b 'zsh -lc \"palette-action review clear\"'"
     }
   },
   {

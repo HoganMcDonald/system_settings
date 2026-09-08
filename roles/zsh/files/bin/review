@@ -1,227 +1,1615 @@
 #!/usr/bin/env bash
 #
-# review - Check out a branch in a worktree and open a Claude code review session
+# review - Review pull requests in dedicated worktrees (tuicr + opencode)
 #
-# Usage: review <branch-name>
+# Usage:
+#   review <ref>            branch, PR number, PR URL, or Linear ticket/link
+#   review HEAD             next-up PR (oldest pending review request)
+#   review log              queue of PRs awaiting your review, with SLA
+#   review status           active local review sessions
+#   review snooze <ref>     drop a PR to the bottom of the stack until tomorrow
+#   review clear [ref]      tear down review worktrees + tmux sessions
+#
+# Sourcing this file with REVIEW_LIB_ONLY=1 loads the functions without
+# running anything, which is how the test suite exercises the pure helpers.
+# Shell options are set inside main() so sourcing cannot mutate the caller.
 
-set -e
+# --- Config ------------------------------------------------------------------
 
-# --- Help -------------------------------------------------------------------
+REVIEW_SLA_HOURS="${REVIEW_SLA_HOURS:-24}"
+REVIEW_STATE_VERSION=1
+REVIEW_TITLE_WIDTH="${REVIEW_TITLE_WIDTH:-52}"
+
+# Records are separated by ASCII unit separator, not tab: tab is IFS whitespace,
+# so `read` would collapse runs of tabs and shift every empty field.
+REVIEW_FS=$'\037'
+
+# Detect the date(1) flavor by probing behaviour, not vendor strings. BSD/macOS
+# date uses -j/-r/-f; GNU date uses -d. A nix-shell or devbox puts GNU coreutils
+# ahead of /bin, so this cannot be assumed from the platform.
+if date -j -f '%Y-%m-%d %H:%M:%S' '2000-01-01 00:00:00' '+%s' > /dev/null 2>&1; then
+  REVIEW_DATE_FLAVOR=bsd
+elif date -d '2000-01-01 00:00:00' '+%s' > /dev/null 2>&1; then
+  REVIEW_DATE_FLAVOR=gnu
+else
+  REVIEW_DATE_FLAVOR=unknown
+fi
+
+# --- Help --------------------------------------------------------------------
 
 display_help() {
   cat << 'EOF'
-review - Check out a branch in a worktree and open a Claude code review session
+review - Review pull requests in dedicated worktrees (tuicr + opencode)
 
-Usage: review [options] <branch-name>
+Usage:
+  review <ref>              Open a review session for a PR
+  review HEAD               Open the next-up PR awaiting your review
+  review log                Show the queue of PRs awaiting your review
+  review status             Show active local review sessions
+  review snooze <ref>       Snooze a PR until end of day
+  review unsnooze <ref>     Undo a snooze (--all to clear every snooze)
+  review clear [ref]        Tear down review worktrees and tmux sessions
+
+Refs:
+  A ref is any of the following, all resolved in the current repository:
+    feat/their-branch                       branch name
+    1234 or #1234                           PR number
+    https://github.com/o/r/pull/1234        PR URL
+    HEX-1234                                Linear ticket identifier
+    https://linear.app/team/issue/HEX-1234  Linear ticket link
+
+  Linear refs resolve to the newest matching open PR.
 
 Options:
-  -h, --help     Display this help message and exit
+  -a, --all                 Clear every snooze (unsnooze only)
+  -f, --force               Remove worktrees even when dirty (clear only)
+  -n, --dry-run             Show what would be done (clear only)
+  -h, --help                Display this help message and exit
 
-Checks out the given branch in a linked worktree and opens a tmux session
-with Claude running the /review skill. Does NOT create a new branch — the
-branch must already exist locally or be fetchable from the remote.
+Sessions:
+  Each PR is checked out detached in .worktrees/reviews/pr-<number> and gets a
+  tmux session with two windows: tuicr (the review TUI) and opencode.
+  Nothing is ever committed, pushed, or branched on your behalf.
 
-The tmux session is named <parent_session>/review/<branch> (or just
-review/<branch> if not inside tmux).
+SLA:
+  "Next up" is the oldest PR whose review is still requested from you. Age is
+  wall clock; the SLA column counts only Monday-Friday hours against a
+  REVIEW_SLA_HOURS (default 24) business-hour target.
 
-Example:
-  review feat/add-auth
-  review fix/null-pointer
+Environment:
+  REVIEW_SLA_HOURS    Business-hour SLA target (default 24)
+  REVIEW_DEBUG=1      Print the resolved repo, login, and matched PRs
+  REVIEW_COLOR        always | never | auto (default auto: on for a terminal)
+  REVIEW_BORDER       utf8 | ascii | auto (default auto: from the locale)
+  NO_COLOR            Set to disable colour, per no-color.org
+
+Examples:
+  review HEAD
+  review 1234
+  review HEX-4821
+  review log
+  review snooze 1234
+  review unsnooze 1234
+  review unsnooze --all
+  review clear
 EOF
   exit 0
 }
 
-# --- Arg parsing -------------------------------------------------------------
+# --- Pure helpers ------------------------------------------------------------
 
-if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
-  display_help
-fi
+# Classify a user-supplied ref into: head | pr | pr-url | linear | branch
+classify_ref() {
+  local ref="$1"
 
-if [ $# -ne 1 ]; then
-  echo "Error: expected exactly one argument: <branch-name>"
-  echo "Usage: review <branch-name>"
-  exit 1
-fi
+  if [ "$ref" = "HEAD" ] || [ "$ref" = "head" ]; then
+    echo "head"
+    return 0
+  fi
 
-BRANCH="$1"
+  if [[ "$ref" =~ ^#?[0-9]+$ ]]; then
+    echo "pr"
+    return 0
+  fi
 
-# --- Prereq checks ----------------------------------------------------------
+  if [[ "$ref" =~ ^https?://[^/]*github\.com/[^/]+/[^/]+/pull/[0-9]+ ]]; then
+    echo "pr-url"
+    return 0
+  fi
 
-if ! git rev-parse --is-inside-work-tree &>/dev/null; then
-  echo "Error: not inside a git repository"
-  exit 1
-fi
+  if [[ "$ref" =~ ^https?://([^/]*\.)?linear\.app/ ]]; then
+    echo "linear"
+    return 0
+  fi
 
-if ! command -v tmux &>/dev/null; then
-  echo "Error: tmux is not installed (brew install tmux)"
-  exit 1
-fi
+  if [[ "$ref" =~ ^[A-Za-z][A-Za-z0-9]*-[0-9]+$ ]]; then
+    echo "linear"
+    return 0
+  fi
 
-# --- Helpers -----------------------------------------------------------------
+  echo "branch"
+}
 
-REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
+# Extract an uppercase Linear ticket identifier from a ref, if present.
+linear_ticket_from_ref() {
+  local ref="$1"
 
-find_worktree_for_branch() {
-  local target_branch="$1"
-  local wt_path=""
+  if [[ "$ref" =~ /issue/([A-Za-z][A-Za-z0-9]*-[0-9]+) ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}" | tr '[:lower:]' '[:upper:]'
+    return 0
+  fi
 
-  while IFS= read -r line; do
-    case "$line" in
-      "worktree "*)
-        wt_path="${line#worktree }"
-        ;;
-      "branch refs/heads/$target_branch")
-        case "$wt_path" in
-          "$REPO_ROOT/.worktrees/"*)
-            echo "$wt_path"
-            return 0
-            ;;
-        esac
-        ;;
-      "")
-        wt_path=""
-        ;;
-    esac
-  done < <(git worktree list --porcelain)
+  if [[ "$ref" =~ ^([A-Za-z][A-Za-z0-9]*-[0-9]+)$ ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}" | tr '[:lower:]' '[:upper:]'
+    return 0
+  fi
 
   return 1
 }
 
-find_session_for_worktree() {
+# Split a GitHub PR URL into "owner/repo number".
+parse_pr_url() {
+  local ref="$1"
+
+  if [[ "$ref" =~ ^https?://[^/]*github\.com/([^/]+)/([^/]+)/pull/([0-9]+) ]]; then
+    printf '%s/%s %s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}"
+    return 0
+  fi
+
+  return 1
+}
+
+# Strip a leading '#' from a PR number.
+normalize_pr_number() {
+  local ref="$1"
+  printf '%s\n' "${ref#\#}"
+}
+
+# Format an epoch in local time using a strftime format (no leading '+').
+epoch_format() {
+  local epoch="$1" fmt="$2"
+
+  case "$REVIEW_DATE_FLAVOR" in
+    gnu) date -d "@$epoch" "+$fmt" ;;
+    bsd) date -r "$epoch" "+$fmt" ;;
+    *)
+      echo "Error: unsupported date(1); need BSD or GNU date" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Parse "YYYY-MM-DD HH:MM:SS" in local time into an epoch.
+localtime_to_epoch() {
+  local stamp="$1"
+
+  case "$REVIEW_DATE_FLAVOR" in
+    gnu) date -d "$stamp" '+%s' ;;
+    bsd) date -j -f '%Y-%m-%d %H:%M:%S' "$stamp" '+%s' ;;
+    *)
+      echo "Error: unsupported date(1); need BSD or GNU date" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Local midnight (as an epoch) for the day containing the given epoch.
+local_midnight() {
+  local epoch="$1"
+  local day
+  day=$(epoch_format "$epoch" '%Y-%m-%d')
+  localtime_to_epoch "$day 00:00:00"
+}
+
+# Day of week (1=Monday .. 7=Sunday) for the given epoch.
+epoch_weekday() {
+  epoch_format "$1" '%u'
+}
+
+# End of the local day (next midnight) for the given epoch.
+end_of_day_epoch() {
+  local epoch="$1"
+  local midnight next
+  midnight=$(local_midnight "$epoch")
+  # Advance past the day boundary with slack so DST transitions stay correct.
+  next=$(local_midnight $((midnight + 90000)))
+  printf '%s\n' "$next"
+}
+
+# Elapsed seconds between two epochs, counting Monday-Friday only.
+business_seconds() {
+  local start="$1" end="$2"
+
+  if [ "$end" -le "$start" ]; then
+    echo 0
+    return 0
+  fi
+
+  local total=0 cursor="$start" day_start day_end seg_end dow
+  while [ "$cursor" -lt "$end" ]; do
+    day_start=$(local_midnight "$cursor")
+    day_end=$(local_midnight $((day_start + 90000)))
+
+    seg_end="$day_end"
+    if [ "$seg_end" -gt "$end" ]; then
+      seg_end="$end"
+    fi
+
+    dow=$(epoch_weekday "$day_start")
+    if [ "$dow" -le 5 ]; then
+      total=$((total + seg_end - cursor))
+    fi
+
+    cursor="$seg_end"
+  done
+
+  printf '%s\n' "$total"
+}
+
+# Format a duration in seconds as a compact human string.
+format_duration() {
+  local secs="$1"
+
+  if [ "$secs" -lt 0 ]; then
+    secs=$((-secs))
+  fi
+
+  local d=$((secs / 86400))
+  local h=$(((secs % 86400) / 3600))
+  local m=$(((secs % 3600) / 60))
+
+  if [ "$d" -gt 0 ]; then
+    printf '%dd %dh\n' "$d" "$h"
+  elif [ "$h" -gt 0 ]; then
+    printf '%dh %dm\n' "$h" "$m"
+  else
+    printf '%dm\n' "$m"
+  fi
+}
+
+# Render the SLA column for a given business-hour age.
+sla_cell() {
+  local business="$1" sla_seconds="$2"
+  local remaining=$((sla_seconds - business))
+
+  if [ "$remaining" -lt 0 ]; then
+    printf 'OVER by %s\n' "$(format_duration "$remaining")"
+  else
+    printf '%s left\n' "$(format_duration "$remaining")"
+  fi
+}
+
+# --- Presentation ------------------------------------------------------------
+
+# Border glyphs. Box drawing needs a UTF-8 locale, so fall back to ASCII when
+# the locale does not advertise it. REVIEW_BORDER=utf8|ascii forces a style.
+setup_borders() {
+  local mode="${REVIEW_BORDER:-auto}"
+
+  if [ "$mode" = auto ]; then
+    case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
+      *UTF-8* | *utf-8* | *UTF8* | *utf8*) mode=utf8 ;;
+      *) mode=ascii ;;
+    esac
+  fi
+
+  if [ "$mode" = utf8 ]; then
+    REVIEW_B_TL='┌' REVIEW_B_TR='┐' REVIEW_B_BL='└' REVIEW_B_BR='┘'
+    REVIEW_B_H='─' REVIEW_B_V='│'
+    REVIEW_B_TJ='┬' REVIEW_B_BJ='┴' REVIEW_B_LJ='├' REVIEW_B_RJ='┤' REVIEW_B_CJ='┼'
+  else
+    REVIEW_B_TL='+' REVIEW_B_TR='+' REVIEW_B_BL='+' REVIEW_B_BR='+'
+    REVIEW_B_H='-' REVIEW_B_V='|'
+    REVIEW_B_TJ='+' REVIEW_B_BJ='+' REVIEW_B_LJ='+' REVIEW_B_RJ='+' REVIEW_B_CJ='+'
+  fi
+}
+
+# REVIEW_COLOR=always|never|auto (default auto: on only for a real terminal).
+setup_colors() {
+  local mode="${REVIEW_COLOR:-auto}"
+
+  if [ "$mode" = auto ]; then
+    if [ -n "${NO_COLOR:-}" ] || [ ! -t 1 ] || [ "${TERM:-dumb}" = dumb ]; then
+      mode=never
+    else
+      mode=always
+    fi
+  fi
+
+  if [ "$mode" = always ]; then
+    REVIEW_C_RESET=$'\033[0m'
+    REVIEW_C_BOLD=$'\033[1m'
+    REVIEW_C_DIM=$'\033[2m'
+    REVIEW_C_RED=$'\033[31m'
+    REVIEW_C_YELLOW=$'\033[33m'
+    REVIEW_C_GREEN=$'\033[32m'
+    REVIEW_C_CYAN=$'\033[36m'
+  else
+    REVIEW_C_RESET='' REVIEW_C_BOLD='' REVIEW_C_DIM=''
+    REVIEW_C_RED='' REVIEW_C_YELLOW='' REVIEW_C_GREEN='' REVIEW_C_CYAN=''
+  fi
+}
+
+# Tag a cell with a colour name. The marker is stripped by render_table before
+# widths are measured, so escape bytes can never skew column alignment.
+paint() {
+  printf '\001%s\002%s' "$1" "$2"
+}
+
+# Compose the FLAGS cell for a queue row. `snooze_until` is an epoch or empty;
+# showing the wake time answers the obvious follow-up question.
+flags_cell() {
+  local draft="$1" snooze_until="$2" out=""
+
+  if [ -n "$draft" ]; then
+    out="draft"
+  fi
+
+  if [ -n "$snooze_until" ]; then
+    [ -n "$out" ] && out="$out,"
+    out="${out}snoozed til $(epoch_format "$snooze_until" '%H:%M')" || return 1
+  fi
+
+  printf '%s\n' "${out:--}"
+}
+
+# Colour for one cell of a queue row. Snoozed rows are dimmed wholesale: the
+# user has explicitly deferred them, so a red SLA breach would be noise.
+row_tone() {
+  local snooze_until="$1" default="$2"
+
+  if [ -n "$snooze_until" ]; then
+    echo dim
+  else
+    printf '%s\n' "$default"
+  fi
+}
+
+# Colour for an SLA cell: breached, close to breaching, or comfortable.
+sla_color() {
+  local business="$1" sla_seconds="$2"
+  local remaining=$((sla_seconds - business))
+
+  if [ "$remaining" -lt 0 ]; then
+    echo red
+  elif [ "$remaining" -lt 14400 ]; then
+    echo yellow
+  else
+    echo green
+  fi
+}
+
+# Keep only printable ASCII so table widths line up in every terminal. Emoji and
+# other wide glyphs are counted as multiple columns by awk, which skews borders.
+sanitize_cell() {
+  printf '%s' "$1" \
+    | LC_ALL=C tr -cd '\40-\176' \
+    | LC_ALL=C tr -s ' ' \
+    | sed -e 's/^ *//' -e 's/ *$//'
+}
+
+truncate_cell() {
+  local s="$1" n="$2"
+
+  if [ "${#s}" -le "$n" ]; then
+    printf '%s\n' "$s"
+    return 0
+  fi
+
+  if [ "$n" -le 3 ]; then
+    printf '%s\n' "${s:0:$n}"
+    return 0
+  fi
+
+  printf '%s...\n' "${s:0:$((n - 3))}"
+}
+
+# Render tab-separated stdin (first line = header) as a box-drawn table.
+# Cells may carry a \001<colour>\002 prefix from paint(); it is removed before
+# measuring and re-applied after padding so ANSI bytes never affect widths.
+render_table() {
+  awk -F'\t' \
+    -v m1=$'\001' -v m2=$'\002' \
+    -v tl="$REVIEW_B_TL" -v tr="$REVIEW_B_TR" -v bl="$REVIEW_B_BL" -v br="$REVIEW_B_BR" \
+    -v hb="$REVIEW_B_H" -v vb="$REVIEW_B_V" \
+    -v tj="$REVIEW_B_TJ" -v bj="$REVIEW_B_BJ" -v lj="$REVIEW_B_LJ" -v rj="$REVIEW_B_RJ" \
+    -v cj="$REVIEW_B_CJ" \
+    -v c_bold="$REVIEW_C_BOLD" -v c_dim="$REVIEW_C_DIM" -v c_red="$REVIEW_C_RED" \
+    -v c_yellow="$REVIEW_C_YELLOW" -v c_green="$REVIEW_C_GREEN" -v c_cyan="$REVIEW_C_CYAN" \
+    -v c_reset="$REVIEW_C_RESET" '
+    function repeat(s, n,   out, k) { out = ""; for (k = 0; k < n; k++) out = out s; return out }
+    function color_of(name) {
+      if (name == "red") return c_red
+      if (name == "yellow") return c_yellow
+      if (name == "green") return c_green
+      if (name == "cyan") return c_cyan
+      if (name == "dim") return c_dim
+      if (name == "bold") return c_bold
+      return ""
+    }
+    {
+      rows = NR
+      if (NF > maxf) maxf = NF
+      for (i = 1; i <= NF; i++) {
+        text = $i
+        tint = ""
+        # Marker parsing via index/substr, not regex: control-character escapes
+        # are not portable across awk implementations.
+        if (substr(text, 1, 1) == m1) {
+          p = index(text, m2)
+          if (p > 1) {
+            tint = substr(text, 2, p - 2)
+            text = substr(text, p + 1)
+          }
+        }
+        cell[NR, i] = text
+        tone[NR, i] = tint
+        if (length(text) > w[i]) w[i] = length(text)
+      }
+    }
+    END {
+      if (rows == 0) exit 0
+
+      top = tl; mid = lj; bot = bl
+      for (i = 1; i <= maxf; i++) {
+        bar = repeat(hb, w[i] + 2)
+        top = top bar (i < maxf ? tj : tr)
+        mid = mid bar (i < maxf ? cj : rj)
+        bot = bot bar (i < maxf ? bj : br)
+      }
+
+      print top
+      for (r = 1; r <= rows; r++) {
+        line = vb
+        for (i = 1; i <= maxf; i++) {
+          padded = sprintf(" %-*s ", w[i], cell[r, i])
+          if (r == 1) {
+            line = line c_bold padded c_reset vb
+          } else {
+            tint = color_of(tone[r, i])
+            line = line (tint == "" ? padded : tint padded c_reset) vb
+          }
+        }
+        print line
+        if (r == 1) print mid
+      }
+      print bot
+    }
+  '
+}
+
+# Convert a GitHub ISO-8601 (UTC, Z-suffixed) timestamp to an epoch.
+iso_to_epoch() {
+  case "$REVIEW_DATE_FLAVOR" in
+    gnu) date -u -d "$1" '+%s' ;;
+    bsd) date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$1" '+%s' ;;
+    *)
+      echo "Error: unsupported date(1); need BSD or GNU date" >&2
+      return 1
+      ;;
+  esac
+}
+
+# jq program that reduces the GraphQL payload to the pending review queue.
+queue_jq_program() {
+  cat << 'JQ'
+[
+  .data.repository
+  | to_entries[]
+  | .value
+  | select(. != null)
+  | (
+      .timelineItems.nodes
+      | map(select(.requestedReviewer != null and .requestedReviewer.login == $me))
+      | map(.createdAt)
+      | sort
+      | last
+    ) as $requested
+  | ($requested // .createdAt) as $requested_at
+  | (
+      .reviews.nodes
+      | map(select(.author != null and .author.login == $me and .submittedAt != null))
+      | map(.submittedAt)
+      | sort
+      | last
+    ) as $reviewed_at
+  | {
+      number: .number,
+      title: .title,
+      url: .url,
+      draft: .isDraft,
+      author: (if .author == null then "unknown" else .author.login end),
+      additions: .additions,
+      deletions: .deletions,
+      changed_files: .changedFiles,
+      head_ref: .headRefName,
+      base_ref: .baseRefName,
+      requested_at: $requested_at,
+      reviewed_at: $reviewed_at,
+      pending: (($reviewed_at == null) or ($reviewed_at < $requested_at))
+    }
+]
+| map(select(.pending))
+| sort_by(.requested_at)
+JQ
+}
+
+# Reduce a GraphQL payload on stdin into the pending queue for a given login.
+queue_transform() {
+  local me="$1"
+  jq --arg me "$me" "$(queue_jq_program)"
+}
+
+# --- Prereqs -----------------------------------------------------------------
+
+require_cmd() {
+  local cmd="$1" hint="$2"
+
+  if ! command -v "$cmd" &> /dev/null; then
+    echo "Error: $cmd is not installed ($hint)" >&2
+    exit 1
+  fi
+}
+
+require_repo() {
+  if ! git rev-parse --is-inside-work-tree &> /dev/null; then
+    echo "Error: not inside a git repository" >&2
+    exit 1
+  fi
+
+  REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
+  GIT_COMMON_DIR=$(cd "$(git rev-parse --git-common-dir)" && pwd -P)
+  REVIEWS_DIR="$REPO_ROOT/.worktrees/reviews"
+}
+
+# --- State -------------------------------------------------------------------
+
+state_path() {
+  printf '%s/review-state.json\n' "$GIT_COMMON_DIR"
+}
+
+# Read state, dropping expired snoozes so every consumer sees live data only.
+state_read() {
+  local file now
+  file=$(state_path)
+  now=$(date '+%s')
+
+  if [ ! -f "$file" ]; then
+    printf '{"version":%s,"worktrees":{},"snoozes":{}}\n' "$REVIEW_STATE_VERSION"
+    return 0
+  fi
+
+  jq --argjson now "$now" --argjson version "$REVIEW_STATE_VERSION" '
+    {
+      version: $version,
+      worktrees: (.worktrees // {}),
+      snoozes: ((.snoozes // {}) | with_entries(select(.value.until > $now)))
+    }
+  ' "$file" 2> /dev/null || printf '{"version":%s,"worktrees":{},"snoozes":{}}\n' "$REVIEW_STATE_VERSION"
+}
+
+state_write() {
+  local json="$1" file tmp
+  file=$(state_path)
+  tmp="$file.tmp.$$"
+
+  printf '%s\n' "$json" > "$tmp"
+  mv "$tmp" "$file"
+}
+
+state_update() {
+  local filter="$1"
+  shift
+  local current updated
+  current=$(state_read)
+  updated=$(printf '%s' "$current" | jq "$@" "$filter")
+  state_write "$updated"
+}
+
+state_register_worktree() {
+  local pr="$1" path="$2" session="$3" repo="$4" url="$5" title="$6" author="$7"
+
+  state_update '.worktrees[$pr] = {
+      path: $path,
+      session: $session,
+      repo: $repo,
+      url: $url,
+      title: $title,
+      author: $author,
+      created_at: $created
+    }' \
+    --arg pr "$pr" \
+    --arg path "$path" \
+    --arg session "$session" \
+    --arg repo "$repo" \
+    --arg url "$url" \
+    --arg title "$title" \
+    --arg author "$author" \
+    --arg created "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+}
+
+state_forget_worktree() {
+  state_update 'del(.worktrees[$pr])' --arg pr "$1"
+}
+
+state_set_session() {
+  local pr="$1" session="$2"
+  state_update 'if .worktrees[$pr] then .worktrees[$pr].session = $session else . end' \
+    --arg pr "$pr" --arg session "$session"
+}
+
+state_snooze() {
+  local pr="$1" until_epoch="$2"
+  state_update '.snoozes[$pr] = { until: $until }' \
+    --arg pr "$pr" --argjson until "$until_epoch"
+}
+
+state_unsnooze() {
+  state_update 'del(.snoozes[$pr])' --arg pr "$1"
+}
+
+state_clear_snoozes() {
+  state_update '.snoozes = {}'
+}
+
+state_snoozed_until() {
+  state_read | jq -r --arg pr "$1" '.snoozes[$pr].until // empty'
+}
+
+# Snoozed PR numbers, oldest expiry first. Expired entries are already pruned
+# by state_read, so this only ever lists live snoozes.
+state_snoozed_prs() {
+  state_read | jq -r '.snoozes | to_entries | sort_by(.value.until) | .[].key'
+}
+
+# Records of: pr, path, session, repo, url, title, author
+state_worktree_rows() {
+  state_read | jq -r --arg fs "$REVIEW_FS" '
+    .worktrees
+    | to_entries
+    | sort_by(.key | tonumber? // 0)
+    | .[]
+    | [
+        .key,
+        (.value.path // ""),
+        (.value.session // ""),
+        (.value.repo // ""),
+        (.value.url // ""),
+        ((.value.title // "") | gsub("[\\n\\r\\t]"; " ")),
+        (.value.author // "")
+      ]
+    | join($fs)
+  '
+}
+
+state_worktree_field() {
+  state_read | jq -r --arg pr "$1" --arg field "$2" '.worktrees[$pr][$field] // empty'
+}
+
+# --- GitHub ------------------------------------------------------------------
+
+# Run a command, surfacing its stderr on failure. Swallowing errors here would
+# make an auth or network problem look identical to an empty review queue.
+gh_capture() {
+  local out err label status=0
+  # A bare `if cmd; then` swallows the failure status, so capture it explicitly.
+  label="$1 ${2:-} ${3:-}"
+  err=$(mktemp)
+
+  out=$("$@" 2> "$err") || status=$?
+
+  if [ "$status" -eq 0 ]; then
+    rm -f "$err"
+    printf '%s' "$out"
+    return 0
+  fi
+
+  echo "Error: '${label% }' failed (exit $status)" >&2
+  sed 's/^/  /' "$err" >&2
+  rm -f "$err"
+  return "$status"
+}
+
+debug() {
+  if [ -n "${REVIEW_DEBUG:-}" ]; then
+    printf 'debug: %s\n' "$*" >&2
+  fi
+}
+
+# Resolve the repo and login once, in the current shell. Doing this inside a
+# command substitution would both lose the cache and hide failures, because
+# errexit does not propagate out of nested function/substitution layers.
+init_github() {
+  require_cmd gh "brew install gh"
+  require_cmd jq "brew install jq"
+
+  if [ -z "${REVIEW_REPO:-}" ]; then
+    REVIEW_REPO=$(gh_capture gh repo view --json nameWithOwner -q .nameWithOwner) || exit 1
+  fi
+
+  if [ -z "${REVIEW_ME:-}" ]; then
+    REVIEW_ME=$(gh_capture gh api user -q .login) || exit 1
+  fi
+
+  debug "repo=$REVIEW_REPO login=$REVIEW_ME"
+}
+
+# Fetch the pending review queue for the current repository as JSON.
+queue_fetch() {
+  local numbers query fragment aliases index n
+
+  numbers=$(gh_capture gh pr list --repo "$REVIEW_REPO" \
+    --search "review-requested:@me is:open" \
+    --limit 50 --json number -q '.[].number') || return 1
+  debug "review-requested PRs: $(printf '%s' "$numbers" | tr '\n' ' ')"
+
+  if [ -z "$numbers" ]; then
+    echo '[]'
+    return 0
+  fi
+
+  aliases=""
+  index=0
+  while IFS= read -r n; do
+    [ -n "$n" ] || continue
+    aliases+="p${index}: pullRequest(number: ${n}) { ...prFields } "
+    index=$((index + 1))
+  done <<< "$numbers"
+
+  fragment='fragment prFields on PullRequest {
+    number title url isDraft additions deletions changedFiles createdAt
+    headRefName baseRefName
+    author { login }
+    timelineItems(itemTypes: [REVIEW_REQUESTED_EVENT], last: 50) {
+      nodes { ... on ReviewRequestedEvent { createdAt requestedReviewer { ... on User { login } } } }
+    }
+    reviews(last: 50) { nodes { state submittedAt author { login } } }
+  }'
+
+  query="$fragment
+  query { repository(owner: \"${REVIEW_REPO%%/*}\", name: \"${REVIEW_REPO##*/}\") { $aliases } }"
+
+  local payload
+  payload=$(gh_capture gh api graphql -f query="$query") || return 1
+  printf '%s' "$payload" | queue_transform "$REVIEW_ME"
+}
+
+# Resolve a ref to a PR number in the current repository.
+resolve_pr_number() {
+  local ref="$1" kind repo="$REVIEW_REPO"
+  kind=$(classify_ref "$ref")
+
+  case "$kind" in
+    pr)
+      normalize_pr_number "$ref"
+      ;;
+    pr-url)
+      local parsed url_repo number
+      parsed=$(parse_pr_url "$ref")
+      url_repo="${parsed%% *}"
+      number="${parsed##* }"
+      if [ "$url_repo" != "$repo" ]; then
+        echo "Error: $url_repo is not the current repository ($repo)" >&2
+        return 1
+      fi
+      printf '%s\n' "$number"
+      ;;
+    branch)
+      local found
+      found=$(gh_capture gh pr list --repo "$repo" --head "$ref" --state open \
+        --limit 1 --json number -q '.[0].number') || return 1
+      if [ -z "$found" ]; then
+        echo "Error: no open PR found for branch '$ref' in $repo" >&2
+        return 1
+      fi
+      printf '%s\n' "$found"
+      ;;
+    linear)
+      resolve_linear_pr "$ref"
+      ;;
+    head)
+      echo "Error: HEAD cannot be resolved here" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Resolve a Linear ticket to the newest matching open PR.
+resolve_linear_pr() {
+  local ref="$1" ticket found repo="$REVIEW_REPO"
+  if ! ticket=$(linear_ticket_from_ref "$ref"); then
+    echo "Error: could not extract a Linear ticket from '$ref'" >&2
+    return 1
+  fi
+
+  found=$(gh_capture gh pr list --repo "$repo" --state open --search "$ticket" \
+    --limit 50 --json number,createdAt \
+    -q 'sort_by(.createdAt) | .[-1].number') || return 1
+
+  if [ -z "$found" ] || [ "$found" = "null" ]; then
+    # Fall back to matching the ticket inside head branch names.
+    local listing
+    listing=$(gh_capture gh pr list --repo "$repo" --state open --limit 200 \
+      --json number,headRefName,title,createdAt) || return 1
+    found=$(printf '%s' "$listing" \
+      | jq -r --arg t "$(printf '%s' "$ticket" | tr '[:upper:]' '[:lower:]')" '
+          map(select(
+            ((.headRefName // "") | ascii_downcase | contains($t)) or
+            ((.title // "") | ascii_downcase | contains($t))
+          ))
+          | sort_by(.createdAt)
+          | .[-1].number // empty
+        ')
+  fi
+
+  if [ -z "$found" ] || [ "$found" = "null" ]; then
+    echo "Error: no open PR in $repo references $ticket" >&2
+    return 1
+  fi
+
+  printf '%s\n' "$found"
+}
+
+# Pick the next-up PR: oldest pending request, skipping drafts and snoozes.
+resolve_head_pr() {
+  local queue snoozes candidate
+  queue=$(queue_fetch) || return 1
+
+  if [ "$(printf '%s' "$queue" | jq 'length')" -eq 0 ]; then
+    echo "Error: no PRs are awaiting your review" >&2
+    return 1
+  fi
+
+  snoozes=$(state_read | jq '.snoozes | keys')
+
+  candidate=$(printf '%s' "$queue" | jq -r --argjson snoozes "$snoozes" '
+    map(select(.draft == false))
+    | map(select((.number | tostring) as $n | ($snoozes | index($n)) == null))
+    | .[0].number // empty
+  ')
+
+  if [ -z "$candidate" ]; then
+    echo "Error: every pending review is snoozed or in draft" >&2
+    echo "Hint: run 'review log' to see the queue." >&2
+    return 1
+  fi
+
+  printf '%s\n' "$candidate"
+}
+
+# --- Worktrees and sessions --------------------------------------------------
+
+worktree_path_for_pr() {
+  printf '%s/pr-%s\n' "$REVIEWS_DIR" "$1"
+}
+
+review_ref_for_pr() {
+  printf 'refs/review/pr/%s\n' "$1"
+}
+
+worktree_is_registered() {
+  local path="$1"
+  git worktree list --porcelain | grep -qxF "worktree $path"
+}
+
+# Append review worktrees that exist on disk but are missing from state, so
+# orphans left behind by a crash are still visible and still cleanable.
+append_unregistered_rows() {
+  local rows="$1" title="$2"
+  local dir base pr known
+
+  if [ ! -d "$REVIEWS_DIR" ]; then
+    printf '%s' "$rows"
+    return 0
+  fi
+
+  known=$(printf '%s\n' "$rows" | cut -d "$REVIEW_FS" -f1)
+
+  for dir in "$REVIEWS_DIR"/*; do
+    [ -d "$dir" ] || continue
+    base=$(basename "$dir")
+    pr="${base#pr-}"
+    case "$pr" in
+      '' | *[!0-9]*) continue ;;
+    esac
+    if printf '%s\n' "$known" | grep -qxF "$pr"; then
+      continue
+    fi
+    rows+=$'\n'"${pr}${REVIEW_FS}${dir}${REVIEW_FS}${REVIEW_FS}${REVIEW_FS}${REVIEW_FS}${title}${REVIEW_FS}"
+  done
+
+  printf '%s' "$rows" | grep -v '^$' || true
+}
+
+find_sessions_for_worktree() {
   local wt_path="$1"
 
-  tmux list-panes -a -F '#{session_name} #{pane_current_path}' 2>/dev/null | while IFS=' ' read -r session pane_path; do
-    case "$pane_path" in
-      "$wt_path"|"$wt_path"/*)
-        echo "$session"
+  tmux list-panes -a -F '#{session_name}::#{pane_current_path}' 2> /dev/null \
+    | while IFS= read -r line; do
+      local session pane_path
+      session="${line%%::*}"
+      pane_path="${line##*::}"
+      case "$pane_path" in
+        "$wt_path" | "$wt_path"/*)
+          printf '%s\n' "$session"
+          ;;
+      esac
+    done | sort -u
+}
+
+session_exists() {
+  local session="$1"
+  [ -n "$session" ] && tmux has-session -t "=$session" 2> /dev/null
+}
+
+session_name_for_pr() {
+  local pr="$1"
+
+  if [ -n "${TMUX:-}" ]; then
+    printf '%s/review/pr-%s\n' "$(tmux display-message -p '#S')" "$pr"
+  else
+    printf 'review/pr-%s\n' "$pr"
+  fi
+}
+
+attach_session() {
+  local session="$1"
+
+  if [ -n "${TMUX:-}" ]; then
+    tmux switch-client -t "=$session"
+  else
+    tmux attach-session -t "=$session"
+  fi
+}
+
+# Fetch the PR head into a private ref and check it out detached.
+create_review_worktree() {
+  local pr="$1" path="$2" ref
+  ref=$(review_ref_for_pr "$pr")
+
+  echo "Fetching PR #$pr..."
+  if ! git fetch --no-tags origin "+refs/pull/$pr/head:$ref" 2>&1 | sed 's/^/  /'; then
+    echo "Error: failed to fetch refs/pull/$pr/head from origin" >&2
+    return 1
+  fi
+
+  mkdir -p "$REVIEWS_DIR"
+  git worktree add --detach "$path" "$ref" > /dev/null
+}
+
+create_review_session() {
+  local session="$1" path="$2" url="$3"
+
+  tmux new-session -d -s "$session" -n "tuicr" -c "$path"
+  tmux send-keys -t "$session:tuicr" "tuicr pr $(printf '%q' "$url")" Enter
+
+  tmux new-window -t "$session" -n "opencode" -c "$path"
+  tmux send-keys -t "$session:opencode" "opencode" Enter
+
+  tmux select-window -t "$session:tuicr"
+}
+
+# --- Command: open -----------------------------------------------------------
+
+cmd_open() {
+  local ref="$1" kind pr
+
+  require_repo
+  require_cmd git "brew install git"
+  require_cmd tmux "brew install tmux"
+  require_cmd tuicr "brew install tuicr"
+  require_cmd opencode "brew install opencode"
+  init_github
+
+  kind=$(classify_ref "$ref")
+
+  if [ "$kind" = "head" ]; then
+    pr=$(resolve_head_pr) || exit 1
+  else
+    pr=$(resolve_pr_number "$ref") || exit 1
+  fi
+
+  local meta url title author head_ref draft
+  meta=$(gh_capture gh pr view "$pr" --repo "$REVIEW_REPO" \
+    --json number,title,url,author,headRefName,isDraft,state) || exit 1
+
+  if [ "$(printf '%s' "$meta" | jq -r '.state')" != "OPEN" ]; then
+    echo "Warning: PR #$pr is $(printf '%s' "$meta" | jq -r '.state')." >&2
+  fi
+
+  url=$(printf '%s' "$meta" | jq -r '.url')
+  title=$(printf '%s' "$meta" | jq -r '.title')
+  author=$(printf '%s' "$meta" | jq -r '.author.login // "unknown"')
+  head_ref=$(printf '%s' "$meta" | jq -r '.headRefName')
+  draft=$(printf '%s' "$meta" | jq -r '.isDraft')
+
+  local path
+  path=$(worktree_path_for_pr "$pr")
+
+  if [ -d "$path" ] && worktree_is_registered "$path"; then
+    echo "Worktree already exists at .worktrees/reviews/pr-$pr, reusing."
+  else
+    if [ -d "$path" ] && ! worktree_is_registered "$path"; then
+      echo "Pruning stale worktree directory for PR #$pr..."
+      rm -rf "$path"
+      git worktree prune
+    fi
+    create_review_worktree "$pr" "$path"
+  fi
+
+  local session existing
+  existing=$(find_sessions_for_worktree "$path" | head -1 || true)
+
+  if [ -n "$existing" ]; then
+    session="$existing"
+    echo "Session '$session' already exists, switching."
+  else
+    session=$(session_name_for_pr "$pr")
+    if session_exists "$session"; then
+      echo "Session '$session' already exists, switching."
+    else
+      create_review_session "$session" "$path" "$url"
+    fi
+  fi
+
+  state_register_worktree "$pr" "$path" "$session" "$REVIEW_REPO" "$url" "$title" "$author"
+
+  local label="$REVIEW_C_DIM" off="$REVIEW_C_RESET"
+  echo ""
+  printf '  %sPR%s       %s#%s%s %s\n' \
+    "$label" "$off" "$REVIEW_C_CYAN" "$pr" "$off" "$(sanitize_cell "$title")"
+  printf '  %sAuthor%s   %s\n' "$label" "$off" "$author"
+  printf '  %sHead%s     %s %s(detached, read-only review)%s\n' \
+    "$label" "$off" "$head_ref" "$label" "$off"
+  if [ "$draft" = "true" ]; then
+    printf '  %sState%s    %sdraft%s\n' "$label" "$off" "$REVIEW_C_YELLOW" "$off"
+  fi
+  printf '  %sWorktree%s .worktrees/reviews/pr-%s\n' "$label" "$off" "$pr"
+  printf '  %sSession%s  %s\n' "$label" "$off" "$session"
+  echo ""
+
+  attach_session "$session"
+}
+
+# --- Command: log ------------------------------------------------------------
+
+cmd_log() {
+  require_repo
+  init_github
+
+  local queue count
+  queue=$(queue_fetch) || exit 1
+  count=$(printf '%s' "$queue" | jq 'length')
+
+  if [ "$count" -eq 0 ]; then
+    printf 'No PRs are awaiting your review in %s%s%s.\n' \
+      "$REVIEW_C_BOLD" "$REVIEW_REPO" "$REVIEW_C_RESET"
+    echo "Hint: set REVIEW_DEBUG=1 to see the repo and PRs the query returned."
+    return 0
+  fi
+
+  local now sla_seconds snoozes
+  now=$(date '+%s')
+  sla_seconds=$((REVIEW_SLA_HOURS * 3600))
+  snoozes=$(state_read | jq '.snoozes')
+
+  # Snoozed PRs sort to the bottom of the stack.
+  local rows
+  rows=$(printf '%s' "$queue" | jq -r --argjson snoozes "$snoozes" --arg fs "$REVIEW_FS" '
+    map(. + { snoozed_until: ($snoozes[(.number | tostring)].until // null) })
+    | sort_by([(if .snoozed_until == null then 0 else 1 end), .requested_at])
+    | .[]
+    | [
+        (.number | tostring),
+        .author,
+        ((.additions | tostring) + "/-" + (.deletions | tostring)),
+        .requested_at,
+        (if .draft then "draft" else "" end),
+        (if .snoozed_until == null then "" else (.snoozed_until | tostring) end),
+        (.title | gsub("[\\n\\r\\t]"; " "))
+      ]
+    | join($fs)
+  ')
+
+  {
+    printf 'PR\tAUTHOR\tLOC\tAGE\tSLA\tFLAGS\tTITLE\n'
+    while IFS="$REVIEW_FS" read -r number author loc requested_at draft_flag snooze_until title; do
+      [ -n "$number" ] || continue
+
+      local requested_epoch age business
+      requested_epoch=$(iso_to_epoch "$requested_at") || exit 1
+      age=$(format_duration $((now - requested_epoch)))
+      business=$(business_seconds "$requested_epoch" "$now")
+
+      local flag_tone=dim
+      [ -n "$draft_flag" ] && flag_tone=yellow
+
+      # A snoozed row is greyed out entirely, marker included, so the eye skips
+      # it; the "snoozed til HH:MM" flag carries the state without colour.
+      printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$(paint "$(row_tone "$snooze_until" cyan)" "#$number")" \
+        "$(paint "$(row_tone "$snooze_until" '')" "$(sanitize_cell "$author")")" \
+        "$(paint dim "+$loc")" \
+        "$(paint dim "$age")" \
+        "$(paint "$(row_tone "$snooze_until" "$(sla_color "$business" "$sla_seconds")")" \
+          "$(sla_cell "$business" "$sla_seconds")")" \
+        "$(paint "$(row_tone "$snooze_until" "$flag_tone")" \
+          "$(flags_cell "$draft_flag" "$snooze_until")")" \
+        "$(paint "$(row_tone "$snooze_until" '')" \
+          "$(truncate_cell "$(sanitize_cell "$title")" "$REVIEW_TITLE_WIDTH")")"
+    done <<< "$rows"
+  } | render_table
+
+  printf '\n%s%s%s  SLA target: %sh of Mon-Fri time from when review was requested.\n' \
+    "$REVIEW_C_BOLD" "$REVIEW_REPO" "$REVIEW_C_RESET" "$REVIEW_SLA_HOURS"
+}
+
+# --- Command: status ---------------------------------------------------------
+
+cmd_status() {
+  require_repo
+  require_cmd jq "brew install jq"
+  require_cmd tmux "brew install tmux"
+
+  local rows
+  rows=$(state_worktree_rows)
+  rows=$(append_unregistered_rows "$rows" "(unregistered)")
+
+  if [ -z "$rows" ]; then
+    echo "No active review sessions."
+    return 0
+  fi
+
+  local all="$rows"
+
+  {
+    printf 'PR\tSESSION\tWORKTREE\tTMUX\tTREE\tTITLE\n'
+    while IFS="$REVIEW_FS" read -r pr path session repo url title author; do
+      [ -n "$pr" ] || continue
+
+      local tmux_state tmux_color tree_state tree_color
+      if session_exists "$session"; then
+        tmux_state="live" tmux_color=green
+      elif [ -z "$session" ]; then
+        tmux_state="none" tmux_color=dim
+      else
+        tmux_state="dead" tmux_color=red
+      fi
+
+      if [ ! -d "$path" ]; then
+        tree_state="missing" tree_color=red
+      elif [ -n "$(git -C "$path" status --porcelain 2> /dev/null)" ]; then
+        tree_state="dirty" tree_color=yellow
+      else
+        tree_state="clean" tree_color=green
+      fi
+
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$(paint cyan "#$pr")" \
+        "$(truncate_cell "$(sanitize_cell "$session")" 34)" \
+        "$(paint dim ".worktrees/reviews/$(basename "$path")")" \
+        "$(paint "$tmux_color" "$tmux_state")" \
+        "$(paint "$tree_color" "$tree_state")" \
+        "$(truncate_cell "$(sanitize_cell "$title")" 40)"
+    done <<< "$all"
+  } | render_table
+}
+
+# --- Command: snooze ---------------------------------------------------------
+
+cmd_snooze() {
+  local ref="$1"
+
+  require_repo
+  init_github
+
+  local pr kind
+  kind=$(classify_ref "$ref")
+
+  if [ "$kind" = "head" ]; then
+    pr=$(resolve_head_pr) || exit 1
+  else
+    pr=$(resolve_pr_number "$ref") || exit 1
+  fi
+
+  local until_epoch
+  until_epoch=$(end_of_day_epoch "$(date '+%s')")
+  state_snooze "$pr" "$until_epoch"
+
+  printf 'Snoozed %s#%s%s until %s%s%s.\n' \
+    "$REVIEW_C_CYAN" "$pr" "$REVIEW_C_RESET" \
+    "$REVIEW_C_BOLD" "$(epoch_format "$until_epoch" '%Y-%m-%d %H:%M')" "$REVIEW_C_RESET"
+  echo "It stays visible in 'review log' but 'review HEAD' will skip it."
+}
+
+# --- Command: unsnooze -------------------------------------------------------
+
+cmd_unsnooze() {
+  local ref="${1:-}" all="$2"
+
+  require_repo
+  require_cmd jq "brew install jq"
+
+  if [ "$all" = true ]; then
+    local snoozed count
+    snoozed=$(state_snoozed_prs)
+    count=$(printf '%s' "$snoozed" | grep -c . || true)
+
+    if [ "$count" -eq 0 ]; then
+      echo "No PRs are snoozed."
+      return 0
+    fi
+
+    state_clear_snoozes
+    printf 'Unsnoozed %s%d%s PR(s):' "$REVIEW_C_BOLD" "$count" "$REVIEW_C_RESET"
+    local pr
+    while IFS= read -r pr; do
+      [ -n "$pr" ] || continue
+      printf ' %s#%s%s' "$REVIEW_C_CYAN" "$pr" "$REVIEW_C_RESET"
+    done <<< "$snoozed"
+    echo ""
+    return 0
+  fi
+
+  if [ -z "$ref" ]; then
+    echo "Error: 'review unsnooze' expects a ref, or --all" >&2
+    list_snoozed_hint
+    return 1
+  fi
+
+  # HEAD is meaningless here: it only ever selects PRs that are not snoozed.
+  if [ "$(classify_ref "$ref")" = "head" ]; then
+    echo "Error: HEAD never resolves to a snoozed PR; pass an explicit ref or --all" >&2
+    list_snoozed_hint
+    return 1
+  fi
+
+  init_github
+
+  local pr
+  pr=$(resolve_pr_number "$ref") || exit 1
+
+  if [ -z "$(state_snoozed_until "$pr")" ]; then
+    printf '%s#%s%s is not snoozed.\n' "$REVIEW_C_CYAN" "$pr" "$REVIEW_C_RESET"
+    list_snoozed_hint
+    return 0
+  fi
+
+  state_unsnooze "$pr"
+  printf 'Unsnoozed %s#%s%s; it is back in the %sreview HEAD%s rotation.\n' \
+    "$REVIEW_C_CYAN" "$pr" "$REVIEW_C_RESET" "$REVIEW_C_BOLD" "$REVIEW_C_RESET"
+}
+
+list_snoozed_hint() {
+  local snoozed
+  snoozed=$(state_snoozed_prs)
+
+  if [ -z "$snoozed" ]; then
+    echo "No PRs are currently snoozed." >&2
+    return 0
+  fi
+
+  printf 'Currently snoozed:' >&2
+  local pr
+  while IFS= read -r pr; do
+    [ -n "$pr" ] || continue
+    printf ' #%s' "$pr" >&2
+  done <<< "$snoozed"
+  echo "" >&2
+}
+
+# --- Command: clear ----------------------------------------------------------
+
+remove_review_worktree() {
+  local pr="$1" path="$2" force="$3" dry_run="$4"
+
+  if [ ! -d "$path" ]; then
+    if [ "$dry_run" = true ]; then
+      echo "[dry-run] Would forget missing worktree for PR #$pr"
+    else
+      git worktree prune
+    fi
+    return 0
+  fi
+
+  if [ "$force" != true ] && [ -n "$(git -C "$path" status --porcelain 2> /dev/null)" ]; then
+    echo "Skip: .worktrees/reviews/$(basename "$path") has uncommitted changes (use --force)" >&2
+    return 1
+  fi
+
+  if [ "$dry_run" = true ]; then
+    echo "[dry-run] Would remove worktree: $path"
+    return 0
+  fi
+
+  echo "Removing worktree: .worktrees/reviews/$(basename "$path")"
+  if worktree_is_registered "$path"; then
+    git worktree remove --force "$path"
+  else
+    rm -rf "$path"
+    git worktree prune
+  fi
+
+  git update-ref -d "$(review_ref_for_pr "$pr")" 2> /dev/null || true
+}
+
+cmd_clear() {
+  local target="${1:-}" force="$2" dry_run="$3"
+
+  require_repo
+  require_cmd git "brew install git"
+  require_cmd tmux "brew install tmux"
+  require_cmd jq "brew install jq"
+
+  local target_pr=""
+  if [ -n "$target" ]; then
+    init_github
+    if [ "$(classify_ref "$target")" = "branch" ]; then
+      # Legacy review worktrees were checked out on a branch.
+      if clear_legacy_branch "$target" "$force" "$dry_run"; then
         return 0
+      fi
+    fi
+    target_pr=$(resolve_pr_number "$target") || exit 1
+  fi
+
+  local rows
+  rows=$(state_worktree_rows)
+  rows=$(append_unregistered_rows "$rows" "")
+
+  if [ -z "$rows" ]; then
+    echo "No review worktrees to clear."
+    return 0
+  fi
+
+  # Never delete the shell we are standing in mid-teardown.
+  local self_session=""
+  if [ -n "${TMUX:-}" ]; then
+    self_session=$(tmux display-message -p '#S')
+  fi
+
+  local kill_self=false cleared=0 skipped=0
+  while IFS="$REVIEW_FS" read -r pr path session repo url title author; do
+    [ -n "$pr" ] || continue
+    if [ -n "$target_pr" ] && [ "$pr" != "$target_pr" ]; then
+      continue
+    fi
+
+    local sessions
+    sessions=$(find_sessions_for_worktree "$path" || true)
+    if [ -n "$session" ] && session_exists "$session"; then
+      sessions=$(printf '%s\n%s' "$sessions" "$session" | grep -v '^$' | sort -u)
+    fi
+
+    if ! remove_review_worktree "$pr" "$path" "$force" "$dry_run"; then
+      skipped=$((skipped + 1))
+      continue
+    fi
+
+    local s
+    while IFS= read -r s; do
+      [ -n "$s" ] || continue
+      if [ "$s" = "$self_session" ]; then
+        kill_self=true
+        continue
+      fi
+      if [ "$dry_run" = true ]; then
+        echo "[dry-run] Would kill tmux session: $s"
+      else
+        echo "Killing tmux session: $s"
+        tmux kill-session -t "=$s" 2> /dev/null || true
+      fi
+    done <<< "$sessions"
+
+    if [ "$dry_run" != true ]; then
+      state_forget_worktree "$pr"
+    fi
+    cleared=$((cleared + 1))
+  done <<< "$rows"
+
+  if [ -n "$target_pr" ] && [ "$cleared" -eq 0 ] && [ "$skipped" -eq 0 ]; then
+    echo "No review worktree found for PR #$target_pr."
+    return 0
+  fi
+
+  echo ""
+  if [ "$dry_run" = true ]; then
+    echo "[dry-run] Would clear $cleared review worktree(s)."
+  else
+    echo "Cleared $cleared review worktree(s)."
+  fi
+  if [ "$skipped" -gt 0 ]; then
+    printf '%sSkipped %d dirty worktree(s); rerun with --force to remove them.%s\n' \
+      "$REVIEW_C_YELLOW" "$skipped" "$REVIEW_C_RESET"
+  fi
+  echo "No branches were deleted."
+
+  if [ "$kill_self" = true ] && [ "$dry_run" != true ]; then
+    kill_own_session "$self_session"
+  fi
+}
+
+# Step out of the session being torn down, then kill it last.
+kill_own_session() {
+  local session="$1" other
+
+  if [ "$(pwd -P)" != "$REPO_ROOT" ]; then
+    cd "$REPO_ROOT" 2> /dev/null || true
+  fi
+
+  other=$(tmux list-sessions -F '#S' 2> /dev/null | grep -vxF "$session" | head -1 || true)
+
+  if [ -z "$other" ]; then
+    echo "Note: '$session' is the only tmux session; leaving it running."
+    return 0
+  fi
+
+  echo "Switching to '$other' and killing '$session'..."
+  tmux switch-client -t "=$other"
+  tmux kill-session -t "=$session" 2> /dev/null || true
+}
+
+# Tear down a pre-PR-era review worktree that is checked out on a branch.
+clear_legacy_branch() {
+  local branch="$1" force="$2" dry_run="$3" wt_path="" candidate=""
+
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*) candidate="${line#worktree }" ;;
+      "branch refs/heads/$branch")
+        case "$candidate" in
+          "$REPO_ROOT/.worktrees/"*)
+            wt_path="$candidate"
+            break
+            ;;
+        esac
+        ;;
+      "") candidate="" ;;
+    esac
+  done < <(git worktree list --porcelain)
+
+  if [ -z "$wt_path" ]; then
+    return 1
+  fi
+
+  echo "Found legacy review worktree for branch '$branch'."
+
+  local sessions s
+  sessions=$(find_sessions_for_worktree "$wt_path" || true)
+  while IFS= read -r s; do
+    [ -n "$s" ] || continue
+    if [ "$dry_run" = true ]; then
+      echo "[dry-run] Would kill tmux session: $s"
+    else
+      echo "Killing tmux session: $s"
+      tmux kill-session -t "=$s" 2> /dev/null || true
+    fi
+  done <<< "$sessions"
+
+  if [ "$force" != true ] && [ -n "$(git -C "$wt_path" status --porcelain 2> /dev/null)" ]; then
+    echo "Error: '$wt_path' has uncommitted changes (use --force)" >&2
+    return 0
+  fi
+
+  if [ "$dry_run" = true ]; then
+    echo "[dry-run] Would remove worktree: $wt_path"
+  else
+    if [ "$(pwd -P)" != "$REPO_ROOT" ]; then
+      cd "$REPO_ROOT" 2> /dev/null || true
+    fi
+    echo "Removing worktree: $wt_path"
+    git worktree remove --force "$wt_path"
+  fi
+
+  echo "Branch '$branch' was not deleted."
+  return 0
+}
+
+# --- Main --------------------------------------------------------------------
+
+main() {
+  set -euo pipefail
+
+  if [ "$REVIEW_DATE_FLAVOR" = unknown ]; then
+    echo "Error: date(1) on PATH supports neither BSD (-j/-r) nor GNU (-d) syntax" >&2
+    echo "  found: $(command -v date)" >&2
+    exit 1
+  fi
+
+  local force=false dry_run=false all=false
+  local args=()
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -h | --help)
+        display_help
+        ;;
+      -f | --force)
+        force=true
+        ;;
+      -n | --dry-run)
+        dry_run=true
+        ;;
+      -a | --all)
+        all=true
+        ;;
+      --)
+        shift
+        while [ $# -gt 0 ]; do
+          args+=("$1")
+          shift
+        done
+        break
+        ;;
+      -*)
+        echo "Error: unknown option: $1" >&2
+        exit 1
+        ;;
+      *)
+        args+=("$1")
         ;;
     esac
-  done
-}
-
-ADJECTIVES=(
-  amber bold bright calm clever cool cosmic crisp dark deft
-  eager fast fierce gentle golden grand hazy keen light lunar
-  mellow misty noble pale plain prime quick quiet rapid raw
-  sharp silent sleek slim smooth solar steady stout swift tall
-  terse tidy vivid warm wild young agile blunt brisk clean
-  clear dense dusty fresh ivory jade lucid nifty opal radiant
-)
-
-ANIMALS=(
-  badger bear cat crane crow deer dolphin eagle elk falcon
-  ferret finch fox gecko goat hawk heron horse ibis jackal
-  jay kite lemur lion lynx moose newt otter owl parrot
-  puma quail raven robin seal shark shrike snake sparrow spider
-  squid stork swan tern tiger toad viper walrus wren yak
-  ant bat cod crab drake egret frog grouse gull hare
-)
-
-generate_name() {
-  local adj="${ADJECTIVES[$((RANDOM % ${#ADJECTIVES[@]}))]}"
-  local animal="${ANIMALS[$((RANDOM % ${#ANIMALS[@]}))]}"
-  echo "${adj}-${animal}"
-}
-
-# --- Ensure branch is available locally -------------------------------------
-
-if ! git show-ref --verify --quiet "refs/heads/$BRANCH"; then
-  # Try to fetch it from the remote
-  echo "Branch '$BRANCH' not found locally, fetching..."
-  if git fetch origin "$BRANCH:$BRANCH" 2>/dev/null; then
-    echo "Fetched '$BRANCH' from origin."
-  else
-    echo "Error: branch '$BRANCH' not found locally or on origin"
-    exit 1
-  fi
-fi
-
-# --- Worktree ----------------------------------------------------------------
-
-WORKTREE_PATH=$(find_worktree_for_branch "$BRANCH" || true)
-
-if [ -n "$WORKTREE_PATH" ]; then
-  WORKTREE_NAME=$(basename "$WORKTREE_PATH")
-  echo "Worktree already exists at .worktrees/$WORKTREE_NAME, reusing."
-else
-  WORKTREE_NAME=""
-  for _ in $(seq 1 10); do
-    CANDIDATE=$(generate_name)
-    if [ ! -d "$REPO_ROOT/.worktrees/$CANDIDATE" ]; then
-      WORKTREE_NAME="$CANDIDATE"
-      break
-    fi
+    shift
   done
 
-  if [ -z "$WORKTREE_NAME" ]; then
-    echo "Error: failed to generate a unique worktree name after 10 attempts"
+  if [ "${#args[@]}" -eq 0 ]; then
+    echo "Error: expected a ref or subcommand" >&2
+    echo "Usage: review <ref>|HEAD|log|status|snooze <ref>|clear [ref]" >&2
     exit 1
   fi
 
-  mkdir -p "$REPO_ROOT/.worktrees"
-  git worktree add "$REPO_ROOT/.worktrees/$WORKTREE_NAME" "$BRANCH"
+  local subcommand="${args[0]}"
 
-  WORKTREE_PATH="$REPO_ROOT/.worktrees/$WORKTREE_NAME"
+  case "$subcommand" in
+    log)
+      [ "${#args[@]}" -eq 1 ] || {
+        echo "Error: 'review log' takes no arguments" >&2
+        exit 1
+      }
+      cmd_log
+      ;;
+    status)
+      [ "${#args[@]}" -eq 1 ] || {
+        echo "Error: 'review status' takes no arguments" >&2
+        exit 1
+      }
+      cmd_status
+      ;;
+    snooze)
+      [ "${#args[@]}" -eq 2 ] || {
+        echo "Error: 'review snooze' expects exactly one ref" >&2
+        exit 1
+      }
+      cmd_snooze "${args[1]}"
+      ;;
+    unsnooze)
+      [ "${#args[@]}" -le 2 ] || {
+        echo "Error: 'review unsnooze' expects at most one ref" >&2
+        exit 1
+      }
+      cmd_unsnooze "${args[1]:-}" "$all"
+      ;;
+    clear)
+      [ "${#args[@]}" -le 2 ] || {
+        echo "Error: 'review clear' expects at most one ref" >&2
+        exit 1
+      }
+      cmd_clear "${args[1]:-}" "$force" "$dry_run"
+      ;;
+    *)
+      [ "${#args[@]}" -eq 1 ] || {
+        echo "Error: unexpected argument: ${args[1]}" >&2
+        exit 1
+      }
+      cmd_open "$subcommand"
+      ;;
+  esac
+}
 
-  if [ -d "$REPO_ROOT/.claude" ] && [ ! -e "$WORKTREE_PATH/.claude" ]; then
-    ln -s "$REPO_ROOT/.claude" "$WORKTREE_PATH/.claude"
-  fi
+# Presentation is initialised even when sourced, so render_table works standalone.
+setup_borders
+setup_colors
 
-  CLAUDE_PROJECTS_DIR="$HOME/.claude/projects"
-  MAIN_PROJECT_KEY=$(echo "$REPO_ROOT" | tr '/' '-')
-  WT_PROJECT_KEY=$(echo "$WORKTREE_PATH" | tr '/' '-')
-  if [ -d "$CLAUDE_PROJECTS_DIR/$MAIN_PROJECT_KEY" ] && [ ! -e "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY" ]; then
-    ln -s "$CLAUDE_PROJECTS_DIR/$MAIN_PROJECT_KEY" "$CLAUDE_PROJECTS_DIR/$WT_PROJECT_KEY"
-  fi
-fi
-
-# --- Tmux session ------------------------------------------------------------
-
-EXISTING_SESSION=$(find_session_for_worktree "$WORKTREE_PATH" || true)
-
-if [ -n "$EXISTING_SESSION" ]; then
-  echo "Session '$EXISTING_SESSION' already exists, switching."
-  echo ""
-  echo "  Branch:   $BRANCH"
-  echo "  Worktree: .worktrees/$WORKTREE_NAME"
-  echo "  Session:  $EXISTING_SESSION"
-  echo ""
-
-  if [ -n "$TMUX" ]; then
-    tmux switch-client -t "$EXISTING_SESSION"
-  else
-    tmux attach-session -t "$EXISTING_SESSION"
-  fi
-  exit 0
-fi
-
-if [ -n "$TMUX" ]; then
-  PARENT_SESSION=$(tmux display-message -p '#S')
-  SESSION="${PARENT_SESSION}/review/${BRANCH}"
-else
-  SESSION="review/${BRANCH}"
-fi
-
-tmux new-session -d -s "$SESSION" -n "claude" -c "$WORKTREE_PATH"
-tmux send-keys -t "$SESSION:claude" "claude '/review'" Enter
-
-tmux new-window -t "$SESSION" -n "zsh" -c "$WORKTREE_PATH"
-
-tmux select-window -t "$SESSION:claude"
-
-# --- Summary -----------------------------------------------------------------
-
-echo ""
-echo "  Branch:   $BRANCH (read-only review)"
-echo "  Worktree: .worktrees/$WORKTREE_NAME"
-echo "  Session:  $SESSION"
-echo ""
-
-# --- Attach ------------------------------------------------------------------
-
-if [ -n "$TMUX" ]; then
-  tmux switch-client -t "$SESSION"
-else
-  tmux attach-session -t "$SESSION"
+if [ -z "${REVIEW_LIB_ONLY:-}" ]; then
+  main "$@"
 fi

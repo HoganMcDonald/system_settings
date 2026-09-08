@@ -1,0 +1,75 @@
+#compdef review
+
+_review() {
+  local -a subcommands
+  subcommands=(
+    'HEAD:Open the next-up PR awaiting your review'
+    'log:Show the queue of PRs awaiting your review'
+    'status:Show active local review sessions'
+    'snooze:Snooze a PR until end of day'
+    'unsnooze:Undo a snooze'
+    'clear:Tear down review worktrees and tmux sessions'
+  )
+
+  _arguments -C \
+    '(-h --help)'{-h,--help}'[Display help message]' \
+    '(-a --all)'{-a,--all}'[Clear every snooze]' \
+    '(-f --force)'{-f,--force}'[Remove worktrees even when dirty]' \
+    '(-n --dry-run)'{-n,--dry-run}'[Show what would be done]' \
+    '1: :->first' \
+    '2: :->second'
+
+  case "$state" in
+    first)
+      _describe -t commands 'subcommand' subcommands
+      __review_refs
+      ;;
+    second)
+      case "${words[2]}" in
+        unsnooze)
+          __review_snoozed
+          ;;
+        snooze | clear)
+          __review_refs
+          ;;
+      esac
+      ;;
+  esac
+}
+
+# Only currently-snoozed PRs can meaningfully be unsnoozed.
+__review_snoozed() {
+  local state_file snoozed
+  state_file="$(git rev-parse --git-common-dir 2>/dev/null)/review-state.json"
+  [[ -f "$state_file" ]] || return 0
+
+  snoozed=(${(f)"$(jq -r --argjson now "$(date +%s)" '
+    .snoozes // {}
+    | to_entries
+    | map(select(.value.until > $now))
+    | sort_by(.value.until)
+    | .[].key
+  ' "$state_file" 2>/dev/null)"})
+
+  if (( ${#snoozed} )); then
+    _describe -t snoozed 'snoozed PR' snoozed
+  fi
+}
+
+# Offer open PRs awaiting review first, then local branches.
+__review_refs() {
+  local -a prs branches
+  prs=(${(f)"$(gh pr list --search 'review-requested:@me is:open' \
+    --limit 25 --json number,title \
+    -q '.[] | "\(.number):\(.title)"' 2>/dev/null)"})
+  if (( ${#prs} )); then
+    _describe -t pulls 'PR awaiting review' prs
+  fi
+
+  branches=(${(f)"$(git branch --format='%(refname:short)' 2>/dev/null)"})
+  if (( ${#branches} )); then
+    _describe -t branches 'branch' branches
+  fi
+}
+
+_review "$@"

@@ -21,6 +21,8 @@ Scans all worktrees under $REPO_ROOT/.worktrees/ and creates tmux sessions
 for any that don't already have one. Primary use case: restoring sessions
 after a computer restart.
 
+Review worktrees (.worktrees/reviews) are skipped — use `review` for those.
+
 Each restored session gets three windows: nvim, opencode, and zsh — matching
 the layout created by `hack`.
 
@@ -121,6 +123,14 @@ for wt_dir in "$WORKTREES_DIR"/*/; do
 
   # Skip if not a directory
   [ -d "$wt_dir" ] || continue
+
+  # `review` owns .worktrees/reviews and `unhack` stages deletions in .trash;
+  # neither should be restored with the hack layout.
+  case "$(basename "$wt_dir")" in
+    reviews | .trash)
+      continue
+      ;;
+  esac
 
   TOTAL=$((TOTAL + 1))
 
