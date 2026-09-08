@@ -44,7 +44,10 @@ return {
         -- refresh the tree via `enable_refresh_on_write`.
         use_libuv_file_watcher = false,
       },
-      window = { width = 40 },
+      window = {
+        width = 40,
+        mappings = { l = "open" },
+      },
     })
   end,
 }
