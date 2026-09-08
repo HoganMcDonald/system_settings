@@ -1,4 +1,4 @@
-#!/usr/bin/env lua
+#!/opt/homebrew/bin/lua
 
 print("[sketchybarrc] starting...")
 
