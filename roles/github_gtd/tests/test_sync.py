@@ -226,13 +226,24 @@ class GitHubGtdSyncTest(unittest.TestCase):
         self.assertEqual(operations, [])
         self.assertIn(action_id, state["acknowledged"])
 
-    def test_resolved_action_is_completed_without_touching_manual_tasks(self):
+    def test_review_action_persists_until_manually_completed(self):
+        action_id = "github-gtd:v1:PR_node_1:needs-review:2026-08-28T19:00:00Z"
+        active = [
+            {"id": "managed", "description": f"GTD Sync: {action_id}", "labels": ["github", "github-review"]}
+        ]
+        state = sync.default_state()
+        self.assertEqual(sync.plan_reconciliation({}, active, [], state), [])
+        self.assertEqual(sync.plan_reconciliation({}, active, [], state), [])
+
+    def test_resolved_authored_action_requires_two_syncs_before_completion(self):
         action_id = "github-gtd:v1:PR_node_1:fixup:1"
         active = [
             {"id": "managed", "description": f"GTD Sync: {action_id}", "labels": ["github", "fixup"]},
             {"id": "manual", "description": "", "labels": ["github", "fixup"]},
         ]
-        operations = sync.plan_reconciliation({}, active, [], sync.default_state())
+        state = sync.default_state()
+        self.assertEqual(sync.plan_reconciliation({}, active, [], state), [])
+        operations = sync.plan_reconciliation({}, active, [], state)
         self.assertEqual(
             operations,
             [{"operation": "close", "task_id": "managed", "action_id": action_id}],

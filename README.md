@@ -186,7 +186,7 @@ Generated tasks use these labels:
 - `@github-stale` for authored PRs that have gone 24 weekday hours without a review
 - `@github` for the combined queue
 
-Draft PRs do not create tasks. Requested reviews arrive whenever the PR is not a draft. Completing a review task manually dismisses that request, so a teammate's review can make your own review unnecessary without the task being recreated. A re-requested review or a later transition back into an actionable authored state creates a new task.
+Draft PRs do not create tasks. Requested reviews arrive whenever the PR is not a draft and remain until completed in Todoist, even if GitHub clears the request after a teammate reviews. Completing a review task manually dismisses that request, so a teammate's review can make your own review unnecessary without the task being recreated. A re-requested review or a later transition back into an actionable authored state creates a new task.
 
 Review requests are due after 24 hours of Monday-Friday time. Authored PRs become stale at the same threshold when nobody has submitted a review. The due datetime is set only when the task is created, so manually rescheduling it remains authoritative. A Friday 3pm request is due Monday 3pm.
 

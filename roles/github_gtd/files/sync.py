@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time as time_module
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -29,6 +30,12 @@ MARKER_CONTEXTS = {
     "github-fixup": "fixup",
     "github-merge": "needs-merge",
     "github-stale": "stale",
+}
+MARKER_LABELS = {
+    "needs-review": "github-review",
+    "fixup": "github-fixup",
+    "needs-merge": "github-merge",
+    "stale": "github-stale",
 }
 MARKER_RE = re.compile(r"^GTD Sync: (github-gtd:v1:[^\s]+)$", re.MULTILINE)
 
@@ -170,8 +177,13 @@ def task_marker(task):
     return match.group(1) if match else None
 
 
+def marker_label(marker):
+    match = re.match(r"^github-gtd:v1:[^:]+:([^:]+):", marker)
+    return MARKER_LABELS.get(match.group(1)) if match else None
+
+
 def default_state():
-    return {"version": 1, "tasks": {}, "acknowledged": [], "contexts": {}}
+    return {"version": 1, "tasks": {}, "acknowledged": [], "contexts": {}, "missing": {}}
 
 
 def hydrate_state_from_tasks(state, active_tasks, completed_tasks):
@@ -270,6 +282,7 @@ def make_action(action_id, pr, context, verb, reason, due_datetime=None):
 def plan_reconciliation(actions, active_tasks, completed_tasks, state):
     acknowledged = set(state.get("acknowledged") or [])
     tracked = state.setdefault("tasks", {})
+    missing = state.setdefault("missing", {})
     completed_markers = {marker for task in completed_tasks if (marker := task_marker(task))}
     acknowledged.update(completed_markers)
 
@@ -293,8 +306,26 @@ def plan_reconciliation(actions, active_tasks, completed_tasks, state):
     for action_id, task in active_by_marker.items():
         action = actions.get(action_id)
         if not action:
-            operations.append({"operation": "close", "task_id": task["id"], "action_id": action_id})
+            context = marker_label(action_id)
+            if context == "github-review":
+                missing.pop(action_id, None)
+                current_labels = set(task.get("labels") or [])
+                desired_labels = (current_labels - OWNED_LABELS) | {SOURCE_LABEL, context}
+                if desired_labels != current_labels:
+                    operations.append(
+                        {
+                            "operation": "update-labels",
+                            "task_id": task["id"],
+                            "action_id": action_id,
+                            "labels": sorted(desired_labels),
+                        }
+                    )
+                continue
+            missing[action_id] = int(missing.get(action_id, 0)) + 1
+            if missing[action_id] >= 2:
+                operations.append({"operation": "close", "task_id": task["id"], "action_id": action_id})
             continue
+        missing.pop(action_id, None)
         current_labels = set(task.get("labels") or [])
         desired_labels = (current_labels - OWNED_LABELS) | {SOURCE_LABEL, action["context"]}
         if desired_labels != current_labels:
@@ -312,6 +343,9 @@ def plan_reconciliation(actions, active_tasks, completed_tasks, state):
             continue
         operations.append({"operation": "create", "action_id": action_id, "action": action})
 
+    for action_id in list(missing):
+        if action_id not in active_by_marker:
+            missing.pop(action_id)
     state["acknowledged"] = sorted(acknowledged)
     return operations
 
@@ -428,7 +462,7 @@ def gh_json(arguments):
 def fetch_github():
     teams = gh_json(["api", "user/teams", "--paginate", "--slurp"])
 
-    def search(query):
+    def search_once(query):
         cursor = None
         nodes = []
         viewer = None
@@ -437,6 +471,9 @@ def fetch_github():
             if cursor:
                 arguments.extend(["-F", f"cursor={cursor}"])
             response = gh_json(arguments)
+            if response.get("errors"):
+                messages = "; ".join(error.get("message", "unknown error") for error in response["errors"])
+                raise RuntimeError(f"GitHub GraphQL search returned errors: {messages}")
             data = response.get("data") or {}
             viewer = viewer or (data.get("viewer") or {}).get("login")
             page = data.get("search") or {}
@@ -445,10 +482,27 @@ def fetch_github():
             nodes.extend(node for node in page.get("nodes", []) if node)
             page_info = page.get("pageInfo") or {}
             if not page_info.get("hasNextPage"):
+                if len(nodes) != int(page.get("issueCount") or 0):
+                    raise RuntimeError(
+                        f"GitHub search returned {len(nodes)} of {int(page.get('issueCount') or 0)} results: {query}"
+                    )
                 return viewer, nodes
             cursor = page_info.get("endCursor")
             if not cursor:
                 raise RuntimeError("GitHub pagination ended without a cursor")
+
+    def search(query):
+        error = None
+        for attempt in range(3):
+            try:
+                return search_once(query)
+            except RuntimeError as current_error:
+                error = current_error
+                if attempt < 2:
+                    time_module.sleep(1)
+        if error:
+            raise error
+        raise RuntimeError(f"GitHub search failed without an error: {query}")
 
     viewer, authored = search("is:pr is:open author:@me archived:false")
     requested_viewer, requested = search("is:pr is:open review-requested:@me archived:false")
