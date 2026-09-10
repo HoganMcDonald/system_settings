@@ -1,7 +1,7 @@
 local colors = require 'colors'
 
 local COUNT = 4
-local AEROSPACE = '/opt/homebrew/bin/aerospace'
+local AEROSPACE = '/Applications/AeroSpace.app/Contents/MacOS/AeroSpace'
 local ACTIVE_COLOR = colors.with_alpha(colors.cyan, 0x2d)
 local INACTIVE_COLOR = colors.panel_bg_dim
 

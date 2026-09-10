@@ -3,7 +3,7 @@
 # Workspace indicator script
 # Updates the workspace ovals based on current AeroSpace workspace
 
-AEROSPACE="/opt/homebrew/bin/aerospace"
+AEROSPACE="/Applications/AeroSpace.app/Contents/MacOS/AeroSpace"
 
 # Get current workspace from command line arg, environment variable, or aerospace command
 if [ -n "$1" ]; then
