@@ -15,15 +15,24 @@ export default (async () => {
 
   return {
     event: async ({ event }) => {
+      const eventType = event.type as string
+
       if (event.type === "session.status") {
-        await update(event.properties.status.type === "idle" ? "waiting" : "working")
+        await update(event.properties.status.type === "idle" ? "idle" : "working")
       } else if (event.type === "session.created") {
         await update("idle")
       } else if (event.type === "session.idle") {
-        await update("waiting")
+        await update("idle")
       } else if (event.type === "permission.updated") {
         await update("waiting")
       } else if (event.type === "permission.replied") {
+        await update("working")
+      } else if (eventType === "question.asked") {
+        await update("waiting")
+      } else if (
+        eventType === "question.replied" ||
+        eventType === "question.rejected"
+      ) {
         await update("working")
       } else if (event.type === "session.deleted") {
         await update("end")
