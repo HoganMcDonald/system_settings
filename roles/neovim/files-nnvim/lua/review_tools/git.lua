@@ -49,6 +49,7 @@ return {
       "Gedit",
     },
     keys = {
+      { "<leader>gc", "<cmd>Git commit<cr>", desc = "Create commit" },
       { "<leader>gs", "<cmd>Git<cr>", desc = "Git status" },
       { "<leader>gp", "<cmd>Git push<cr>", desc = "Git push" },
       { "<leader>gP", "<cmd>Git pull<cr>", desc = "Git pull" },
@@ -57,5 +58,8 @@ return {
       { "<leader>gw", "<cmd>Gwrite<cr>", desc = "Stage current file" },
       { "<leader>gr", "<cmd>Gread<cr>", desc = "Checkout current file" },
     },
+    config = function()
+      require("lib.git_commit").setup()
+    end,
   },
 }
