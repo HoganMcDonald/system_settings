@@ -7,6 +7,8 @@ description: Write or rewrite GitHub pull request descriptions in Hogan McDonald
 
 Write PR descriptions that sound like a pragmatic engineer explaining the change to another engineer. Make the problem easy to understand before describing the implementation.
 
+These rules come from 99 PRs Hogan published in `hex-inc/hex` from March 9 through September 9, 2026. Of the 95 substantive descriptions, 81 used an unheaded narrative. Bullets, numbered procedures, screenshots, Looms, and testing sections appeared when the change benefited from them, not as a mandatory template.
+
 ## Workflow
 
 1. Read the complete branch diff, commit list, linked ticket, and test results before drafting.
@@ -14,7 +16,8 @@ Write PR descriptions that sound like a pragmatic engineer explaining the change
 3. Describe the fix in terms of behavior and important implementation boundaries.
 4. Include validation that was actually performed. Never imply an unrun check passed.
 5. Preserve existing screenshots, Loom links, rollout warnings, and generated branch-stack blocks unless asked to remove them.
-6. When editing an existing PR, update its body with `gh pr edit` and verify the result.
+6. Remove placeholder template prompts and unchecked boilerplate only when they add no information. Generated Git Town stack blocks are not authored prose and stay at the end.
+7. When editing an existing PR, update its body with `gh pr edit` and verify the result.
 
 ## Voice
 
@@ -22,13 +25,15 @@ Write PR descriptions that sound like a pragmatic engineer explaining the change
 - Explain the causal chain. Name the user action, the mistaken decision in the code, and the resulting behavior.
 - Use `The TL;DR is...` when a complex mechanism benefits from a plain-language restatement.
 - Use contractions and ordinary language: "doesn't", "kept chugging along", "no questions asked", "Here's how it goes". Do not force colorful phrasing into a simple change.
+- First person is natural when it clarifies a discovery, decision, limitation, or test: "I realized", "I tried", or "I don't think". Do not rewrite everything into passive voice.
 - Keep exact identifiers, routes, permissions, and flags in backticks.
-- State uncertainty candidly when it is real, including where reviewer expertise is needed. Never invent uncertainty as a stylistic flourish.
+- State uncertainty candidly and narrowly when it is real. Pair it with evidence, what remains unknown, or the specific reviewer expertise needed. Never invent uncertainty as a stylistic flourish.
 - Prefer short paragraphs for the narrative and bullets for multiple behaviors, affected paths, acceptance criteria, or tests.
 - Use `Before:` / `Now:` when that is clearer than a chronological explanation.
 - For security bugs, explain the actor and boundary being bypassed in concrete terms without sensationalizing.
 - For a large change, add a review guide only when ordering the review materially helps. Point reviewers to the core decision first.
 - For meaningful manual verification, use `How tested:` and `Finding:`. For ordinary automated checks, a short command list is enough.
+- If validation was blocked, say what passed, what failed, and whether the test reached the behavior under review.
 - Default to an unheaded narrative. Hogan's PRs usually open with one or more short paragraphs that explain the problem and fix directly.
 - Do not add `Why`, `What`, `Summary`, or `Validation` sections unless the user requests them or an explicit repository rule requires them.
 
@@ -46,6 +51,20 @@ For a small or medium PR, use this shape without headings:
 
 Add a `Testing`, `Review guide`, or prominent merge-warning section only when the change genuinely needs it. If a repository mandates a description template, satisfy the minimum required structure while preserving this voice inside it.
 
+For sequences, use numbered steps. This is especially useful for reproductions, attacker paths, migrations, and rollout order.
+
+For security changes, make the boundary concrete:
+
+1. Name the actor.
+2. Name the capability, credential, or protected resource.
+3. Explain which check or boundary was bypassed.
+4. Describe the concrete result.
+5. Explain where enforcement happens now and how it fails safely.
+
+For large changes, explain the central decision first. Add a review guide only when reading files in a particular order materially helps, and distinguish core decisions from generated or mechanical churn. State deferred work and rollout gates explicitly.
+
+Screenshots and Looms are evidence, not decoration. Use screenshots for visible states or before/after comparisons and Looms for motion or multi-step workflows. Do not invent either.
+
 ## Avoid
 
 - Generic openings such as "This PR aims to", "This change enhances", or "In order to".
@@ -57,6 +76,7 @@ Add a `Testing`, `Review guide`, or prominent merge-warning section only when th
 - Restating the same point in `Why`, `What`, and a summary.
 - Claiming tests, lint, typechecks, or manual verification that were not run.
 - Adding screenshots, Loom links, ticket quotations, or branch-stack markup that do not already exist or were not supplied.
+- Manufacturing humor, uncertainty, or signature phrases to imitate the voice.
 
 ## Final Check
 

@@ -24,7 +24,24 @@ return {
       "<leader>aa",
       function()
         require("lib.edgy").close_filetype("neotest-summary")
-        vim.cmd("CodeCompanionChat Toggle")
+
+        local chat = require("codecompanion.interactions.chat")
+        local is_visual = vim.fn.mode():find("[vV\22]") ~= nil
+        local context = is_visual and "#{selection}" or "#{buffer}"
+
+        if chat.is_visible() then
+          chat.toggle()
+          return
+        end
+
+        local current = require("codecompanion").toggle_chat()
+        current = current or chat.last_chat()
+        if current then
+          current:add_buf_message({
+            role = require("codecompanion.config").constants.USER_ROLE,
+            content = context .. " ",
+          })
+        end
       end,
       mode = { "n", "x" },
       desc = "Chat",
