@@ -24,7 +24,13 @@ return {
   },
   config = function()
     require("dropbar").setup({
-      general = {
+      icons = {
+        ui = {
+          bar = { separator = " › ", extends = "…" },
+          menu = { separator = " ", indicator = " " },
+        },
+      },
+      bar = {
         enable = function(buf, win)
           if vim.api.nvim_win_get_config(win).relative ~= "" then
             return false
@@ -32,15 +38,6 @@ return {
           return vim.bo[buf].buftype == "" and not excluded_filetypes[vim.bo[buf].filetype]
         end,
         attach_events = { "OptionSet", "BufWinEnter", "BufWritePost" },
-      },
-      icons = {
-        kinds = { use_devicons = true },
-        ui = {
-          bar = { separator = " › ", extends = "…" },
-          menu = { separator = " ", indicator = " " },
-        },
-      },
-      bar = {
         sources = function(buf, _)
           local sources = require("dropbar.sources")
           local utils = require("dropbar.utils")
