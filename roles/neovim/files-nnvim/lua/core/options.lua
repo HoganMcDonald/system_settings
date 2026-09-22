@@ -21,9 +21,10 @@ opt.fillchars = {
   foldopen = "",
   foldsep = " ",
 }
+opt.foldcolumn = "1"
+opt.foldenable = true
 opt.foldlevel = 99
-opt.foldmethod = "indent"
-opt.foldtext = ""
+opt.foldlevelstart = 99
 opt.formatoptions = "jcroqlnt"
 opt.grepformat = "%f:%l:%c:%m"
 opt.grepprg = "rg --vimgrep"

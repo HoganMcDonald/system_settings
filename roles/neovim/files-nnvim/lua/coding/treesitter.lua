@@ -141,13 +141,6 @@ return {
           if has_query(lang, "indents") then
             vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
           end
-
-          -- Fold options are window scoped, so only touch the window that is
-          -- actually displaying this buffer.
-          if has_query(lang, "folds") and vim.api.nvim_get_current_buf() == args.buf then
-            vim.wo.foldmethod = "expr"
-            vim.wo.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-          end
         end,
       })
     end,
