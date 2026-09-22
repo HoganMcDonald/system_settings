@@ -5,16 +5,19 @@ local M = {}
 
 ---@alias NvimGitHubSource NvimBrand<string, "github">
 ---@alias NvimCodebergSource NvimBrand<string, "codeberg">
+---@alias NvimDirSource NvimBrand<string, "dir">
 ---@alias NvimUrlSource NvimBrand<string, "url">
----@alias NvimPackSource NvimGitHubSource|NvimCodebergSource|NvimUrlSource
+---@alias NvimPackSource NvimGitHubSource|NvimCodebergSource|NvimDirSource|NvimUrlSource
 
 local github, unwrap_github = types.create_brand("github", types.is_string)
 local codeberg, unwrap_codeberg = types.create_brand("codeberg", types.is_string)
+local dir, unwrap_dir = types.create_brand("dir", types.is_string)
 local url, unwrap_url = types.create_brand("url", types.is_string)
 
 local source_unwrappers = {
   github = unwrap_github,
   codeberg = unwrap_codeberg,
+  dir = unwrap_dir,
   url = unwrap_url,
 }
 
@@ -32,6 +35,14 @@ end
 function M.codeberg(path)
   assert(type(path) == "string" and path ~= "", "codeberg path must be a non-empty string")
   return codeberg("https://codeberg.org/" .. path)
+end
+
+---@param path string
+---@return NvimDirSource
+---@example pack.dir("~/my_plugin")
+function M.dir(path)
+  assert(type(path) == "string" and path ~= "", "plugin directory must be a non-empty string")
+  return dir(vim.fs.abspath(vim.fn.expand(path)))
 end
 
 ---@param source string
@@ -145,6 +156,44 @@ local function plugin_name(spec)
   local source = unwrap_source(spec.src):gsub("/+$", "")
   source = source:gsub("%.git$", "")
   return spec.name or vim.fs.basename(source)
+end
+
+---@param spec NvimPackSpec
+---@return string
+local function prepare_dir(spec)
+  local source = unwrap_dir(spec.src)
+  assert(vim.fn.isdirectory(source) == 1, "plugin directory does not exist: " .. source)
+
+  local name = plugin_name(spec)
+  assert(name ~= "." and name ~= ".." and not name:find("[/\\]"), "invalid local plugin name: " .. name)
+
+  local site = vim.fs.joinpath(vim.fn.stdpath("data"), "pack-dev")
+  local opt = vim.fs.joinpath(site, "pack", "dev", "opt")
+  local link = vim.fs.joinpath(opt, name)
+  vim.fn.mkdir(opt, "p")
+
+  local stat = vim.uv.fs_lstat(link)
+  if stat then
+    assert(stat.type == "link", "local plugin package already exists and is not a symlink: " .. link)
+    local target = assert(vim.uv.fs_readlink(link))
+    if target ~= source then
+      assert(vim.uv.fs_unlink(link))
+      assert(vim.uv.fs_symlink(source, link, { dir = true }))
+    end
+  else
+    assert(vim.uv.fs_symlink(source, link, { dir = true }))
+  end
+
+  return site
+end
+
+---@param spec NvimPackSpec
+local function load_dir(spec)
+  local packpath = vim.o.packpath
+  vim.o.packpath = prepare_dir(spec)
+  local ok, err = pcall(vim.cmd.packadd, plugin_name(spec))
+  vim.o.packpath = packpath
+  assert(ok, err)
 end
 
 ---@param value any
@@ -265,6 +314,17 @@ end
 ---until `load()` calls `:packadd`, which restores the entry and sources it then.
 ---@param specs NvimPackSpec[]
 local function defer_lazy_plugins(specs)
+  local lazy_names = {}
+  for _, spec in ipairs(specs) do
+    if spec.src._brand ~= "dir" and is_lazy(spec) then
+      lazy_names[plugin_name(spec)] = true
+    end
+  end
+
+  if not next(lazy_names) then
+    return
+  end
+
   local paths = {}
   -- `info` defaults to true, which collects git branches and tags for every
   -- plugin. Only the paths are needed here.
@@ -273,8 +333,8 @@ local function defer_lazy_plugins(specs)
   end
 
   local deferred = {}
-  for _, spec in ipairs(specs) do
-    local path = is_lazy(spec) and paths[plugin_name(spec)] or nil
+  for name in pairs(lazy_names) do
+    local path = paths[name]
     if path then
       deferred[path] = true
       deferred[vim.fs.joinpath(path, "after")] = true
@@ -327,15 +387,22 @@ function M.setup(specs)
     end
   end
 
-  local native_specs = vim.tbl_map(function(spec)
-    return {
-      src = unwrap_source(spec.src),
-      name = spec.name,
-      version = spec.version,
-      data = spec.data,
-    }
-  end, normalized)
-  vim.pack.add(native_specs, { load = false, confirm = false })
+  local native_specs = {}
+  for _, spec in ipairs(normalized) do
+    if spec.src._brand == "dir" then
+      prepare_dir(spec)
+    else
+      table.insert(native_specs, {
+        src = unwrap_source(spec.src),
+        name = spec.name,
+        version = spec.version,
+        data = spec.data,
+      })
+    end
+  end
+  if not vim.tbl_isempty(native_specs) then
+    vim.pack.add(native_specs, { load = false, confirm = false })
+  end
   defer_lazy_plugins(normalized)
 
   for _, spec in ipairs(normalized) do
@@ -346,7 +413,11 @@ function M.setup(specs)
       end
 
       local name = plugin_name(spec)
-      vim.cmd.packadd(name)
+      if spec.src._brand == "dir" then
+        load_dir(spec)
+      else
+        vim.cmd.packadd(name)
+      end
       if spec.config then
         spec.config(spec)
       end
