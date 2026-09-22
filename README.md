@@ -51,7 +51,7 @@ Roles are tagged one-to-one with their role name — see `dotfiles.yml` for the 
 ## What's in the box
 
 **Tools**
-`homebrew`, `git`, `asdf`, `devbox`, `direnv`, `lima`, `cli`, `zsh`, `tmux`, `pgcli`, `mycli`, `agents`, `dashboard`, `github_gtd`, `nanobot`, `neovim`, `helix`, `zellij`
+`homebrew`, `git`, `asdf`, `devbox`, `direnv`, `lima`, `cli`, `zsh`, `tmux`, `pgcli`, `mycli`, `agents`, `dashboard`, `nanobot`, `neovim`, `helix`, `zellij`
 
 **Apps** (Homebrew casks)
 `apps` (Linear, Figma, Brain.fm), `aerospace`, `browsers`, `kitty`, `ghostty`
@@ -172,62 +172,6 @@ Tests for the ref parsing and business-hour math:
 
 ```sh
 roles/zsh/tests/test_review.sh
-```
-
-### GitHub GTD — actionable pull requests in Todoist
-
-The `github_gtd` role installs a five-minute LaunchAgent that puts actionable pull-request work in the native Todoist Inbox. Todoist is the task-management source of truth: moving, renaming, prioritizing, scheduling, or completing a generated task is preserved. GitHub supplies action state and the automation-owned context label.
-
-Generated tasks use these labels:
-
-- `@github-review` for direct and team review requests
-- `@github-fixup` for authored PRs with changes requested, conflicts, or failing CI
-- `@github-merge` for authored PRs that are approved, mergeable, and passing CI
-- `@github-stale` for authored PRs that have gone 24 weekday hours without a review
-- `@github` for the combined queue
-
-Draft PRs do not create tasks. Requested reviews arrive whenever the PR is not a draft and remain until completed in Todoist, even if GitHub clears the request after a teammate reviews. Completing a review task manually dismisses that request, so a teammate's review can make your own review unnecessary without the task being recreated. A re-requested review or a later transition back into an actionable authored state creates a new task.
-
-Review requests are due after 24 hours of Monday-Friday time. Authored PRs become stale at the same threshold when nobody has submitted a review. The due datetime is set only when the task is created, so manually rescheduling it remains authoritative. A Friday 3pm request is due Monday 3pm.
-
-Get a personal API token from **Todoist Settings → Integrations → Developer**, then install the role:
-
-```sh
-bin/bootstrap github_gtd  # installs the CLI and inactive LaunchAgent
-github-gtd auth           # stores the token in Keychain and starts synchronization
-```
-
-At the Keychain prompt, paste the Todoist personal API token rather than your Mac password or Todoist account password. The command validates the token before starting synchronization and removes it if Todoist rejects it.
-
-The token is read from Keychain at runtime and is never written to this repository or the LaunchAgent plist.
-
-```sh
-github-gtd dry-run  # preview reconciliation
-github-gtd sync     # synchronize now
-github-gtd doctor   # verify GitHub, Todoist, and labels
-github-gtd status   # inspect launchd and the last successful sync
-github-gtd logs     # follow the service log
-```
-
-The synchronizer creates its labels automatically. Recommended Todoist filters:
-
-| Name | Query |
-| --- | --- |
-| GitHub Actions | `@github` |
-| Reviews | `@github-review` |
-| Fixups | `@github-fixup` |
-| Ready to Merge | `@github-merge` |
-| Stale Authored PRs | `@github-stale` |
-| GitHub Today | `@github & today` |
-| Overdue Reviews | `@github-review & overdue` |
-| Unscheduled GitHub | `@github & no date` |
-
-Favorite `GitHub Actions` and `Reviews`. During inbox processing, move generated tasks into normal GTD projects and add labels such as `@computer` or `@deep-work`; the daemon preserves those choices. Manually created tasks may use the same labels because only tasks carrying a `GTD Sync` marker are managed.
-
-Tests:
-
-```sh
-python3 -m unittest roles/github_gtd/tests/test_sync.py
 ```
 
 ### `linux` — Lima-backed Linux VM with host passthrough

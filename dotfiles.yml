@@ -49,10 +49,6 @@
     - role: dashboard
       tags:
         - dashboard
-    - role: github_gtd
-      tags:
-        - github_gtd
-
     - role: neovim
       tags:
         - neovim
