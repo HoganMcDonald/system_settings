@@ -8,6 +8,7 @@ local groups = {
   { "<leader>d", group = "Debug / log" },
   { "<leader>f", group = "Files" },
   { "<leader>g", group = "Git" },
+  { "<leader>go", group = "GitHub" },
   { "<leader>m", group = "Marks" },
   { "<leader>n", group = "Notes" },
   { "<leader>q", group = "Quit / sessions" },
