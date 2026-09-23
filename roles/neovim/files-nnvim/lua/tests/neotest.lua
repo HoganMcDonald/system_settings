@@ -25,7 +25,14 @@ return {
           -- The chat holds the same edgebar slot. Opening a test file should not
           -- throw a conversation away, so `<leader>ts` stays the way to take the
           -- slot back.
-          if require("lib.edgy").has_filetype("codecompanion") then
+          local edgy = require("lib.edgy")
+          local diffview = package.loaded["diffview.lib"]
+
+          if
+            edgy.has_filetype("codecompanion")
+            or edgy.has_filetype("review-diff")
+            or (diffview and diffview.get_current_view())
+          then
             return
           end
 
