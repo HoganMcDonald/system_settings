@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#
+# pr-context - Read-only, revision-pinned pull request context for reviews
+#
+# Thin wrapper around the shared module used by the OpenCode `pr_context`
+# tool. Run `pr-context --help` for usage.
+
+set -euo pipefail
+
+script_dir=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)
+lib="$HOME/.config/opencode/lib/pr-context.ts"
+[ -f "$lib" ] || lib="$script_dir/../../../agents/files/opencode/lib/pr-context.ts"
+
+if ! command -v bun > /dev/null 2>&1; then
+  echo "Error: bun is not installed (devbox global add bun)" >&2
+  exit 1
+fi
+
+exec bun "$lib" "$@"

@@ -125,12 +125,48 @@
     state: link
     force: yes
 
+- name: Symlink opencode shared libraries
+  file:
+    src: "{{ dotfiles_home }}/roles/agents/files/opencode/lib"
+    dest: "{{ opencode_config_dir }}/lib"
+    state: link
+    force: yes
+
+- name: Symlink opencode global instructions
+  file:
+    src: "{{ dotfiles_home }}/roles/agents/files/opencode/AGENTS.md"
+    dest: "{{ opencode_config_dir }}/AGENTS.md"
+    state: link
+    force: yes
+
 - name: Symlink shared skills for opencode
   file:
     src: "{{ shared_skills_dir }}"
     dest: "{{ opencode_config_dir }}/skills"
     state: link
     force: yes
+
+# Review feedback memory lives outside every git repository on purpose.
+- name: Check feedback memory directory
+  stat:
+    path: "{{ feedback_home }}"
+  register: feedback_home_stat
+
+- name: Refuse a symlinked feedback memory directory
+  fail:
+    msg: "{{ feedback_home }} is a symlink; the feedback store must be a real directory outside git"
+  when: feedback_home_stat.stat.islnk is defined and feedback_home_stat.stat.islnk
+
+- name: Create feedback memory directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0700"
+  loop:
+    - "{{ feedback_home }}"
+    - "{{ feedback_home }}/entries"
+    - "{{ feedback_home }}/state"
+    - "{{ feedback_home }}/state/sessions"
 
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"

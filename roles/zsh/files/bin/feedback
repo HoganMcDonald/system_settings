@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# feedback - Search and maintain review feedback memory (~/.feedback)
+#
+# Thin wrapper around the shared store module used by the OpenCode plugin, so
+# every agent harness and the shell read and write entries the same way.
+# Run `feedback --help` for usage.
+
+set -euo pipefail
+
+script_dir=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)
+lib="$HOME/.config/opencode/lib/feedback-store.ts"
+[ -f "$lib" ] || lib="$script_dir/../../../agents/files/opencode/lib/feedback-store.ts"
+
+if ! command -v bun > /dev/null 2>&1; then
+  echo "Error: bun is not installed (devbox global add bun)" >&2
+  exit 1
+fi
+
+exec bun "$lib" "$@"
