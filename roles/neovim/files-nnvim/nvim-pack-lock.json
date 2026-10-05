@@ -41,6 +41,10 @@
       "rev": "b6346946d10d07998efee029fb0f7a593806d0cd",
       "src": "https://github.com/folke/flash.nvim"
     },
+    "fold-cycle.nvim": {
+      "rev": "6144567b3307bbcfed0e5b2dd23acb9576575d9e",
+      "src": "https://github.com/jghauser/fold-cycle.nvim"
+    },
     "friendly-snippets": {
       "rev": "6cd7280adead7f586db6fccbd15d2cac7e2188b9",
       "src": "https://github.com/rafamadriz/friendly-snippets"
@@ -141,6 +145,10 @@
       "rev": "edcc181a875301dd21840189aa2f2f9ad69fc172",
       "src": "https://github.com/nvim-neotest/nvim-nio"
     },
+    "nvim-origami": {
+      "rev": "a137d35eaabb7cd7be89228229c1aa5b057f5ed7",
+      "src": "https://github.com/chrisgrieser/nvim-origami"
+    },
     "nvim-surround": {
       "rev": "2e93e154de9ff326def6480a4358bfc149d5da2c",
       "src": "https://github.com/kylechui/nvim-surround",
@@ -164,10 +172,6 @@
       "rev": "88c1453db4ba7dd24131086fe51fdf74e587d275",
       "src": "https://github.com/windwp/nvim-ts-autotag"
     },
-    "nvim-ufo": {
-      "rev": "ab3eb124062422d276fae49e0dd63b3ad1062cfc",
-      "src": "https://github.com/kevinhwang91/nvim-ufo"
-    },
     "nvim-web-devicons": {
       "rev": "2ae6958df7ced50baac5035cec0c15799eedfbf7",
       "src": "https://github.com/nvim-tree/nvim-web-devicons"
@@ -187,10 +191,6 @@
     "plenary.nvim": {
       "rev": "74b06c6c75e4eeb3108ec01852001636d85a932b",
       "src": "https://github.com/nvim-lua/plenary.nvim"
-    },
-    "promise-async": {
-      "rev": "119e8961014c9bfaf1487bf3c2a393d254f337e2",
-      "src": "https://github.com/kevinhwang91/promise-async"
     },
     "recall.nvim": {
       "rev": "812b3b0ec40568fa6f1a62f5baf052a4e3c60367",

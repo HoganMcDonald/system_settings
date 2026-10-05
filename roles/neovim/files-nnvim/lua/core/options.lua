@@ -23,8 +23,10 @@ opt.fillchars = {
 }
 opt.foldcolumn = "1"
 opt.foldenable = true
+opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
 opt.foldlevel = 99
 opt.foldlevelstart = 99
+opt.foldmethod = "expr"
 opt.formatoptions = "jcroqlnt"
 opt.grepformat = "%f:%l:%c:%m"
 opt.grepprg = "rg --vimgrep"
