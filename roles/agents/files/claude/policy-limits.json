@@ -18,6 +18,12 @@
     "allow_cobalt_plinth": {
       "allowed": false
     },
+    "allow_cobalt_plinth_juniper": {
+      "allowed": false
+    },
+    "allow_cobalt_plinth_bramble": {
+      "allowed": false
+    },
     "enforce_web_search_mcp_isolation": {
       "allowed": false
     }
