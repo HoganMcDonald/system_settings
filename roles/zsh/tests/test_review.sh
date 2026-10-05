@@ -455,6 +455,127 @@ section "iso_to_epoch"
 assert_eq "parses github timestamp" "$(TZ=UTC epoch_at '2026-08-03 10:00:00')" \
   "$(iso_to_epoch '2026-08-03T10:00:00Z')"
 
+# --- normalize_remote_repo ---------------------------------------------------
+
+section "normalize_remote_repo"
+assert_eq "ssh scp-style" "hex-inc/hex" "$(normalize_remote_repo 'git@github.com:hex-inc/hex.git')"
+assert_eq "https" "hex-inc/hex" "$(normalize_remote_repo 'https://github.com/hex-inc/hex')"
+assert_eq "https with .git and slash" "hex-inc/hex" "$(normalize_remote_repo 'https://github.com/hex-inc/hex.git/')"
+assert_eq "ssh url" "hex-inc/hex" "$(normalize_remote_repo 'ssh://git@github.com/hex-inc/hex.git')"
+assert_eq "host alias" "hex-inc/hex" "$(normalize_remote_repo 'github-work:Hex-Inc/Hex.git')"
+
+# --- session_base_name -------------------------------------------------------
+
+section "session_base_name"
+assert_eq "main session" "hex" "$(session_base_name 'hex' /src/hex)"
+assert_eq "from a review session" "hex" "$(session_base_name 'hex/review/pr-12' /src/hex)"
+assert_eq "from a hack session" "hex" "$(session_base_name 'hex/feat(cache)' /src/hex)"
+assert_eq "outside tmux" "hex" "$(session_base_name '' /src/hex)"
+
+# --- run status derivation ---------------------------------------------------
+
+section "run status"
+
+M_QUEUED='{"run_id":"pr-1-x","state":"queued","head_sha":"aaa"}'
+M_LAUNCHED='{"run_id":"pr-1-x","state":"launched","head_sha":"aaa"}'
+M_STOPPED='{"run_id":"pr-1-x","state":"stopped","head_sha":"aaa"}'
+RESULT='{"verdict":"comment","summary":"ok","counts":{"major":1},"head_sha_reviewed":"aaa"}'
+
+status_of() {
+  run_status_from "$1" "$2" "$3" "$4" "$5" /tmp/run | jq -r '.status'
+}
+
+assert_eq "queued stays queued" "queued" "$(status_of "$M_QUEUED" '{}' null false null)"
+assert_eq "stopped stays stopped" "stopped" "$(status_of "$M_STOPPED" '{}' null true true)"
+assert_eq "result wins even after the session ends" "completed" "$(status_of "$M_LAUNCHED" '{"status":"running"}' "$RESULT" false false)"
+assert_eq "agent-reported failure" "failed" "$(status_of "$M_LAUNCHED" '{"status":"failed"}' null true true)"
+assert_eq "dead session interrupts" "interrupted" "$(status_of "$M_LAUNCHED" '{"status":"running"}' null false null)"
+assert_eq "exited agent interrupts" "interrupted" "$(status_of "$M_LAUNCHED" '{"status":"running","pid":1}' null true false)"
+assert_eq "no status yet is starting" "starting" "$(status_of "$M_LAUNCHED" '{}' null true null)"
+assert_eq "live agent status passes through" "waiting" "$(status_of "$M_LAUNCHED" '{"status":"waiting"}' null true true)"
+
+RECORD=$(run_status_from "$M_LAUNCHED" '{"opencode_session_id":"ses_1"}' "$RESULT" true true /tmp/run)
+assert_eq "record keeps manifest fields" "pr-1-x" "$(printf '%s' "$RECORD" | jq -r '.run_id')"
+assert_eq "record exposes the session id" "ses_1" "$(printf '%s' "$RECORD" | jq -r '.opencode_session_id')"
+assert_eq "record points at the report" "/tmp/run/report.md" "$(printf '%s' "$RECORD" | jq -r '.report')"
+assert_eq "record summarises counts" "1" "$(printf '%s' "$RECORD" | jq -r '.result.counts.major')"
+
+section "run_is_active"
+for s in queued starting running waiting idle; do
+  assert_eq "$s is active" "yes" "$(run_is_active "$s" && echo yes || echo no)"
+done
+for s in completed failed interrupted stopped; do
+  assert_eq "$s is not active" "no" "$(run_is_active "$s" && echo yes || echo no)"
+done
+
+section "run_prompt"
+PROMPT=$(run_prompt "https://github.com/o/r/pull/9" "pr-9-x" "abc" "def")
+assert_eq "prompt names the PR" "yes" "$(printf '%s' "$PROMPT" | grep -qF 'https://github.com/o/r/pull/9' && echo yes || echo no)"
+assert_eq "prompt asks for review_submit" "yes" "$(printf '%s' "$PROMPT" | grep -qF 'review_submit' && echo yes || echo no)"
+
+# --- locking -----------------------------------------------------------------
+
+section "state locking"
+
+LOCK_DIR=$(mktemp -d)
+GIT_COMMON_DIR="$LOCK_DIR"
+
+acquire_lock
+assert_eq "lock directory exists while held" "yes" "$([ -d "$LOCK_DIR/review-state.lock" ] && echo yes || echo no)"
+acquire_lock
+release_lock
+assert_eq "nested release keeps the lock" "yes" "$([ -d "$LOCK_DIR/review-state.lock" ] && echo yes || echo no)"
+release_lock
+assert_eq "outer release frees the lock" "no" "$([ -d "$LOCK_DIR/review-state.lock" ] && echo yes || echo no)"
+
+# A lock left by a dead process is reclaimed rather than waited on forever.
+mkdir "$LOCK_DIR/review-state.lock"
+echo 999999 > "$LOCK_DIR/review-state.lock/pid"
+acquire_lock
+assert_eq "stale lock is reclaimed" "$$" "$(cat "$LOCK_DIR/review-state.lock/pid")"
+release_lock
+
+# Concurrent writers must not lose each other's updates.
+for i in 1 2 3 4 5 6 7 8; do
+  (state_snooze "$((900 + i))" "$(($(date '+%s') + 3600))") &
+done
+wait
+assert_eq "concurrent updates all land" "8" "$(state_snoozed_prs | grep -c .)"
+
+rm -rf "$LOCK_DIR"
+unset GIT_COMMON_DIR
+
+# --- run selection -----------------------------------------------------------
+
+section "run selection"
+
+RUN_TMP=$(mktemp -d)
+GIT_COMMON_DIR="$RUN_TMP"
+RUNS_DIR="$RUN_TMP/review-runs"
+
+make_run() {
+  mkdir -p "$RUNS_DIR/$1"
+  printf '{"run_id":"%s","pr":%s,"state":"%s","tmux_session":"no-such-session-%s","head_sha":"aaa"}\n' \
+    "$1" "$2" "$3" "$1" > "$RUNS_DIR/$1/manifest.json"
+}
+
+make_run pr-10-20261005T000001Z-0001 10 queued
+make_run pr-11-20261005T000002Z-0002 11 stopped
+make_run pr-12-20261005T000003Z-0003 12 launched
+
+assert_eq "queued runs are listed" "pr-10-20261005T000001Z-0001" "$(queued_run_ids)"
+assert_eq "active runs include queued, exclude stopped and dead" "pr-10-20261005T000001Z-0001" "$(active_run_ids)"
+assert_eq "active runs filter by PR" "" "$(active_run_ids 11)"
+
+# Stopping a queued run must only cancel it: a tmux session with the run's
+# name may be an interactive review of the same PR.
+stop_run pr-10-20261005T000001Z-0001
+assert_eq "stopped queued run is no longer queued" "" "$(queued_run_ids)"
+assert_eq "stopped queued run is recorded" "stopped" "$(jq -r '.state' "$RUNS_DIR/pr-10-20261005T000001Z-0001/manifest.json")"
+
+rm -rf "$RUN_TMP"
+unset GIT_COMMON_DIR RUNS_DIR
+
 # --- Summary -----------------------------------------------------------------
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
