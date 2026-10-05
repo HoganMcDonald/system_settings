@@ -50,6 +50,14 @@ This is a macOS system setup repository containing an Ansible playbook for autom
 ### aerospace
 -
 
+### agents
+- Claude Code, Codex, and OpenCode configs; OpenCode files live in `roles/agents/files/opencode/` and shared skills in `roles/agents/files/skills/`
+- `review` agent (`opencode/agent/review.md`): read-only PR reviewer on `anthropic/claude-opus-5-5` with the `medium` variant; `/review` and `/feedback` commands
+- `plugin/review-loop.ts` exposes `pr_context`, `feedback_*`, and `review_*` tools, triggers feedback capture on `hoganmcdonald`'s PRs, and appends the `💡 feedback captured` footer
+- Shared logic in `opencode/lib/` (`feedback-store.ts`, `pr-context.ts`, `review-loop-core.ts`), also exposed as the `feedback` and `pr-context` CLIs
+- Feedback memory lives in `~/.feedback` (never in git): one Markdown lesson per file plus a generated index
+- Tests: `bun test roles/agents/tests`
+
 ### apps
 - Installs general GUI applications via Homebrew casks
 - Current apps: Linear, Figma, Brain.fm
@@ -132,7 +140,8 @@ This is a macOS system setup repository containing an Ansible playbook for autom
 - Default keybindings: Ctrl+g+n (new tab), Ctrl+g+d/v (split panes), Ctrl+g+hjkl (navigation)
 
 ### zsh
-- 
+- `bin/review` manages PR review worktrees and tmux sessions; `review start <ref>...|--next N` launches detached agent reviews with run state in `<git-common-dir>/review-runs/`; `review clear --stop` (or the `review_cleanup` tool) tears them all down
+- Tests: `roles/zsh/tests/test_review.sh`
 
 ## Notes
 - Requires vault password file at `~/.vault_pass.txt`
