@@ -9,28 +9,42 @@ _review() {
     'snooze:Snooze a PR until end of day'
     'unsnooze:Undo a snooze'
     'clear:Tear down review worktrees and tmux sessions'
+    'start:Launch agent reviews in detached sessions'
+    'result:Show the latest agent review for a PR'
+    'attach:Switch to a PR review session'
+    'stop:Stop an active agent review'
+    'dispatch:Launch queued agent reviews'
   )
 
   _arguments -C \
     '(-h --help)'{-h,--help}'[Display help message]' \
-    '(-a --all)'{-a,--all}'[Clear every snooze]' \
+    '(-a --all)'{-a,--all}'[Every snooze (unsnooze) or active review (stop)]' \
     '(-f --force)'{-f,--force}'[Remove worktrees even when dirty]' \
     '(-n --dry-run)'{-n,--dry-run}'[Show what would be done]' \
+    '--json[Machine-readable output]' \
+    '--stop[Stop active and cancel queued agent reviews first]' \
+    '--full[Include the full report]' \
+    '--next[Pick the next N PRs from the queue]:count:' \
+    '--max-active[Concurrent running agent reviews]:count:' \
+    '--parent-session[OpenCode session that requested the reviews]:session:' \
     '1: :->first' \
-    '2: :->second'
+    '*: :->rest'
 
   case "$state" in
     first)
       _describe -t commands 'subcommand' subcommands
       __review_refs
       ;;
-    second)
+    rest)
       case "${words[2]}" in
         unsnooze)
           __review_snoozed
           ;;
-        snooze | clear)
+        snooze | clear | start)
           __review_refs
+          ;;
+        result | attach | stop)
+          __review_runs
           ;;
       esac
       ;;
@@ -53,6 +67,17 @@ __review_snoozed() {
 
   if (( ${#snoozed} )); then
     _describe -t snoozed 'snoozed PR' snoozed
+  fi
+}
+
+# PRs with agent review runs, newest run last.
+__review_runs() {
+  local runs_dir prs
+  runs_dir="$(git rev-parse --git-common-dir 2>/dev/null)/review-runs"
+  [[ -d "$runs_dir" ]] || return 0
+  prs=(${(f)"$(ls "$runs_dir" 2>/dev/null | sed -nE 's/^pr-([0-9]+)-.*/\1/p' | sort -un)"})
+  if (( ${#prs} )); then
+    _describe -t runs 'PR with agent review' prs
   fi
 }
 

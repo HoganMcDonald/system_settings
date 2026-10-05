@@ -9,6 +9,8 @@
 #   review status           active local review sessions
 #   review snooze <ref>     drop a PR to the bottom of the stack until tomorrow
 #   review clear [ref]      tear down review worktrees + tmux sessions
+#   review start <ref>...   launch agent reviews in detached sessions (agent-first)
+#   review result <ref>     show the latest agent review for a PR
 #
 # Sourcing this file with REVIEW_LIB_ONLY=1 loads the functions without
 # running anything, which is how the test suite exercises the pure helpers.
@@ -17,7 +19,11 @@
 # --- Config ------------------------------------------------------------------
 
 REVIEW_SLA_HOURS="${REVIEW_SLA_HOURS:-24}"
+REVIEW_MAX_ACTIVE="${REVIEW_MAX_ACTIVE:-3}"
+REVIEW_AGENT="${REVIEW_AGENT:-review}"
 REVIEW_STATE_VERSION=1
+REVIEW_JSON="${REVIEW_JSON:-}"
+REVIEW_LOCK_DEPTH=0
 REVIEW_TITLE_WIDTH="${REVIEW_TITLE_WIDTH:-52}"
 
 # Records are separated by ASCII unit separator, not tab: tab is IFS whitespace,
@@ -50,6 +56,15 @@ Usage:
   review unsnooze <ref>     Undo a snooze (--all to clear every snooze)
   review clear [ref]        Tear down review worktrees and tmux sessions
 
+Agent reviews:
+  review start <ref>...     Launch agent reviews in detached sessions
+  review start --next N     Launch the next N PRs awaiting your review
+  review result <ref>       Show the latest agent review (--full for the report)
+  review attach <ref>       Switch to a PR's review session
+  review stop <ref>         Stop an active agent review (keeps the worktree)
+  review stop --all         Stop every active or queued agent review
+  review dispatch           Launch queued agent reviews up to the active limit
+
 Refs:
   A ref is any of the following, all resolved in the current repository:
     feat/their-branch                       branch name
@@ -61,15 +76,28 @@ Refs:
   Linear refs resolve to the newest matching open PR.
 
 Options:
-  -a, --all                 Clear every snooze (unsnooze only)
-  -f, --force               Remove worktrees even when dirty (clear only)
+  -a, --all                 Clear every snooze (unsnooze); include old runs (status);
+                            every active review (stop)
+      --stop                Stop active and cancel queued agent reviews first (clear)
+  -f, --force               Remove worktrees with local changes; implies --stop
+                            (clear). Re-review an already reviewed head (start)
   -n, --dry-run             Show what would be done (clear only)
+      --json                Machine-readable output (start, status, result, dispatch)
+      --next N              Pick the next N PRs from the queue (start)
+      --max-active N        Concurrent running agent reviews (default 3)
+      --parent-session ID   OpenCode session that requested the reviews (start)
+      --full                Include the full report (result)
   -h, --help                Display this help message and exit
 
 Sessions:
   Each PR is checked out detached in .worktrees/reviews/pr-<number> and gets a
   tmux session with two windows: tuicr (the review TUI) and opencode.
   Nothing is ever committed, pushed, or branched on your behalf.
+
+  `review start` never switches your tmux client. It pins each run to the PR's
+  head and base SHAs, starts the OpenCode `review` agent in the session, and
+  records progress under <git-common-dir>/review-runs/<run-id>/. Runs beyond
+  the active limit are queued and launched as earlier reviews finish.
 
 SLA:
   "Next up" is the oldest PR whose review is still requested from you. Age is
@@ -78,6 +106,8 @@ SLA:
 
 Environment:
   REVIEW_SLA_HOURS    Business-hour SLA target (default 24)
+  REVIEW_MAX_ACTIVE   Concurrent running agent reviews (default 3)
+  REVIEW_AGENT        OpenCode agent used for agent reviews (default review)
   REVIEW_DEBUG=1      Print the resolved repo, login, and matched PRs
   REVIEW_COLOR        always | never | auto (default auto: on for a terminal)
   REVIEW_BORDER       utf8 | ascii | auto (default auto: from the locale)
@@ -92,6 +122,10 @@ Examples:
   review unsnooze 1234
   review unsnooze --all
   review clear
+  review clear --stop       stop all agent reviews and tear everything down
+  review start 1234 5678
+  review start --next 3 --json
+  review result 1234 --full
 EOF
   exit 0
 }
@@ -163,6 +197,94 @@ parse_pr_url() {
 normalize_pr_number() {
   local ref="$1"
   printf '%s\n' "${ref#\#}"
+}
+
+# Reduce a git remote URL to a lowercase "owner/repo" for comparison.
+normalize_remote_repo() {
+  local url="$1"
+  url="${url%/}"
+  url="${url%.git}"
+  case "$url" in
+    *://*)
+      url="${url#*://}"
+      url="${url#*/}"
+      ;;
+    *:*) url="${url#*:}" ;;
+  esac
+  printf '%s\n' "$url" | tr '[:upper:]' '[:lower:]'
+}
+
+# The stable prefix for review session names: the originating session's
+# repository segment, so launching from a review session never nests names.
+session_base_name() {
+  local current="$1" repo_root="$2"
+
+  if [ -n "$current" ]; then
+    printf '%s\n' "${current%%/*}"
+  else
+    basename "$repo_root"
+  fi
+}
+
+# Run statuses that still hold, or are about to hold, a review session.
+run_is_active() {
+  case "$1" in
+    queued | starting | running | waiting | idle) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# jq program deriving a run's effective status from its manifest ($m), the
+# agent-written status ($s), the submitted result ($r), and liveness checks.
+# A live tmux session is not proof of progress, and a missing one is not
+# proof of failure once a result exists, so the order below matters.
+run_status_jq() {
+  cat << 'JQ'
+($m.state // "launched") as $state
+| (if $state == "queued" then "queued"
+   elif $state == "stopped" then "stopped"
+   elif $r != null then "completed"
+   elif ($s.status // "") == "failed" then "failed"
+   elif ($live | not) then "interrupted"
+   elif $pid_alive == false then "interrupted"
+   else ($s.status // "starting") end) as $status
+| $m + {
+    status: $status,
+    run_dir: $dir,
+    opencode_session_id: ($s.opencode_session_id // null),
+    status_detail: ($s.detail // null),
+    status_updated_at: ($s.updated_at // null),
+    result: (if $r == null then null else {
+      verdict: $r.verdict,
+      summary: $r.summary,
+      counts: ($r.counts // {}),
+      head_sha_reviewed: ($r.head_sha_reviewed // $m.head_sha),
+      submitted_at: $r.submitted_at,
+      feedback_captured: ($r.feedback_captured // [])
+    } end),
+    report: (if $r == null then null else ($dir + "/report.md") end)
+  }
+JQ
+}
+
+# Apply run_status_jq to raw JSON strings; liveness flags are true/false/null.
+run_status_from() {
+  local manifest="$1" status="$2" result="$3" live="$4" pid_alive="$5" dir="$6"
+  jq -cn \
+    --argjson m "$manifest" \
+    --argjson s "$status" \
+    --argjson r "$result" \
+    --argjson live "$live" \
+    --argjson pid_alive "$pid_alive" \
+    --arg dir "$dir" \
+    "$(run_status_jq)"
+}
+
+# The prompt typed into the review agent for a run.
+run_prompt() {
+  local url="$1" run_id="$2" head_sha="$3" base_sha="$4"
+  printf 'Review %s in this dedicated review worktree. This is review run %s, pinned to head %s (base %s). Follow the pr-review skill end to end, then call review_submit with the final report.' \
+    "$url" "$run_id" "$head_sha" "$base_sha"
 }
 
 # Format an epoch in local time using a strftime format (no leading '+').
@@ -560,12 +682,69 @@ require_repo() {
   REPO_ROOT=$(cd "$(git rev-parse --git-common-dir)/.." && pwd -P)
   GIT_COMMON_DIR=$(cd "$(git rev-parse --git-common-dir)" && pwd -P)
   REVIEWS_DIR="$REPO_ROOT/.worktrees/reviews"
+  RUNS_DIR="$GIT_COMMON_DIR/review-runs"
+}
+
+# Progress chatter goes to stderr in --json mode so stdout stays parseable.
+say() {
+  if [ -n "$REVIEW_JSON" ]; then
+    printf '%s\n' "$*" >&2
+  else
+    printf '%s\n' "$*"
+  fi
 }
 
 # --- State -------------------------------------------------------------------
 
 state_path() {
   printf '%s/review-state.json\n' "$GIT_COMMON_DIR"
+}
+
+lock_path() {
+  printf '%s/review-state.lock\n' "$GIT_COMMON_DIR"
+}
+
+# A re-entrant mkdir lock serialises every read-modify-write of shared state,
+# because several agents may launch reviews in the same repository at once.
+# Command substitutions inherit REVIEW_LOCK_DEPTH, so nested calls made while
+# the lock is held never deadlock or release it early.
+acquire_lock() {
+  if [ "$REVIEW_LOCK_DEPTH" -gt 0 ]; then
+    REVIEW_LOCK_DEPTH=$((REVIEW_LOCK_DEPTH + 1))
+    return 0
+  fi
+
+  local lock holder tries=0
+  lock=$(lock_path)
+  until mkdir "$lock" 2> /dev/null; do
+    holder=$(cat "$lock/pid" 2> /dev/null || true)
+    if [ -n "$holder" ] && ! kill -0 "$holder" 2> /dev/null; then
+      rm -rf "$lock"
+      continue
+    fi
+    tries=$((tries + 1))
+    # A lock without a pid file is either being created or abandoned mid-write.
+    if [ -z "$holder" ] && [ "$tries" -gt 50 ]; then
+      rm -rf "$lock"
+      continue
+    fi
+    if [ "$tries" -gt 1200 ]; then
+      echo "Error: timed out waiting for $lock" >&2
+      return 1
+    fi
+    sleep 0.1
+  done
+  printf '%s\n' "$$" > "$lock/pid"
+  REVIEW_LOCK_DEPTH=1
+}
+
+release_lock() {
+  if [ "$REVIEW_LOCK_DEPTH" -gt 1 ]; then
+    REVIEW_LOCK_DEPTH=$((REVIEW_LOCK_DEPTH - 1))
+    return 0
+  fi
+  REVIEW_LOCK_DEPTH=0
+  rm -rf "$(lock_path)"
 }
 
 # Read state, dropping expired snoozes so every consumer sees live data only.
@@ -600,16 +779,21 @@ state_write() {
 state_update() {
   local filter="$1"
   shift
-  local current updated
+  local current updated status=0
+  acquire_lock || return 1
   current=$(state_read)
-  updated=$(printf '%s' "$current" | jq "$@" "$filter")
-  state_write "$updated"
+  updated=$(printf '%s' "$current" | jq "$@" "$filter") || status=$?
+  if [ "$status" -eq 0 ]; then
+    state_write "$updated"
+  fi
+  release_lock
+  return "$status"
 }
 
 state_register_worktree() {
   local pr="$1" path="$2" session="$3" repo="$4" url="$5" title="$6" author="$7"
 
-  state_update '.worktrees[$pr] = {
+  state_update '.worktrees[$pr] = (.worktrees[$pr] // {}) + {
       path: $path,
       session: $session,
       repo: $repo,
@@ -626,6 +810,11 @@ state_register_worktree() {
     --arg title "$title" \
     --arg author "$author" \
     --arg created "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+}
+
+state_set_run() {
+  state_update 'if .worktrees[$pr] then .worktrees[$pr].run_id = $run else . end' \
+    --arg pr "$1" --arg run "$2"
 }
 
 state_forget_worktree() {
@@ -943,13 +1132,12 @@ session_exists() {
 }
 
 session_name_for_pr() {
-  local pr="$1"
+  local pr="$1" current=""
 
   if [ -n "${TMUX:-}" ]; then
-    printf '%s/review/pr-%s\n' "$(tmux display-message -p '#S')" "$pr"
-  else
-    printf 'review/pr-%s\n' "$pr"
+    current=$(tmux display-message -p '#S' 2> /dev/null || true)
   fi
+  printf '%s/review/pr-%s\n' "$(session_base_name "$current" "$REPO_ROOT")" "$pr"
 }
 
 attach_session() {
@@ -962,19 +1150,69 @@ attach_session() {
   fi
 }
 
-# Fetch the PR head into a private ref and check it out detached.
-create_review_worktree() {
-  local pr="$1" path="$2" ref
-  ref=$(review_ref_for_pr "$pr")
+# The remote that actually hosts the resolved GitHub repository. Assuming
+# `origin` would silently review a fork's PR head in a multi-remote clone.
+resolve_fetch_remote() {
+  local want remote url
+  want=$(printf '%s' "$REVIEW_REPO" | tr '[:upper:]' '[:lower:]')
 
-  echo "Fetching PR #$pr..."
-  if ! git fetch --no-tags origin "+refs/pull/$pr/head:$ref" 2>&1 | sed 's/^/  /'; then
-    echo "Error: failed to fetch refs/pull/$pr/head from origin" >&2
+  while IFS= read -r remote; do
+    [ -n "$remote" ] || continue
+    url=$(git remote get-url "$remote" 2> /dev/null) || continue
+    if [ "$(normalize_remote_repo "$url")" = "$want" ]; then
+      printf '%s\n' "$remote"
+      return 0
+    fi
+  done < <(git remote)
+
+  echo "Error: no git remote points at $REVIEW_REPO" >&2
+  return 1
+}
+
+# Fetch the PR head into a private ref and print the fetched commit.
+fetch_pr_ref() {
+  local pr="$1" ref remote
+  ref=$(review_ref_for_pr "$pr")
+  remote=$(resolve_fetch_remote) || return 1
+
+  say "Fetching PR #$pr from $remote..."
+  if ! git fetch --quiet --no-tags "$remote" "+refs/pull/$pr/head:$ref" >&2; then
+    echo "Error: failed to fetch refs/pull/$pr/head from $remote" >&2
     return 1
   fi
+  git rev-parse "$ref"
+}
 
-  mkdir -p "$REVIEWS_DIR"
-  git worktree add --detach "$path" "$ref" > /dev/null
+# Create or refresh the PR's detached worktree at the fetched head, printing
+# the checked-out commit. Returns 2 for conflicts that need a human: an
+# unregistered directory in the way, or local changes that a refresh would
+# clobber. Nothing is ever deleted here.
+prepare_worktree() {
+  local pr="$1" path="$2" sha current
+
+  if [ -d "$path" ] && ! worktree_is_registered "$path"; then
+    echo "Conflict: $path exists but is not a registered worktree; move it aside or run 'git worktree prune'" >&2
+    return 2
+  fi
+
+  sha=$(fetch_pr_ref "$pr") || return 1
+
+  if [ -d "$path" ]; then
+    current=$(git -C "$path" rev-parse HEAD)
+    if [ "$current" != "$sha" ]; then
+      if [ -n "$(git -C "$path" status --porcelain 2> /dev/null)" ]; then
+        echo "Conflict: .worktrees/reviews/pr-$pr has local changes and is at ${current:0:10}, not the PR head ${sha:0:10}" >&2
+        return 2
+      fi
+      say "Moving .worktrees/reviews/pr-$pr to the new PR head ${sha:0:10}."
+      git -C "$path" checkout --quiet --detach "$sha"
+    fi
+  else
+    mkdir -p "$REVIEWS_DIR"
+    git worktree add --quiet --detach "$path" "$sha" > /dev/null
+  fi
+
+  printf '%s\n' "$sha"
 }
 
 create_review_session() {
@@ -984,9 +1222,191 @@ create_review_session() {
   tmux send-keys -t "$session:tuicr" "tuicr pr $(printf '%q' "$url")" Enter
 
   tmux new-window -t "$session" -n "opencode" -c "$path"
-  tmux send-keys -t "$session:opencode" "opencode" Enter
+  tmux send-keys -t "$session:opencode" "opencode --agent $(printf '%q' "$REVIEW_AGENT")" Enter
 
   tmux select-window -t "$session:tuicr"
+}
+
+# --- Agent review runs -------------------------------------------------------
+#
+# A run directory holds everything about one agent review:
+#   manifest.json  launch facts and lifecycle state, written by this script
+#   status.json    live progress, written by the OpenCode plugin in the session
+#   result.json    structured outcome, written by the review_submit tool
+#   report.md      the full review report
+# Results outlive worktrees, so `review clear` never deletes run directories.
+
+run_dir_for() {
+  printf '%s/%s\n' "$RUNS_DIR" "$1"
+}
+
+new_run_id() {
+  printf 'pr-%s-%s-%04x\n' "$1" "$(date -u '+%Y%m%dT%H%M%SZ')" "$((RANDOM % 65536))"
+}
+
+write_file_atomic() {
+  local file="$1" content="$2" tmp
+  tmp="$file.tmp.$$"
+  printf '%s\n' "$content" > "$tmp"
+  mv "$tmp" "$file"
+}
+
+json_file_or() {
+  local file="$1" fallback="$2"
+
+  if [ -f "$file" ] && jq -e . "$file" > /dev/null 2>&1; then
+    cat "$file"
+  else
+    printf '%s\n' "$fallback"
+  fi
+}
+
+manifest_update() {
+  local id="$1" filter="$2"
+  shift 2
+  local file updated
+  file="$(run_dir_for "$id")/manifest.json"
+  acquire_lock || return 1
+  updated=$(jq "$@" "$filter" "$file") && write_file_atomic "$file" "$updated"
+  release_lock
+}
+
+run_ids() {
+  [ -d "$RUNS_DIR" ] || return 0
+  local dir
+  for dir in "$RUNS_DIR"/pr-*; do
+    [ -f "$dir/manifest.json" ] && basename "$dir"
+  done | sort
+}
+
+latest_run_for_pr() {
+  run_ids | grep "^pr-$1-" | tail -1 || true
+}
+
+# Effective run record: manifest plus derived status, as one JSON object.
+run_record() {
+  local id="$1" dir manifest status result session pid live=false pid_alive=null
+  dir=$(run_dir_for "$id")
+  [ -f "$dir/manifest.json" ] || return 1
+
+  manifest=$(json_file_or "$dir/manifest.json" '{}')
+  status=$(json_file_or "$dir/status.json" '{}')
+  result=$(json_file_or "$dir/result.json" 'null')
+
+  session=$(printf '%s' "$manifest" | jq -r '.tmux_session // empty')
+  if session_exists "$session"; then
+    live=true
+  fi
+
+  pid=$(printf '%s' "$status" | jq -r '.pid // empty')
+  if [ -n "$pid" ]; then
+    if kill -0 "$pid" 2> /dev/null; then pid_alive=true; else pid_alive=false; fi
+  fi
+
+  run_status_from "$manifest" "$status" "$result" "$live" "$pid_alive" "$dir"
+}
+
+run_status() {
+  run_record "$1" | jq -r '.status'
+}
+
+count_running_runs() {
+  local id n=0
+  while IFS= read -r id; do
+    [ -n "$id" ] || continue
+    case "$(run_status "$id")" in
+      starting | running) n=$((n + 1)) ;;
+    esac
+  done < <(run_ids)
+  printf '%s\n' "$n"
+}
+
+mark_run_failed() {
+  local id="$1" detail="$2" file
+  file="$(run_dir_for "$id")/status.json"
+  write_file_atomic "$file" "$(jq -n --arg d "$detail" --arg now "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+    '{status: "failed", detail: $d, updated_at: $now}')"
+}
+
+# Launch one queued run: refresh its worktree, open (or extend) its tmux
+# session, and type the review prompt into a fresh OpenCode instance.
+launch_run() {
+  local id="$1" manifest pr url path session sha base_sha window err status=0
+  manifest=$(cat "$(run_dir_for "$id")/manifest.json")
+  pr=$(printf '%s' "$manifest" | jq -r '.pr')
+  url=$(printf '%s' "$manifest" | jq -r '.url')
+  path=$(printf '%s' "$manifest" | jq -r '.worktree')
+  session=$(printf '%s' "$manifest" | jq -r '.tmux_session')
+  base_sha=$(printf '%s' "$manifest" | jq -r '.base_sha')
+
+  err=$(mktemp)
+  sha=$(prepare_worktree "$pr" "$path" 2> "$err") || status=$?
+  if [ "$status" -ne 0 ]; then
+    mark_run_failed "$id" "$(tr '\n' ' ' < "$err" | sed 's/ *$//')"
+    cat "$err" >&2
+    rm -f "$err"
+    manifest_update "$id" '.state = "launched" | .launched_at = $now' --arg now "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+    return 1
+  fi
+  rm -f "$err"
+
+  local env_args=(
+    -e "REVIEW_RUN_ID=$id"
+    -e "REVIEW_RUN_DIR=$(run_dir_for "$id")"
+    -e "REVIEW_PR_URL=$url"
+    -e "REVIEW_HEAD_SHA=$sha"
+  )
+  local prompt agent_cmd
+  prompt=$(run_prompt "$url" "$id" "$sha" "$base_sha")
+  agent_cmd="opencode --agent $(printf '%q' "$REVIEW_AGENT") --prompt $(printf '%q' "$prompt")"
+
+  if session_exists "$session"; then
+    # An interactive session already exists for this PR: add the agent beside it.
+    window="review-agent"
+    tmux new-window -d -t "$session" -n "$window" -c "$path" "${env_args[@]}"
+  else
+    window="opencode"
+    tmux new-session -d -s "$session" -n "tuicr" -c "$path" "${env_args[@]}"
+    tmux send-keys -t "$session:tuicr" "tuicr pr $(printf '%q' "$url")" Enter
+    tmux new-window -d -t "$session" -n "$window" -c "$path" "${env_args[@]}"
+  fi
+  tmux send-keys -t "$session:$window" "$agent_cmd" Enter
+
+  manifest_update "$id" '.state = "launched" | .launched_at = $now | .head_sha = $sha | .tmux_window = $window' \
+    --arg now "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" --arg sha "$sha" --arg window "$window"
+
+  local title author
+  title=$(printf '%s' "$manifest" | jq -r '.title')
+  author=$(printf '%s' "$manifest" | jq -r '.author')
+  state_register_worktree "$pr" "$path" "$session" "$REVIEW_REPO" "$url" "$title" "$author"
+  state_set_run "$pr" "$id"
+  say "Launched review of PR #$pr in tmux session '$session'."
+}
+
+# Launch queued runs, oldest first, while fewer than the limit are running.
+dispatch_runs() {
+  local max="$1" running id launched=0
+  acquire_lock || return 1
+  running=$(count_running_runs)
+
+  while IFS= read -r id; do
+    [ -n "$id" ] || continue
+    [ "$(jq -r '.state' "$(run_dir_for "$id")/manifest.json")" = "queued" ] || continue
+    if [ "$running" -ge "$max" ]; then
+      break
+    fi
+    if launch_run "$id"; then
+      running=$((running + 1))
+      launched=$((launched + 1))
+    fi
+  done < <(
+    for id in $(run_ids); do
+      jq -r --arg id "$id" 'select(.state == "queued") | "\(.queue_key // .created_at) \($id)"' "$(run_dir_for "$id")/manifest.json"
+    done | sort | cut -d' ' -f2
+  )
+
+  release_lock
+  debug "dispatched $launched run(s); $running running (limit $max)"
 }
 
 # --- Command: open -----------------------------------------------------------
@@ -1023,18 +1443,21 @@ cmd_open() {
   head_ref=$(printf '%s' "$meta" | jq -r '.headRefName')
   draft=$(printf '%s' "$meta" | jq -r '.isDraft')
 
-  local path
+  local path latest_run
   path=$(worktree_path_for_pr "$pr")
+  latest_run=$(latest_run_for_pr "$pr")
 
-  if [ -d "$path" ] && worktree_is_registered "$path"; then
-    echo "Worktree already exists at .worktrees/reviews/pr-$pr, reusing."
+  # Never move a worktree out from under a running agent review.
+  if [ -n "$latest_run" ] && run_is_active "$(run_status "$latest_run")" && [ -d "$path" ]; then
+    echo "An agent review is active in .worktrees/reviews/pr-$pr; reusing it as-is."
   else
-    if [ -d "$path" ] && ! worktree_is_registered "$path"; then
-      echo "Pruning stale worktree directory for PR #$pr..."
-      rm -rf "$path"
-      git worktree prune
+    local status=0
+    prepare_worktree "$pr" "$path" > /dev/null || status=$?
+    if [ "$status" -eq 2 ] && [ -d "$path" ] && worktree_is_registered "$path"; then
+      echo "Reusing the existing worktree as-is." >&2
+    elif [ "$status" -ne 0 ]; then
+      exit 1
     fi
-    create_review_worktree "$pr" "$path"
   fi
 
   local session existing
@@ -1069,6 +1492,398 @@ cmd_open() {
   echo ""
 
   attach_session "$session"
+}
+
+# --- Command: start ----------------------------------------------------------
+
+# Resolve refs (or the next N queued PRs) into unique PR numbers, in order.
+resolve_start_prs() {
+  local next="$1"
+  shift
+  local ref kind pr seen=" "
+
+  if [ -n "$next" ]; then
+    local queue snoozes
+    queue=$(queue_fetch) || return 1
+    snoozes=$(state_read | jq '.snoozes | keys')
+    while IFS= read -r pr; do
+      [ -n "$pr" ] || continue
+      local latest
+      latest=$(latest_run_for_pr "$pr")
+      if [ -n "$latest" ] && run_is_active "$(run_status "$latest")"; then
+        continue
+      fi
+      printf '%s\n' "$pr"
+      next=$((next - 1))
+      [ "$next" -gt 0 ] || break
+    done < <(printf '%s' "$queue" | jq -r --argjson snoozes "$snoozes" '
+      map(select(.draft == false))
+      | map(select((.number | tostring) as $n | ($snoozes | index($n)) == null))
+      | .[].number
+    ')
+  fi
+
+  for ref in "$@"; do
+    kind=$(classify_ref "$ref")
+    if [ "$kind" = "head" ]; then
+      pr=$(resolve_head_pr) || return 1
+    else
+      pr=$(resolve_pr_number "$ref") || return 1
+    fi
+    case "$seen" in
+      *" $pr "*) continue ;;
+    esac
+    seen="$seen$pr "
+    printf '%s\n' "$pr"
+  done
+}
+
+# Decide what to do for one PR and print a JSON record of the decision.
+start_one() {
+  local pr="$1" force="$2" parent_session="$3" parent_tmux="$4" seq="$5"
+  local meta url head_sha latest record status
+
+  meta=$(gh_capture gh pr view "$pr" --repo "$REVIEW_REPO" \
+    --json number,title,url,author,headRefName,baseRefName,headRefOid,baseRefOid,isDraft,state) || {
+    jq -cn --argjson pr "$pr" '{pr: $pr, action: "error", detail: "could not load PR metadata"}'
+    return 0
+  }
+  url=$(printf '%s' "$meta" | jq -r '.url')
+  head_sha=$(printf '%s' "$meta" | jq -r '.headRefOid')
+
+  latest=$(latest_run_for_pr "$pr")
+  if [ -n "$latest" ]; then
+    record=$(run_record "$latest")
+    status=$(printf '%s' "$record" | jq -r '.status')
+    if run_is_active "$status"; then
+      if [ "$(printf '%s' "$record" | jq -r '.head_sha')" = "$head_sha" ] || [ "$status" = queued ]; then
+        printf '%s' "$record" | jq -c '. + {action: "reused"}'
+      else
+        printf '%s' "$record" | jq -c --arg head "$head_sha" --arg pr "$pr" \
+          '. + {action: "busy_stale", current_head_sha: $head,
+                detail: "an agent review of an older head is still active; run `review stop \($pr)` first"}'
+      fi
+      return 0
+    fi
+    if [ "$status" = completed ] && [ "$force" != true ] &&
+      [ "$(printf '%s' "$record" | jq -r '.result.head_sha_reviewed')" = "$head_sha" ]; then
+      printf '%s' "$record" | jq -c '. + {action: "already_reviewed", detail: "this head was already reviewed; pass --force to review it again"}'
+      return 0
+    fi
+  fi
+
+  local path
+  path=$(worktree_path_for_pr "$pr")
+  if [ -d "$path" ] && ! worktree_is_registered "$path"; then
+    jq -cn --argjson pr "$pr" --arg url "$url" --arg path "$path" \
+      '{pr: $pr, url: $url, action: "conflict", detail: "\($path) exists but is not a registered worktree; move it aside or run `git worktree prune`"}'
+    return 0
+  fi
+
+  local id dir
+  id=$(new_run_id "$pr")
+  dir=$(run_dir_for "$id")
+  mkdir -p "$dir"
+  write_file_atomic "$dir/manifest.json" "$(printf '%s' "$meta" | jq \
+    --arg id "$id" \
+    --arg repo "$REVIEW_REPO" \
+    --arg path "$path" \
+    --arg session "$(session_name_for_pr "$pr")" \
+    --arg parent_session "$parent_session" \
+    --arg parent_tmux "$parent_tmux" \
+    --arg repo_root "$REPO_ROOT" \
+    --arg now "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+    --arg seq "$seq" '{
+      run_id: $id,
+      queue_key: $seq,
+      pr: .number,
+      repo: $repo,
+      url: .url,
+      title: .title,
+      author: (.author.login // "unknown"),
+      draft: .isDraft,
+      pr_state: .state,
+      head_ref: .headRefName,
+      base_ref: .baseRefName,
+      head_sha: .headRefOid,
+      base_sha: .baseRefOid,
+      worktree: $path,
+      repo_root: $repo_root,
+      tmux_session: $session,
+      parent_session_id: (if $parent_session == "" then null else $parent_session end),
+      parent_tmux_session: (if $parent_tmux == "" then null else $parent_tmux end),
+      state: "queued",
+      created_at: $now
+    }')"
+  jq -cn --arg id "$id" '{run_id: $id, action: "created"}'
+}
+
+cmd_start() {
+  local next="$1" force="$2" max="$3" parent_session="$4"
+  shift 4
+
+  require_repo
+  require_cmd git "brew install git"
+  require_cmd tmux "brew install tmux"
+  require_cmd tuicr "brew install tuicr"
+  require_cmd opencode "brew install opencode"
+  init_github
+
+  if [ -z "$next" ] && [ "$#" -eq 0 ]; then
+    echo "Error: 'review start' expects one or more refs, or --next N" >&2
+    exit 1
+  fi
+
+  local prs
+  prs=$(resolve_start_prs "$next" "$@") || exit 1
+  if [ -z "$prs" ]; then
+    echo "Error: no PRs to review" >&2
+    exit 1
+  fi
+
+  local parent_tmux=""
+  if [ -n "${TMUX:-}" ]; then
+    parent_tmux=$(tmux display-message -p '#S' 2> /dev/null || true)
+  fi
+
+  mkdir -p "$RUNS_DIR"
+  acquire_lock || exit 1
+  # Queue keys preserve request order across batches: launch time, then position.
+  local decisions="" pr index=0 stamp
+  stamp=$(date -u '+%Y%m%d%H%M%S')
+  while IFS= read -r pr; do
+    [ -n "$pr" ] || continue
+    index=$((index + 1))
+    decisions+="$(start_one "$pr" "$force" "$parent_session" "$parent_tmux" "$stamp-$(printf '%03d' "$index")")"$'\n'
+  done <<< "$prs"
+  dispatch_runs "$max"
+  release_lock
+
+  # Re-read created runs so the output reflects whether each launched or queued.
+  local records="" line id
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    if [ "$(printf '%s' "$line" | jq -r '.action')" = created ]; then
+      id=$(printf '%s' "$line" | jq -r '.run_id')
+      line=$(run_record "$id" | jq -c '. + {action: (if .state == "queued" then "queued" elif .status == "failed" then "error" else "launched" end)}')
+    fi
+    records+="$line"$'\n'
+  done <<< "$decisions"
+
+  if [ -n "$REVIEW_JSON" ]; then
+    printf '%s' "$records" | jq -s --argjson max "$max" '{max_active: $max, runs: .}'
+    return 0
+  fi
+
+  printf '%s' "$records" | jq -r '
+    "#\(.pr // "?")\t\(.action)\t\(.status // "-")\t\(.tmux_session // "-")\t\(.detail // .title // "")"
+  ' | {
+    printf 'PR\tACTION\tSTATUS\tSESSION\tDETAIL\n'
+    while IFS=$'\t' read -r pr action status session detail; do
+      printf '%s\t%s\t%s\t%s\t%s\n' "$(paint cyan "$pr")" "$action" "$status" \
+        "$(truncate_cell "$session" 34)" "$(truncate_cell "$(sanitize_cell "$detail")" 50)"
+    done
+  } | render_table
+  echo ""
+  echo "Your tmux client was not switched. Use 'review attach <ref>' to open a session."
+}
+
+# --- Command: dispatch -------------------------------------------------------
+
+cmd_dispatch() {
+  local max="$1"
+  require_repo
+  require_cmd tmux "brew install tmux"
+
+  local queued
+  queued=$(queued_run_ids)
+  if [ -n "$queued" ]; then
+    # The repo identity comes from the manifest, so dispatch needs no GitHub call.
+    REVIEW_REPO=$(jq -r '.repo' "$(run_dir_for "$(printf '%s\n' "$queued" | head -1)")/manifest.json")
+    dispatch_runs "$max"
+  fi
+
+  if [ -n "$REVIEW_JSON" ]; then
+    jq -n --argjson queued "$(queued_run_ids | grep -c . || true)" \
+      --argjson running "$(count_running_runs)" '{queued: $queued, running: $running}'
+  fi
+}
+
+queued_run_ids() {
+  local id
+  for id in $(run_ids); do
+    jq -r 'select(.state == "queued") | .run_id' "$(run_dir_for "$id")/manifest.json"
+  done
+}
+
+# --- Command: result ---------------------------------------------------------
+
+# A run id, or any PR ref; bare numbers resolve without touching GitHub.
+resolve_run_ref() {
+  local ref="$1" pr id
+
+  case "$ref" in
+    pr-*-*)
+      [ -f "$(run_dir_for "$ref")/manifest.json" ] || {
+        echo "Error: no review run '$ref'" >&2
+        return 1
+      }
+      printf '%s\n' "$ref"
+      return 0
+      ;;
+  esac
+
+  if [ "$(classify_ref "$ref")" = pr ]; then
+    pr=$(normalize_pr_number "$ref")
+  else
+    init_github
+    pr=$(resolve_pr_number "$ref") || return 1
+  fi
+
+  id=$(latest_run_for_pr "$pr")
+  if [ -z "$id" ]; then
+    echo "Error: no agent review runs for PR #$pr; start one with 'review start $pr'" >&2
+    return 1
+  fi
+  printf '%s\n' "$id"
+}
+
+cmd_result() {
+  local ref="$1" full="$2"
+  require_repo
+  require_cmd jq "brew install jq"
+
+  local id record report
+  id=$(resolve_run_ref "$ref") || exit 1
+  record=$(run_record "$id")
+  report=$(printf '%s' "$record" | jq -r '.report // empty')
+
+  if [ -n "$REVIEW_JSON" ]; then
+    if [ "$full" = true ] && [ -n "$report" ] && [ -f "$report" ]; then
+      printf '%s' "$record" | jq --rawfile body "$report" '. + {report_markdown: $body}'
+    else
+      printf '%s\n' "$record"
+    fi
+    return 0
+  fi
+
+  printf '%s' "$record" | jq -r '"PR #\(.pr) · \(.title)\nrun \(.run_id) · \(.status) · head \(.head_sha[0:10])\nsession \(.tmux_session)"'
+  if [ -n "$report" ] && [ -f "$report" ]; then
+    echo ""
+    if [ "$full" = true ]; then
+      cat "$report"
+    else
+      printf '%s' "$record" | jq -r '"verdict: \(.result.verdict)\n\(.result.summary)\nfindings: \(.result.counts | to_entries | map("\(.key)=\(.value)") | join(", "))"'
+      echo ""
+      echo "Full report: $report (or review result $ref --full)"
+    fi
+  elif [ "$(printf '%s' "$record" | jq -r '.status_detail // empty')" != "" ]; then
+    printf '%s' "$record" | jq -r '"detail: \(.status_detail)"'
+  fi
+}
+
+# --- Command: attach / stop --------------------------------------------------
+
+session_for_ref() {
+  local ref="$1" pr id session
+
+  if id=$(resolve_run_ref "$ref" 2> /dev/null); then
+    session=$(jq -r '.tmux_session' "$(run_dir_for "$id")/manifest.json")
+    if session_exists "$session"; then
+      printf '%s\n' "$session"
+      return 0
+    fi
+  fi
+
+  if [ "$(classify_ref "$ref")" = pr ]; then
+    pr=$(normalize_pr_number "$ref")
+  else
+    init_github
+    pr=$(resolve_pr_number "$ref") || return 1
+  fi
+  session=$(state_worktree_field "$pr" session)
+  if session_exists "$session"; then
+    printf '%s\n' "$session"
+    return 0
+  fi
+  echo "Error: no live review session for '$ref'" >&2
+  return 1
+}
+
+cmd_attach() {
+  require_repo
+  require_cmd tmux "brew install tmux"
+  local session
+  session=$(session_for_ref "$1") || exit 1
+  attach_session "$session"
+}
+
+# Stop the agent, not the review: the worktree and any results stay.
+# A queued run has not launched anything yet, so it only needs cancelling;
+# touching tmux there could kill an interactive session for the same PR.
+stop_run() {
+  local id="$1" manifest session window state
+  manifest=$(cat "$(run_dir_for "$id")/manifest.json")
+  session=$(printf '%s' "$manifest" | jq -r '.tmux_session')
+  window=$(printf '%s' "$manifest" | jq -r '.tmux_window // "opencode"')
+  state=$(printf '%s' "$manifest" | jq -r '.state')
+
+  if [ "$state" != queued ] && session_exists "$session"; then
+    if [ "$window" = "review-agent" ]; then
+      tmux kill-window -t "=$session:$window" 2> /dev/null || true
+    else
+      tmux kill-session -t "=$session" 2> /dev/null || true
+    fi
+  fi
+  manifest_update "$id" '.state = "stopped" | .stopped_at = $now' --arg now "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+}
+
+# Active runs, optionally for one PR, oldest first.
+active_run_ids() {
+  local pr="${1:-}" id
+  for id in $(run_ids); do
+    if [ -n "$pr" ] && [ "$(jq -r '.pr' "$(run_dir_for "$id")/manifest.json")" != "$pr" ]; then
+      continue
+    fi
+    run_is_active "$(run_status "$id")" && printf '%s\n' "$id"
+  done
+}
+
+cmd_stop() {
+  local ref="$1" max="$2" all="$3"
+  require_repo
+  require_cmd tmux "brew install tmux"
+
+  if [ "$all" = true ]; then
+    local id pr n=0
+    # Hold the lock so a concurrent dispatch cannot launch a run mid-teardown.
+    acquire_lock || exit 1
+    for id in $(active_run_ids); do
+      pr=$(jq -r '.pr' "$(run_dir_for "$id")/manifest.json")
+      stop_run "$id"
+      say "Stopped agent review of PR #$pr ($id)."
+      n=$((n + 1))
+    done
+    release_lock
+    if [ "$n" -eq 0 ]; then
+      say "No active agent reviews."
+    else
+      say "Stopped $n agent review(s). Worktrees were kept; 'review clear' removes them."
+    fi
+    return 0
+  fi
+
+  local id status
+  id=$(resolve_run_ref "$ref") || exit 1
+  status=$(run_status "$id")
+  if ! run_is_active "$status"; then
+    say "Run $id is already $status."
+    return 0
+  fi
+  stop_run "$id"
+  say "Stopped agent review $id."
+  REVIEW_REPO=$(jq -r '.repo' "$(run_dir_for "$id")/manifest.json")
+  dispatch_runs "$max" || true
 }
 
 # --- Command: log ------------------------------------------------------------
@@ -1146,28 +1961,70 @@ cmd_log() {
 
 # --- Command: status ---------------------------------------------------------
 
+# JSON for agents: runs (latest per PR, plus anything still active) and worktrees.
+status_json() {
+  local all="$1" id records="" latest_ids
+  latest_ids=$(run_ids | sed -E 's/^(pr-[0-9]+)-.*/\1 &/' | awk '{latest[$1]=$2} END {for (k in latest) print latest[k]}')
+
+  while IFS= read -r id; do
+    [ -n "$id" ] || continue
+    local record status
+    record=$(run_record "$id") || continue
+    status=$(printf '%s' "$record" | jq -r '.status')
+    if [ "$all" = true ] || run_is_active "$status" || printf '%s\n' "$latest_ids" | grep -qxF "$id"; then
+      records+="$record"$'\n'
+    fi
+  done < <(run_ids)
+
+  local worktrees
+  worktrees=$(state_read | jq '.worktrees')
+  printf '%s' "$records" | jq -s --argjson worktrees "$worktrees" --argjson max "$REVIEW_MAX_ACTIVE" '
+    {
+      max_active: $max,
+      counts: (group_by(.status) | map({key: .[0].status, value: length}) | from_entries),
+      runs: sort_by(.created_at),
+      worktrees: $worktrees
+    }'
+}
+
 cmd_status() {
+  local all="$1"
   require_repo
   require_cmd jq "brew install jq"
   require_cmd tmux "brew install tmux"
 
+  if [ -n "$REVIEW_JSON" ]; then
+    status_json "$all"
+    return 0
+  fi
+
   local rows
   rows=$(state_worktree_rows)
   rows=$(append_unregistered_rows "$rows" "(unregistered)")
+
+  # Queued runs have no worktree yet but still belong in the overview.
+  local id pr
+  for id in $(queued_run_ids); do
+    pr=$(jq -r '.pr' "$(run_dir_for "$id")/manifest.json")
+    if ! printf '%s\n' "$rows" | cut -d "$REVIEW_FS" -f1 | grep -qxF "$pr"; then
+      rows+=$'\n'"$(jq -r --arg fs "$REVIEW_FS" '[(.pr | tostring), .worktree, .tmux_session, .repo, .url, .title, .author] | join($fs)' "$(run_dir_for "$id")/manifest.json")"
+    fi
+  done
+  rows=$(printf '%s\n' "$rows" | grep -v '^$' || true)
 
   if [ -z "$rows" ]; then
     echo "No active review sessions."
     return 0
   fi
 
-  local all="$rows"
+  local all_rows="$rows"
 
   {
-    printf 'PR\tSESSION\tWORKTREE\tTMUX\tTREE\tTITLE\n'
+    printf 'PR\tSESSION\tWORKTREE\tTMUX\tTREE\tAGENT\tTITLE\n'
     while IFS="$REVIEW_FS" read -r pr path session repo url title author; do
       [ -n "$pr" ] || continue
 
-      local tmux_state tmux_color tree_state tree_color
+      local tmux_state tmux_color tree_state tree_color run_state run_color latest
       if session_exists "$session"; then
         tmux_state="live" tmux_color=green
       elif [ -z "$session" ]; then
@@ -1184,14 +2041,28 @@ cmd_status() {
         tree_state="clean" tree_color=green
       fi
 
-      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+      latest=$(latest_run_for_pr "$pr")
+      run_state="-" run_color=dim
+      if [ -n "$latest" ]; then
+        run_state=$(run_status "$latest")
+        case "$run_state" in
+          completed) run_color=green ;;
+          running | starting) run_color=cyan ;;
+          waiting | idle | queued) run_color=yellow ;;
+          failed | interrupted) run_color=red ;;
+          *) run_color=dim ;;
+        esac
+      fi
+
+      printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$(paint cyan "#$pr")" \
         "$(truncate_cell "$(sanitize_cell "$session")" 34)" \
         "$(paint dim ".worktrees/reviews/$(basename "$path")")" \
         "$(paint "$tmux_color" "$tmux_state")" \
         "$(paint "$tree_color" "$tree_state")" \
+        "$(paint "$run_color" "$run_state")" \
         "$(truncate_cell "$(sanitize_cell "$title")" 40)"
-    done <<< "$all"
+    done <<< "$all_rows"
   } | render_table
 }
 
@@ -1334,7 +2205,8 @@ remove_review_worktree() {
 }
 
 cmd_clear() {
-  local target="${1:-}" force="$2" dry_run="$3"
+  local target="${1:-}" force="$2" dry_run="$3" stop_runs="${4:-false}"
+  [ "$force" = true ] && stop_runs=true
 
   require_repo
   require_cmd git "brew install git"
@@ -1353,12 +2225,39 @@ cmd_clear() {
     target_pr=$(resolve_pr_number "$target") || exit 1
   fi
 
+  local kill_self=false cleared=0 skipped=0 cancelled=0
+
+  # Queued runs have no worktree yet; cancel them first so nothing launches
+  # while (or after) the rest is torn down. The lock keeps dispatch out.
+  acquire_lock || exit 1
+  local id qpr
+  for id in $(queued_run_ids); do
+    qpr=$(jq -r '.pr' "$(run_dir_for "$id")/manifest.json")
+    if [ -n "$target_pr" ] && [ "$qpr" != "$target_pr" ]; then
+      continue
+    fi
+    if [ "$stop_runs" != true ]; then
+      echo "Skip: PR #$qpr has a queued agent review; use --stop to cancel it" >&2
+      skipped=$((skipped + 1))
+    elif [ "$dry_run" = true ]; then
+      echo "[dry-run] Would cancel queued agent review for PR #$qpr"
+      cancelled=$((cancelled + 1))
+    else
+      stop_run "$id"
+      echo "Cancelled queued agent review for PR #$qpr"
+      cancelled=$((cancelled + 1))
+    fi
+  done
+  release_lock
+
   local rows
   rows=$(state_worktree_rows)
   rows=$(append_unregistered_rows "$rows" "")
 
   if [ -z "$rows" ]; then
-    echo "No review worktrees to clear."
+    if [ "$cancelled" -eq 0 ] && [ "$skipped" -eq 0 ]; then
+      echo "No review worktrees to clear."
+    fi
     return 0
   fi
 
@@ -1368,17 +2267,32 @@ cmd_clear() {
     self_session=$(tmux display-message -p '#S')
   fi
 
-  local kill_self=false cleared=0 skipped=0
   while IFS="$REVIEW_FS" read -r pr path session repo url title author; do
     [ -n "$pr" ] || continue
     if [ -n "$target_pr" ] && [ "$pr" != "$target_pr" ]; then
       continue
     fi
 
-    local sessions
+    local sessions latest_run run_state=""
     sessions=$(find_sessions_for_worktree "$path" || true)
     if [ -n "$session" ] && session_exists "$session"; then
       sessions=$(printf '%s\n%s' "$sessions" "$session" | grep -v '^$' | sort -u)
+    fi
+
+    # An agent may be mid-review in this worktree; only --force interrupts it.
+    latest_run=$(latest_run_for_pr "$pr")
+    [ -n "$latest_run" ] && run_state=$(run_status "$latest_run")
+    if [ -n "$run_state" ] && run_is_active "$run_state"; then
+      if [ "$stop_runs" != true ]; then
+        echo "Skip: PR #$pr has an active agent review ($run_state); use --stop to stop it first" >&2
+        skipped=$((skipped + 1))
+        continue
+      fi
+      if [ "$dry_run" = true ]; then
+        echo "[dry-run] Would stop agent review $latest_run"
+      else
+        stop_run "$latest_run"
+      fi
     fi
 
     if ! remove_review_worktree "$pr" "$path" "$force" "$dry_run"; then
@@ -1407,7 +2321,7 @@ cmd_clear() {
     cleared=$((cleared + 1))
   done <<< "$rows"
 
-  if [ -n "$target_pr" ] && [ "$cleared" -eq 0 ] && [ "$skipped" -eq 0 ]; then
+  if [ -n "$target_pr" ] && [ "$cleared" -eq 0 ] && [ "$skipped" -eq 0 ] && [ "$cancelled" -eq 0 ]; then
     echo "No review worktree found for PR #$target_pr."
     return 0
   fi
@@ -1419,10 +2333,10 @@ cmd_clear() {
     echo "Cleared $cleared review worktree(s)."
   fi
   if [ "$skipped" -gt 0 ]; then
-    printf '%sSkipped %d dirty worktree(s); rerun with --force to remove them.%s\n' \
+    printf '%sSkipped %d item(s): --stop stops active or queued reviews, --force also removes worktrees with local changes.%s\n' \
       "$REVIEW_C_YELLOW" "$skipped" "$REVIEW_C_RESET"
   fi
-  echo "No branches were deleted."
+  echo "No branches were deleted. Agent review results were kept."
 
   if [ "$kill_self" = true ] && [ "$dry_run" != true ]; then
     kill_own_session "$self_session"
@@ -1516,8 +2430,17 @@ main() {
     exit 1
   fi
 
-  local force=false dry_run=false all=false
+  local force=false dry_run=false all=false full=false stop_runs=false
+  local next="" max="$REVIEW_MAX_ACTIVE" parent_session=""
   local args=()
+
+  # Value-taking options accept both "--opt value" and "--opt=value".
+  need_value() {
+    if [ -z "${2:-}" ] || [[ "$2" == -* ]]; then
+      echo "Error: $1 expects a value" >&2
+      exit 1
+    fi
+  }
 
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -1533,6 +2456,33 @@ main() {
       -a | --all)
         all=true
         ;;
+      --json)
+        REVIEW_JSON=1
+        ;;
+      --stop)
+        stop_runs=true
+        ;;
+      --full)
+        full=true
+        ;;
+      --next)
+        need_value "$1" "${2:-}"
+        next="$2"
+        shift
+        ;;
+      --next=*) next="${1#*=}" ;;
+      --max-active)
+        need_value "$1" "${2:-}"
+        max="$2"
+        shift
+        ;;
+      --max-active=*) max="${1#*=}" ;;
+      --parent-session)
+        need_value "$1" "${2:-}"
+        parent_session="$2"
+        shift
+        ;;
+      --parent-session=*) parent_session="${1#*=}" ;;
       --)
         shift
         while [ $# -gt 0 ]; do
@@ -1552,13 +2502,35 @@ main() {
     shift
   done
 
+  case "$next" in
+    '' | [1-9] | [1-9][0-9]) ;;
+    *)
+      echo "Error: --next expects a number from 1 to 99" >&2
+      exit 1
+      ;;
+  esac
+  case "$max" in
+    [1-9] | [1-9][0-9]) ;;
+    *)
+      echo "Error: --max-active expects a number from 1 to 99" >&2
+      exit 1
+      ;;
+  esac
+
   if [ "${#args[@]}" -eq 0 ]; then
     echo "Error: expected a ref or subcommand" >&2
-    echo "Usage: review <ref>|HEAD|log|status|snooze <ref>|clear [ref]" >&2
+    echo "Usage: review <ref>|HEAD|log|status|snooze <ref>|clear [ref]|start <ref>...|result <ref>" >&2
     exit 1
   fi
 
   local subcommand="${args[0]}"
+
+  expect_one_ref() {
+    [ "${#args[@]}" -eq 2 ] || {
+      echo "Error: 'review $subcommand' expects exactly one ref" >&2
+      exit 1
+    }
+  }
 
   case "$subcommand" in
     log)
@@ -1573,13 +2545,10 @@ main() {
         echo "Error: 'review status' takes no arguments" >&2
         exit 1
       }
-      cmd_status
+      cmd_status "$all"
       ;;
     snooze)
-      [ "${#args[@]}" -eq 2 ] || {
-        echo "Error: 'review snooze' expects exactly one ref" >&2
-        exit 1
-      }
+      expect_one_ref
       cmd_snooze "${args[1]}"
       ;;
     unsnooze)
@@ -1594,7 +2563,37 @@ main() {
         echo "Error: 'review clear' expects at most one ref" >&2
         exit 1
       }
-      cmd_clear "${args[1]:-}" "$force" "$dry_run"
+      cmd_clear "${args[1]:-}" "$force" "$dry_run" "$stop_runs"
+      ;;
+    start)
+      cmd_start "$next" "$force" "$max" "$parent_session" "${args[@]:1}"
+      ;;
+    dispatch)
+      [ "${#args[@]}" -eq 1 ] || {
+        echo "Error: 'review dispatch' takes no arguments" >&2
+        exit 1
+      }
+      cmd_dispatch "$max"
+      ;;
+    result)
+      expect_one_ref
+      cmd_result "${args[1]}" "$full"
+      ;;
+    attach)
+      expect_one_ref
+      cmd_attach "${args[1]}"
+      ;;
+    stop)
+      if [ "$all" = true ]; then
+        [ "${#args[@]}" -eq 1 ] || {
+          echo "Error: 'review stop --all' takes no ref" >&2
+          exit 1
+        }
+        cmd_stop "" "$max" true
+      else
+        expect_one_ref
+        cmd_stop "${args[1]}" "$max" false
+      fi
       ;;
     *)
       [ "${#args[@]}" -eq 1 ] || {
