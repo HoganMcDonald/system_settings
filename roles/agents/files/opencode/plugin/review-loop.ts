@@ -54,8 +54,10 @@ const z = {
 
 const scopeSchema = s
   .object({
-    level: z.level.describe("global = any codebase; language; repository; subsystem = one area of one repo"),
-    repos: s.array(s.string()).optional().describe("owner/repo slugs"),
+    level: z.level.describe(
+      "repository or subsystem (one area of one repo) files the lesson under the PR's repository; global (any codebase) or language files it as cross-repository",
+    ),
+    repos: s.array(s.string()).optional().describe("Optional; repository-scoped lessons always belong to the PR's own repository"),
     languages: s.array(s.string()).optional(),
     subsystems: s.array(s.string()).optional().describe("areas such as query-cache, auth, billing-ui"),
   })
@@ -396,13 +398,17 @@ export default (async ({ client, directory }) => {
     feedback_search: tool({
       description: [
         "Search the local review-feedback memory (~/.feedback) for lessons relevant to code being reviewed or written.",
+        "Entries are partitioned by repository: a search covers one repository's lessons plus cross-repository (global) lessons.",
+        "repo defaults to the current directory's GitHub repository; pass the PR's owner/repo when reviewing elsewhere.",
+        "all_repos=true searches every repository (other repos' conventions apply only when the reasoning transfers).",
         "Returns compact matches only; call feedback_show for the few that apply.",
         "Recall beats precision here: use several terms (behaviour, failure mode, subsystem, symbols, synonyms),",
         "search more than once as the work reveals new areas, and broaden or page with offset when results are thin.",
       ].join(" "),
       args: {
         query: s.string().describe("Free text: concepts, symptoms, subsystem names, synonyms"),
-        repo: s.string().optional().describe("owner/repo to boost repository-scoped lessons"),
+        repo: s.string().optional().describe("owner/repo whose lessons to search (default: current repository)"),
+        all_repos: s.boolean().optional().describe("Search lessons from every repository"),
         paths: s.array(s.string()).optional().describe("Changed file paths to match lesson path globs"),
         symbols: s.array(s.string()).optional(),
         kind: z.kind.optional(),
@@ -410,8 +416,9 @@ export default (async ({ client, directory }) => {
         offset: s.number().int().optional(),
         include_inactive: s.boolean().optional().describe("Also return retired and superseded lessons"),
       },
-      async execute(args) {
-        return fb.formatSearch(await fb.search(args as fb.SearchOptions))
+      async execute(args, ctx) {
+        const repo = args.repo || (args.all_repos ? undefined : fb.inferRepo(ctx.directory || directory))
+        return fb.formatSearch(await fb.search({ ...(args as fb.SearchOptions), repo }))
       },
     }),
 
@@ -427,7 +434,9 @@ export default (async ({ client, directory }) => {
       description: [
         "Record one actionable lesson from review feedback on Hogan's PRs into ~/.feedback.",
         "Pass the comment's source (key from pr_context threads output, PR URL, comment URL, reviewer, thread state, disposition).",
-        "A source key seen before only updates its handling state. A new lesson needs `entry`;",
+        "A source key seen before only updates its handling state. A new lesson needs `entry`.",
+        "Entries are partitioned by repository: repository/subsystem scope files the lesson under the PR's repository;",
+        "global/language scope files it as cross-repository. Merges only work within the same repository or into global lessons;",
         "if similar lessons exist you get candidates back: retry with merge_into=<id> for a recurrence or force_new=true for a distinct lesson.",
         "Use the feedback-accumulator skill for what qualifies and how to scope it.",
       ].join(" "),
@@ -475,7 +484,7 @@ export default (async ({ client, directory }) => {
 
     feedback_revise: tool({
       description:
-        "Edit an existing feedback entry when the user asks, or when a lesson is clearly wrong, too broad, or poorly tagged. Tags merge unless replace_tags is true.",
+        "Edit an existing feedback entry when the user asks, or when a lesson is clearly wrong, too broad, or poorly tagged. Tags merge unless replace_tags is true. Changing scope.level moves the entry between its repository's partition and the global partition (promote a lesson that recurs across repositories to global).",
       args: {
         id: s.string(),
         note: s.string().describe("Why the entry changed"),

@@ -42,8 +42,16 @@ Tools: in OpenCode use `pr_context` and `feedback_*`; elsewhere use the
 
 ## Judgement rules
 
-- **Preserve scope.** A convention of one repository stays `repository`
-  scope; only make it `global` when the reasoning applies to any codebase.
+- **Preserve scope; it decides the partition.** Entries are partitioned by
+  repository. `repository` and `subsystem` lessons are filed under the PR's
+  repository and only surface when working in it; `global` and `language`
+  lessons surface everywhere. A convention of one repository stays
+  `repository` scope; only make it `global` when the reasoning applies to any
+  codebase.
+- **Recurrence across repositories.** When the same lesson shows up in a
+  second repository (a capture warning names the look-alike), promote it:
+  `feedback_revise` the existing entry to `global` scope, merge the new
+  source into it, and retire any duplicate.
 - **Open is not a verdict.** New feedback is `disposition: pending` and
   usually `status: active`. If Hogan pushed back and the reviewer has not
   agreed, use `disposition: disputed` (the entry becomes `disputed`).

@@ -55,7 +55,7 @@ This is a macOS system setup repository containing an Ansible playbook for autom
 - `review` agent (`opencode/agent/review.md`): read-only PR reviewer on `anthropic/claude-opus-5-5` with the `medium` variant; `/review` and `/feedback` commands
 - `plugin/review-loop.ts` exposes `pr_context`, `feedback_*`, and `review_*` tools, triggers feedback capture on `hoganmcdonald`'s PRs, and appends the `💡 feedback captured` footer
 - Shared logic in `opencode/lib/` (`feedback-store.ts`, `pr-context.ts`, `review-loop-core.ts`), also exposed as the `feedback` and `pr-context` CLIs
-- Feedback memory lives in `~/.feedback` (never in git): one Markdown lesson per file plus a generated index
+- Feedback memory lives in `~/.feedback` (never in git): one Markdown lesson per file, partitioned into `entries/<owner>/<repo>/` and `entries/_global/`, plus a generated index; searches cover one repo plus `_global`
 - Tests: `bun test roles/agents/tests`
 
 ### apps
