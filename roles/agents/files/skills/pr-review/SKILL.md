@@ -65,7 +65,8 @@ See `references/review-checklist.md` for prompts by change type.
 ## 5. Recall accumulated feedback
 
 Use the `feedback-recall` skill once you know the subsystems involved, again
-when a new risk area appears, and before finalising. Apply a lesson only when
+when a new risk area appears, and before finalising. Search the PR's own
+repository (`repo: owner/repo`) so its lessons are in scope. Apply a lesson only when
 its conditions hold here; cite its id in the finding.
 
 ## 6. Reconcile with existing discussion

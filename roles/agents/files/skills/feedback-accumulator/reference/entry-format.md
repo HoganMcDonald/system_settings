@@ -1,8 +1,13 @@
 # Feedback entry format
 
-Each lesson is one Markdown file in `~/.feedback/entries/` with YAML
-frontmatter and fixed sections. The tools write these files; this describes
-what to pass to `feedback_capture`.
+Each lesson is one Markdown file with YAML frontmatter and fixed sections,
+partitioned by repository:
+
+- `~/.feedback/entries/<owner>/<repo>/` - `repository` and `subsystem` scope
+- `~/.feedback/entries/_global/` - `global` and `language` scope
+
+The tools choose the partition from the scope and the PR URL and move files
+when scope changes; this describes what to pass to `feedback_capture`.
 
 ## Fields
 
@@ -13,8 +18,9 @@ what to pass to `feedback_capture`.
 | `summary` | One sentence stating the lesson. |
 | `kind` | `correctness`, `security`, `performance`, `reliability`, `data`, `api`, `design`, `testing`, `readability`, `naming`, `style`, `docs`, `ops`, `process`. |
 | `confidence` | `confirmed` (reviewer and author agree, or fixed), `likely`, `tentative` (one reviewer's preference, unresolved). |
-| `scope.level` | `global`, `language`, `repository`, or `subsystem`. Default to the narrowest that is true. |
-| `scope.repos` / `languages` / `subsystems` | `owner/repo`; `typescript`; `query-cache`. |
+| `scope.level` | `global`, `language`, `repository`, or `subsystem`. Default to the narrowest that is true; it decides the partition. |
+| `scope.repos` | Optional. Repository-scoped lessons always belong to the PR's repository; for global lessons it records where the lesson was seen (filled in automatically). |
+| `scope.languages` / `subsystems` | `typescript`; `query-cache`. |
 | `concepts` | 1-4 canonical topics: `authorization`, `caching`, `migrations`. |
 | `aliases` | 5+ alternative search terms: synonyms, symptoms, abbreviations, the reviewer's words. |
 | `symbols` | Functions, types, tables, flags, endpoints involved. |
@@ -91,6 +97,16 @@ its new state; no `entry` is needed:
 
 ## Recurrence
 
-The same lesson from a different PR or reviewer: capture with
-`"merge_into": "<existing id>"` and the new `source`. Add any new aliases in
-`entry` (tags merge).
+The same lesson from a different PR or reviewer in the same repository, or a
+recurrence of a global lesson: capture with `"merge_into": "<existing id>"`
+and the new `source`. Add any new aliases in `entry` (tags merge).
+
+Merging a source from repository B into a repository-A lesson is refused.
+If the lesson genuinely spans both, promote it first, then merge:
+
+```json
+{ "id": "fb-20261005-abc123", "note": "recurred in acme/web", "changes": { "scope": { "level": "global" } } }
+```
+
+Otherwise capture it as a separate lesson for repository B with
+`"force_new": true`.

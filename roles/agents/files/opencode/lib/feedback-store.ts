@@ -10,10 +10,10 @@
 // Override the location with FEEDBACK_HOME (used by the test suite).
 
 import { existsSync, lstatSync } from "node:fs"
-import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises"
+import { mkdir, readFile, readdir, rename, rm, rmdir, stat, writeFile } from "node:fs/promises"
 import { randomBytes } from "node:crypto"
 import { homedir } from "node:os"
-import { join, resolve } from "node:path"
+import { basename, dirname, join, resolve } from "node:path"
 
 // --- Schema ------------------------------------------------------------------
 
@@ -117,6 +117,71 @@ const ID_RE = /^fb-\d{8}-[a-z0-9]{6}$/
 const FILE_RE = /^(fb-\d{8}-[a-z0-9]{6})--[a-z0-9-]{1,60}\.md$/
 const SOURCE_KEY_RE = /^[a-z][a-z0-9-]*:\S{3,300}$/
 const MAX_NOTICE_WORDS = 10
+const REPO_RE = /^[a-z0-9][a-z0-9-]{0,38}\/[a-z0-9._-]{1,100}$/
+
+// --- Partitions --------------------------------------------------------------
+//
+// Entries are partitioned by repository: entries/<owner>/<repo>/ holds lessons
+// scoped to that repository (or one of its subsystems), and entries/_global/
+// holds lessons that apply across codebases (global or language scope).
+// Searches cover one repository plus _global unless all_repos is requested,
+// so a convention from one codebase never leaks into reviews of another.
+// GitHub owners cannot start with "_", so the name cannot collide.
+
+export const GLOBAL_PARTITION = "_global"
+
+export function normalizeRepo(repo: string | undefined | null): string | undefined {
+  const r = String(repo ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\/(www\.)?github\.com\//, "")
+    .replace(/\.git$/, "")
+    .split("/")
+    .slice(0, 2)
+    .join("/")
+  return REPO_RE.test(r) ? r : undefined
+}
+
+export function repoFromPrUrl(url: string | undefined): string | undefined {
+  const m = String(url ?? "").match(/^https?:\/\/(?:www\.)?github\.com\/([^/\s]+)\/([^/\s]+)\/pull\/\d+/)
+  return m ? normalizeRepo(`${m[1]}/${m[2]}`) : undefined
+}
+
+export function isRepoScoped(level: string): boolean {
+  return level === "repository" || level === "subsystem"
+}
+
+export function partitionOf(e: Pick<Entry, "scope">): string {
+  if (!isRepoScoped(e.scope.level)) return GLOBAL_PARTITION
+  const repo = normalizeRepo(e.scope.repos[0])
+  if (!repo) throw new Error("repository-scoped entries need exactly one owner/repo in scope.repos")
+  return repo
+}
+
+// Best-effort repository of a working directory, from its GitHub remote.
+// Strips the SDK variables a Nix-launched tmux server leaks into panes, which
+// break Apple's /usr/bin/git shim.
+export function inferRepo(cwd: string): string | undefined {
+  const env: Record<string, string> = {}
+  for (const [k, v] of Object.entries(process.env)) if (v !== undefined && k !== "DEVELOPER_DIR" && k !== "SDKROOT") env[k] = v
+  const git = (args: string[]) => {
+    try {
+      const r = Bun.spawnSync(["git", ...args], { cwd, env, stdout: "pipe", stderr: "ignore" })
+      return r.exitCode === 0 ? new TextDecoder().decode(r.stdout).trim() : ""
+    } catch {
+      return ""
+    }
+  }
+  const remotes = git(["remote"]).split("\n").filter(Boolean)
+  const ordered = [...remotes.filter((r) => r === "origin"), ...remotes.filter((r) => r !== "origin")]
+  for (const remote of ordered) {
+    const url = git(["remote", "get-url", remote])
+    const m = url.match(/github\.com[:/]+([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/)
+    const repo = m ? normalizeRepo(`${m[1]}/${m[2]}`) : undefined
+    if (repo) return repo
+  }
+  return undefined
+}
 
 // --- Paths and safety --------------------------------------------------------
 
@@ -147,7 +212,7 @@ function assertNotSymlink(p: string) {
 
 export async function ensureStore(home = feedbackHome()) {
   const p = paths(home)
-  for (const dir of [p.home, p.entries, p.state, p.sessions]) {
+  for (const dir of [p.home, p.entries, join(p.entries, GLOBAL_PARTITION), p.state, p.sessions]) {
     assertNotSymlink(dir)
     await mkdir(dir, { recursive: true })
     assertNotSymlink(dir)
@@ -415,7 +480,20 @@ export function validateEntry(e: Entry): string[] {
   if (e.status === "superseded" && !e.superseded_by) errors.push("superseded entries need superseded_by")
   for (const s of e.sources) {
     if (!SOURCE_KEY_RE.test(s.key)) errors.push(`invalid source key '${s.key}'`)
-    if (!/^https:\/\//.test(s.pr)) errors.push(`source ${s.key} needs a PR URL`)
+    if (!repoFromPrUrl(s.pr)) errors.push(`source ${s.key} needs a GitHub PR URL`)
+  }
+  if (isRepoScoped(e.scope.level)) {
+    const repos = e.scope.repos.map(normalizeRepo)
+    if (repos.length !== 1 || !repos[0]) {
+      errors.push(`${e.scope.level}-scoped entries need exactly one owner/repo in scope.repos (got ${JSON.stringify(e.scope.repos)})`)
+    } else {
+      const foreign = e.sources.filter((s) => repoFromPrUrl(s.pr) !== repos[0])
+      if (foreign.length) {
+        errors.push(
+          `${e.scope.level}-scoped entry for ${repos[0]} has sources from other repositories (${foreign.map((s) => repoFromPrUrl(s.pr)).join(", ")}); use level global or language for cross-repository lessons`,
+        )
+      }
+    }
   }
   return errors
 }
@@ -429,26 +507,63 @@ function entryWarnings(e: Entry): string[] {
 
 // --- Store I/O ---------------------------------------------------------------
 
+
 type Loaded = { entry: Entry; file: string }
 
-async function loadAll(home = feedbackHome()): Promise<{ entries: Loaded[]; errors: string[] }> {
+// Every entry file: partitioned (entries/_global/*.md, entries/<owner>/<repo>/*.md)
+// and legacy flat files (entries/*.md), which reindex moves into place.
+async function entryFiles(home = feedbackHome()): Promise<string[]> {
   const p = await ensureStore(home)
+  const out: string[] = []
+  const dirents = async (dir: string) => (await readdir(dir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))
+  for (const d of await dirents(p.entries)) {
+    const path = join(p.entries, d.name)
+    if (d.isSymbolicLink()) continue
+    if (d.isFile() && d.name.endsWith(".md")) out.push(path)
+    if (!d.isDirectory()) continue
+    for (const d2 of await dirents(path)) {
+      const path2 = join(path, d2.name)
+      if (d2.isSymbolicLink()) continue
+      if (d2.isFile() && d2.name.endsWith(".md") && d.name === GLOBAL_PARTITION) out.push(path2)
+      if (!d2.isDirectory() || d.name === GLOBAL_PARTITION) continue
+      for (const d3 of await dirents(path2)) {
+        if (d3.isFile() && d3.name.endsWith(".md")) out.push(join(path2, d3.name))
+      }
+    }
+  }
+  return out
+}
+
+function partitionDir(partition: string, home = feedbackHome()): string {
+  const p = paths(home)
+  if (partition === GLOBAL_PARTITION) return join(p.entries, GLOBAL_PARTITION)
+  const repo = normalizeRepo(partition)
+  if (!repo) throw new Error(`invalid partition '${partition}'`)
+  const [owner, name] = repo.split("/")
+  return join(p.entries, owner, name)
+}
+
+function expectedFile(e: Entry, home = feedbackHome()): string {
+  return join(partitionDir(partitionOf(e), home), `${e.id}--${slugify(e.title)}.md`)
+}
+
+async function loadAll(home = feedbackHome()): Promise<{ entries: Loaded[]; errors: string[] }> {
   const errors: string[] = []
   const entries: Loaded[] = []
-  for (const name of (await readdir(p.entries)).sort()) {
-    if (!name.endsWith(".md")) continue
-    const file = join(p.entries, name)
+  const root = paths(home).entries
+  for (const file of await entryFiles(home)) {
+    const rel = file.slice(root.length + 1)
     if (lstatSync(file).isSymbolicLink()) {
-      errors.push(`${name}: symlinks are ignored`)
+      errors.push(`${rel}: symlinks are ignored`)
       continue
     }
     try {
       const entry = parseEntry(await readFile(file, "utf8"))
-      const m = name.match(FILE_RE)
-      if (!m || m[1] !== entry.id) errors.push(`${name}: filename does not match id '${entry.id}'`)
+      const m = basename(file).match(FILE_RE)
+      if (!m || m[1] !== entry.id) errors.push(`${rel}: filename does not match id '${entry.id}'`)
       entries.push({ entry, file })
     } catch (err: any) {
-      errors.push(`${name}: ${err?.message ?? err}`)
+      errors.push(`${rel}: ${err?.message ?? err}`)
     }
   }
   return { entries, errors }
@@ -456,21 +571,37 @@ async function loadAll(home = feedbackHome()): Promise<{ entries: Loaded[]; erro
 
 async function findEntry(id: string, home = feedbackHome()): Promise<Loaded> {
   if (!ID_RE.test(id)) throw new Error(`invalid feedback id '${id}'`)
-  const p = await ensureStore(home)
-  const name = (await readdir(p.entries)).find((n) => n.startsWith(`${id}--`) && n.endsWith(".md"))
-  if (!name) throw new Error(`feedback entry ${id} not found`)
-  const file = join(p.entries, name)
+  const file = (await entryFiles(home)).find((f) => basename(f).startsWith(`${id}--`))
+  if (!file) throw new Error(`feedback entry ${id} not found`)
   return { entry: parseEntry(await readFile(file, "utf8")), file }
 }
 
 async function saveEntry(e: Entry, previousFile?: string, home = feedbackHome()): Promise<string> {
   const errors = validateEntry(e)
   if (errors.length) throw new Error(`invalid feedback entry: ${errors.join("; ")}`)
-  const p = await ensureStore(home)
-  const file = join(p.entries, `${e.id}--${slugify(e.title)}.md`)
+  await ensureStore(home)
+  const file = expectedFile(e, home)
+  const dir = dirname(file)
+  for (let d = dir; d.startsWith(paths(home).entries) && d !== paths(home).entries; d = dirname(d)) assertNotSymlink(d)
+  await mkdir(dir, { recursive: true })
   await atomicWrite(file, serializeEntry(e))
-  if (previousFile && previousFile !== file) await rm(previousFile, { force: true })
+  if (previousFile && previousFile !== file) {
+    await rm(previousFile, { force: true })
+    await pruneEmptyDirs(dirname(previousFile), home)
+  }
   return file
+}
+
+async function pruneEmptyDirs(dir: string, home = feedbackHome()) {
+  const root = paths(home).entries
+  for (let d = dir; d.startsWith(root) && d !== root; d = dirname(d)) {
+    try {
+      if ((await readdir(d)).length) return
+      await rmdir(d)
+    } catch {
+      return
+    }
+  }
 }
 
 // --- Index -------------------------------------------------------------------
@@ -478,6 +609,7 @@ async function saveEntry(e: Entry, previousFile?: string, home = feedbackHome())
 export type IndexRecord = {
   id: string
   file: string
+  partition: string
   title: string
   notice: string
   summary: string
@@ -498,10 +630,19 @@ export type IndexRecord = {
   text: string
 }
 
+function safePartition(e: Entry): string {
+  try {
+    return partitionOf(e)
+  } catch {
+    return "_invalid"
+  }
+}
+
 function toRecord(e: Entry, file: string): IndexRecord {
   return {
     id: e.id,
     file,
+    partition: safePartition(e),
     title: e.title,
     notice: e.notice,
     summary: e.summary,
@@ -534,9 +675,48 @@ export async function reindex(home = feedbackHome()) {
   return withLock(() => reindexUnlocked(home), home)
 }
 
+// Fill in a repository-scoped entry's repo from its sources when missing
+// (older or hand-written entries); returns whether anything changed.
+function repairScope(e: Entry): boolean {
+  if (!isRepoScoped(e.scope.level)) return false
+  const normalized = uniq(e.scope.repos.map((r) => normalizeRepo(r) ?? r))
+  if (normalized.length === 0) {
+    const fromSources = uniq(e.sources.map((s) => repoFromPrUrl(s.pr)))
+    if (fromSources.length !== 1) return false
+    e.scope.repos = fromSources
+    return true
+  }
+  if (JSON.stringify(normalized) !== JSON.stringify(e.scope.repos)) {
+    e.scope.repos = normalized
+    return true
+  }
+  return false
+}
+
 async function reindexUnlocked(home = feedbackHome()) {
   const p = await ensureStore(home)
-  const { entries, errors } = await loadAll(home)
+  const loaded = await loadAll(home)
+  const errors = [...loaded.errors]
+  let moved = 0
+
+  // Keep every entry in its partition: hand edits that change scope, and
+  // legacy flat files, are moved (and repaired) here.
+  const entries: Loaded[] = []
+  for (const item of loaded.entries) {
+    const repaired = repairScope(item.entry)
+    const problems = validateEntry(item.entry)
+    if (problems.length) {
+      errors.push(`${item.file.slice(p.entries.length + 1)}: ${problems.join("; ")}`)
+      entries.push(item)
+      continue
+    }
+    if (repaired || item.file !== expectedFile(item.entry, home)) {
+      const file = await saveEntry(item.entry, item.file, home)
+      moved++
+      entries.push({ entry: item.entry, file })
+    } else entries.push(item)
+  }
+
   const records = entries.map(({ entry, file }) => toRecord(entry, file))
   await atomicWrite(p.index, records.map((r) => JSON.stringify(r)).join("\n") + (records.length ? "\n" : ""))
 
@@ -545,7 +725,10 @@ async function reindexUnlocked(home = feedbackHome()) {
   const sources = await readJson<Record<string, string>>(p.sources, {})
   for (const { entry } of entries) for (const s of entry.sources) sources[s.key] = entry.id
   await atomicWrite(p.sources, JSON.stringify(sources, null, 2) + "\n")
-  return { entries: records.length, errors }
+  if ((await readFile(p.readme, "utf8").catch(() => "")) !== README) await atomicWrite(p.readme, README)
+  const partitions: Record<string, number> = {}
+  for (const r of records) partitions[r.partition] = (partitions[r.partition] ?? 0) + 1
+  return { entries: records.length, moved, partitions, errors }
 }
 
 async function readIndex(home = feedbackHome()): Promise<IndexRecord[]> {
@@ -560,6 +743,11 @@ async function readIndex(home = feedbackHome()): Promise<IndexRecord[]> {
     } catch {
       // A corrupt line is skipped; `reindex` rebuilds from the entries.
     }
+  }
+  // Indexes written before partitioning lack the field; rebuild once.
+  if (out.some((r) => !r.partition)) {
+    await reindex(home)
+    return readIndex(home)
   }
   return out
 }
@@ -664,7 +852,10 @@ function pathMatches(entryPaths: string[], queryPaths: string[]): boolean {
 
 export type SearchOptions = {
   query: string
+  /** Repository partition to search alongside _global (owner/repo). */
   repo?: string
+  /** Search every partition instead of one repository plus _global. */
+  all_repos?: boolean
   paths?: string[]
   symbols?: string[]
   kind?: string
@@ -681,6 +872,7 @@ export type SearchHit = {
   kind: string
   status: string
   confidence: string
+  partition: string
   scope: string
   sources: number
   score: number
@@ -695,13 +887,22 @@ const STATUS_WEIGHT: Record<string, number> = {
   retired: 0.2,
 }
 
+export function searchPartitions(opts: Pick<SearchOptions, "repo" | "all_repos">): string[] | "all" {
+  if (opts.all_repos) return "all"
+  const repo = normalizeRepo(opts.repo)
+  return repo ? [repo, GLOBAL_PARTITION] : [GLOBAL_PARTITION]
+}
+
 export async function search(opts: SearchOptions, home = feedbackHome()) {
+  if (opts.repo && !opts.all_repos && !normalizeRepo(opts.repo)) throw new Error(`repo must be owner/repo, got '${opts.repo}'`)
   const records = await readIndex(home)
   const limit = Math.max(1, Math.min(opts.limit ?? 8, 50))
   const offset = Math.max(0, opts.offset ?? 0)
   const queryText = [opts.query, ...(opts.symbols ?? []), ...(opts.paths ?? [])].join(" ")
   const terms = [...new Set(tokenize(queryText))]
-  const docs = records
+  const partitions = searchPartitions(opts)
+  const inScope = records.filter((r) => partitions === "all" || partitions.includes(r.partition))
+  const docs = inScope
     .filter((r) => opts.include_inactive || (r.status !== "retired" && r.status !== "superseded"))
     .map((r) => ({ r, f: fieldTokens(r) }))
 
@@ -741,10 +942,11 @@ export async function search(opts: SearchOptions, home = feedbackHome()) {
     if (terms.length === 0) score = 1
     if (score <= 0) continue
     score *= 1 + matchedTerms / Math.max(terms.length, 1)
-    if (opts.repo && r.repos.some((x) => x.toLowerCase() === opts.repo!.toLowerCase())) {
-      score *= 1.25
-      boosts.push(`repo:${opts.repo}`)
-    } else if (opts.repo && r.level === "global") score *= 1.05
+    // Lessons specific to the repository being worked on outrank general ones.
+    if (r.partition !== GLOBAL_PARTITION && r.partition === normalizeRepo(opts.repo)) {
+      score *= 1.15
+      boosts.push(`repo:${r.partition}`)
+    }
     if (opts.paths?.length && pathMatches(r.paths, opts.paths)) {
       score *= 1.35
       boosts.push("paths:glob")
@@ -764,7 +966,8 @@ export async function search(opts: SearchOptions, home = feedbackHome()) {
       kind: r.kind,
       status: r.status,
       confidence: r.confidence,
-      scope: [r.level, ...r.repos, ...r.subsystems].join(" "),
+      partition: r.partition,
+      scope: [r.level, ...r.languages, ...r.subsystems].join(" "),
       sources: r.prs.length,
       score: Math.round(score * 100) / 100,
       matched: [...boosts, ...matched].slice(0, 8),
@@ -777,20 +980,36 @@ export async function search(opts: SearchOptions, home = feedbackHome()) {
   if (scored.length > offset + limit) hints.push(`more results available: repeat with offset=${offset + limit}`)
   if (scored.length < 3)
     hints.push("few matches: retry with synonyms, symptoms, subsystem names, or symbols; '~' marks partial matches")
-  return { total: scored.length, offset, terms, results, hints, entries_in_store: records.length }
+  if (partitions !== "all" && !normalizeRepo(opts.repo)) {
+    hints.push("no repository given: searched only cross-repository (_global) lessons; pass repo=owner/repo for that repository's lessons")
+  }
+  const outside = records.length - inScope.length
+  if (partitions !== "all" && outside > 0 && scored.length < 3) {
+    hints.push(`${outside} lesson(s) belong to other repositories; all_repos=true searches them (apply only if the reasoning transfers)`)
+  }
+  return {
+    total: scored.length,
+    offset,
+    terms,
+    searched: partitions === "all" ? ["all repositories"] : partitions,
+    results,
+    hints,
+    entries_in_store: records.length,
+  }
 }
 
 export function formatSearch(res: Awaited<ReturnType<typeof search>>): string {
+  const where = `searched ${res.searched.join(" + ")}`
   if (res.results.length === 0) {
-    return `No feedback matched (${res.entries_in_store} entries in store; terms: ${res.terms.join(", ") || "none"}).\n${res.hints.join("\n")}`
+    return `No feedback matched (${where}; ${res.entries_in_store} entries in store; terms: ${res.terms.join(", ") || "none"}).\n${res.hints.join("\n")}`
   }
   const lines = res.results.map(
     (h, i) =>
       `${res.offset + i + 1}. ${h.id} [${h.kind}/${h.status}${h.confidence === "confirmed" ? "" : `/${h.confidence}`}] ${h.title}\n` +
-      `   ${h.summary}\n   scope: ${h.scope} · sources: ${h.sources} · score ${h.score} · matched: ${h.matched.join(", ")}`,
+      `   ${h.summary}\n   ${h.partition === GLOBAL_PARTITION ? "global" : h.partition} · scope: ${h.scope} · sources: ${h.sources} · score ${h.score} · matched: ${h.matched.join(", ")}`,
   )
   return [
-    `${res.total} match(es); showing ${res.offset + 1}-${res.offset + res.results.length}.`,
+    `${res.total} match(es) (${where}); showing ${res.offset + 1}-${res.offset + res.results.length}.`,
     ...lines,
     ...res.hints,
     "Use feedback_show with selected ids to read full entries.",
@@ -810,12 +1029,13 @@ export async function show(ids: string[], home = feedbackHome()): Promise<string
   return out.join("\n\n")
 }
 
-export async function recent(limit = 10, home = feedbackHome()) {
-  const records = await readIndex(home)
+export async function recent(limit = 10, repo?: string, home = feedbackHome()) {
+  const partitions = repo ? searchPartitions({ repo }) : "all"
+  const records = (await readIndex(home)).filter((r) => partitions === "all" || partitions.includes(r.partition))
   return records
     .sort((a, b) => b.updated.localeCompare(a.updated))
     .slice(0, limit)
-    .map((r) => ({ id: r.id, title: r.title, kind: r.kind, status: r.status, updated: r.updated, prs: r.prs.length }))
+    .map((r) => ({ id: r.id, partition: r.partition, title: r.title, kind: r.kind, status: r.status, updated: r.updated, prs: r.prs.length }))
 }
 
 // --- Capture -------------------------------------------------------------------
@@ -850,7 +1070,11 @@ export type CaptureResult =
   | { action: "created" | "merged" | "updated"; receipt: Receipt; warnings: string[] }
   | { action: "unchanged"; id: string; reason: string }
   | { action: "skipped"; id: string; reason: string }
-  | { action: "needs_decision"; reason: string; candidates: { id: string; title: string; summary: string; similarity: number }[] }
+  | {
+      action: "needs_decision"
+      reason: string
+      candidates: { id: string; partition: string; title: string; summary: string; similarity: number }[]
+    }
 
 function jaccard(a: string[], b: string[]): number {
   const A = new Set(a)
@@ -885,7 +1109,9 @@ function applyTags(e: Entry, input: EntryInput | undefined) {
   e.symbols = uniq([...e.symbols, ...(input.symbols ?? [])])
   e.paths = uniq([...e.paths, ...(input.paths ?? [])])
   if (input.scope) {
-    e.scope.repos = uniq([...e.scope.repos, ...(input.scope.repos ?? [])])
+    // A repository-scoped entry belongs to exactly one repository; for
+    // cross-repository entries, repos records where the lesson was seen.
+    if (!isRepoScoped(e.scope.level)) e.scope.repos = uniq([...e.scope.repos, ...(input.scope.repos ?? []).map((r) => normalizeRepo(r) ?? r)])
     e.scope.languages = uniq([...e.scope.languages, ...(input.scope.languages ?? [])])
     e.scope.subsystems = uniq([...e.scope.subsystems, ...(input.scope.subsystems ?? [])])
   }
@@ -902,7 +1128,8 @@ export async function capture(input: CaptureInput, home = feedbackHome()): Promi
     if (!src || !SOURCE_KEY_RE.test(String(src.key ?? ""))) {
       throw new Error("source.key is required, e.g. github:owner/repo#123:thread:PRRT_abc")
     }
-    if (!/^https:\/\//.test(String(src.pr ?? ""))) throw new Error("source.pr must be the PR URL")
+    const srcRepo = repoFromPrUrl(src.pr)
+    if (!srcRepo) throw new Error("source.pr must be the GitHub PR URL (https://github.com/owner/repo/pull/N)")
 
     const sources = await readJson<Record<string, string>>(p.sources, {})
     const knownId = sources[src.key]
@@ -946,8 +1173,17 @@ export async function capture(input: CaptureInput, home = feedbackHome()): Promi
     if (input.merge_into) {
       const loaded = await findEntry(input.merge_into, home)
       const e = loaded.entry
+      const target = partitionOf(e)
+      if (target !== GLOBAL_PARTITION && target !== srcRepo) {
+        throw new Error(
+          `${e.id} is scoped to ${target}, but this feedback is from ${srcRepo}. Entries are partitioned by repository: ` +
+            `if the lesson genuinely applies across codebases, first promote it with feedback_revise (scope.level global or language), then merge; ` +
+            `otherwise capture it as a new ${srcRepo} entry with force_new=true.`,
+        )
+      }
       const { source } = mergeSource(undefined, src)
       e.sources.push(source)
+      if (target === GLOBAL_PARTITION) e.scope.repos = uniq([...e.scope.repos, srcRepo])
       applyTags(e, input.entry)
       if (e.status === "proposed" && e.sources.length > 1) e.confidence = "confirmed"
       e.updated = today()
@@ -962,26 +1198,44 @@ export async function capture(input: CaptureInput, home = feedbackHome()): Promi
       throw new Error("new entries need entry.title, entry.summary, entry.notice, entry.lesson and entry.concepts")
     }
 
-    if (!input.force_new) {
+    // Partition of the new entry: repository-scoped lessons belong to the
+    // repository the feedback came from; everything else is cross-repository.
+    const scopeIn = ei.scope ?? {}
+    const level = oneOf(SCOPE_LEVELS, scopeIn.level, "repository")
+    let repos: string[]
+    if (isRepoScoped(level)) {
+      const named = uniq((scopeIn.repos ?? []).map((r) => normalizeRepo(r) ?? r))
+      if (named.length > 1 || (named.length === 1 && named[0] !== srcRepo)) {
+        throw new Error(
+          `a ${level}-scoped lesson from ${srcRepo} cannot be scoped to ${named.join(", ")}; use level global or language for lessons that span repositories`,
+        )
+      }
+      repos = [srcRepo]
+    } else repos = uniq([...(scopeIn.repos ?? []).map((r) => normalizeRepo(r) ?? r), srcRepo])
+    const partition = isRepoScoped(level) ? srcRepo : GLOBAL_PARTITION
+
+    const similar: { id: string; partition: string; title: string; summary: string; similarity: number }[] = []
+    {
       const mine = lessonTokens(ei)
       const { entries } = await loadAll(home)
-      const candidates = entries
-        .filter(({ entry }) => entry.status !== "retired")
-        .map(({ entry }) => ({
-          id: entry.id,
-          title: entry.title,
-          summary: entry.summary,
-          similarity: Math.round(jaccard(mine, lessonTokens(entry)) * 100) / 100,
-        }))
-        .filter((c) => c.similarity >= 0.34)
-        .sort((a, b) => b.similarity - a.similarity)
-        .slice(0, 5)
-      if (candidates.length) {
-        return {
-          action: "needs_decision",
-          reason: "similar lessons exist; retry with merge_into=<id> for a recurrence, or force_new=true for a distinct lesson",
-          candidates,
+      for (const { entry } of entries) {
+        if (entry.status === "retired") continue
+        const similarity = Math.round(jaccard(mine, lessonTokens(entry)) * 100) / 100
+        if (similarity >= 0.34) {
+          similar.push({ id: entry.id, partition: safePartition(entry), title: entry.title, summary: entry.summary, similarity })
         }
+      }
+      similar.sort((a, b) => b.similarity - a.similarity)
+    }
+    // Only lessons this entry could merge into (same repository or global)
+    // block creation; look-alikes in other repositories are reported instead.
+    const mergeable = similar.filter((c) => c.partition === srcRepo || c.partition === GLOBAL_PARTITION).slice(0, 5)
+    const elsewhere = similar.filter((c) => !mergeable.includes(c) && c.partition !== partition).slice(0, 3)
+    if (!input.force_new && mergeable.length) {
+      return {
+        action: "needs_decision",
+        reason: "similar lessons exist in this repository or globally; retry with merge_into=<id> for a recurrence, or force_new=true for a distinct lesson",
+        candidates: mergeable,
       }
     }
 
@@ -996,7 +1250,7 @@ export async function capture(input: CaptureInput, home = feedbackHome()): Promi
         kind: ei.kind,
         status: ei.status ?? (source.disposition === "disputed" ? "disputed" : "active"),
         confidence: ei.confidence,
-        scope: ei.scope ?? {},
+        scope: { ...scopeIn, level, repos },
         concepts: ei.concepts ?? [],
         aliases: ei.aliases ?? [],
         symbols: ei.symbols ?? [],
@@ -1016,7 +1270,13 @@ export async function capture(input: CaptureInput, home = feedbackHome()): Promi
     )
     const file = await saveEntry(e, undefined, home)
     await reindexUnlocked(home)
-    return { action: "created", receipt: receiptFor("created", e, file, source.pr), warnings: entryWarnings(e) }
+    const warnings = entryWarnings(e)
+    for (const c of elsewhere) {
+      warnings.push(
+        `similar lesson ${c.id} exists in ${c.partition} ("${c.title}"); if it applies across repositories, promote one to global scope with feedback_revise and retire the other`,
+      )
+    }
+    return { action: "created", receipt: receiptFor("created", e, file, source.pr), warnings }
   }, home)
 }
 
@@ -1037,13 +1297,25 @@ export async function revise(id: string, changes: ReviseInput, note: string, hom
     if (changes.status) e.status = oneOf(STATUSES, changes.status, e.status)
     if (changes.confidence) e.confidence = oneOf(CONFIDENCES, changes.confidence, e.confidence)
     if (changes.superseded_by) e.superseded_by = changes.superseded_by
-    if (changes.scope?.level) e.scope.level = oneOf(SCOPE_LEVELS, changes.scope.level, e.scope.level)
+    if (changes.scope?.level) {
+      const next = oneOf(SCOPE_LEVELS, changes.scope.level, e.scope.level)
+      // Narrowing a cross-repository lesson needs its one repository: an
+      // explicit scope.repos, or the repository all of its sources share.
+      if (isRepoScoped(next) && !isRepoScoped(e.scope.level)) {
+        const target = uniq((changes.scope.repos?.length ? changes.scope.repos : e.sources.map((s) => repoFromPrUrl(s.pr))).map((r) => normalizeRepo(r) ?? r))
+        if (target.length !== 1) {
+          throw new Error(`narrowing ${e.id} to ${next} scope needs exactly one repository; pass scope.repos (sources span ${target.join(", ")})`)
+        }
+        e.scope.repos = target
+      }
+      e.scope.level = next
+    }
     if (changes.replace_tags) {
       if (changes.concepts) e.concepts = uniq(changes.concepts)
       if (changes.aliases) e.aliases = uniq(changes.aliases)
       if (changes.symbols) e.symbols = uniq(changes.symbols)
       if (changes.paths) e.paths = uniq(changes.paths)
-      if (changes.scope?.repos) e.scope.repos = uniq(changes.scope.repos)
+      if (changes.scope?.repos) e.scope.repos = uniq(changes.scope.repos.map((r) => normalizeRepo(r) ?? r))
       if (changes.scope?.languages) e.scope.languages = uniq(changes.scope.languages)
       if (changes.scope?.subsystems) e.scope.subsystems = uniq(changes.scope.subsystems)
     } else applyTags(e, changes)
@@ -1081,20 +1353,25 @@ Lessons distilled from code review feedback on Hogan's pull requests. Written
 by the feedback-accumulator skill; read by feedback-recall during reviews and
 implementation work.
 
-- \`entries/<id>--<slug>.md\` - one lesson per file (YAML frontmatter + sections)
+- \`entries/<owner>/<repo>/<id>--<slug>.md\` - lessons scoped to one repository
+- \`entries/_global/<id>--<slug>.md\` - lessons that apply across repositories
 - \`index.jsonl\` - generated search index (rebuild: \`feedback reindex\`)
 - \`state/sources.json\` - review-comment keys already captured (tombstones included)
 - \`state/sessions/\` - per-session capture receipts used for the footer
 
-Search instead of reading everything:
+Searches cover one repository plus _global (the repository defaults to the
+current directory's GitHub remote); --all-repos searches every partition:
 
     feedback search "cache authorization tenant" --repo owner/repo
     feedback show fb-20261005-abc123
 
-Hand edits are fine; run \`feedback reindex\` afterwards.
+Hand edits are fine, including changing an entry's scope; run
+\`feedback reindex\` afterwards and it moves the file to the right partition.
 `
 
 // --- CLI ---------------------------------------------------------------------
+
+const BOOLEAN_FLAGS = new Set(["all", "all-repos"])
 
 function parseFlags(argv: string[]) {
   const flags: Record<string, string | boolean> = {}
@@ -1104,6 +1381,7 @@ function parseFlags(argv: string[]) {
     if (a.startsWith("--")) {
       const [k, v] = a.slice(2).split("=", 2)
       if (v !== undefined) flags[k] = v
+      else if (BOOLEAN_FLAGS.has(k)) flags[k] = true
       else if (argv[i + 1] !== undefined && !argv[i + 1].startsWith("--")) flags[k] = argv[++i]
       else flags[k] = true
     } else positional.push(a)
@@ -1121,15 +1399,20 @@ async function readPayload(flags: Record<string, string | boolean>): Promise<any
 const HELP = `feedback - search and maintain review feedback memory (~/.feedback)
 
 Usage:
-  feedback search <query...> [--repo owner/repo] [--paths a,b] [--symbols x,y]
-                             [--kind KIND] [--limit N] [--offset N] [--all] [--json]
+  feedback search <query...> [--repo owner/repo | --all-repos] [--paths a,b]
+                             [--symbols x,y] [--kind KIND] [--limit N] [--offset N]
+                             [--all] [--json]
   feedback show <id...>
-  feedback recent [--limit N]
+  feedback recent [--limit N] [--repo owner/repo]
   feedback capture --json '<CaptureInput>'     (or JSON on stdin)
   feedback revise <id> --note "why" --json '<changes>'
   feedback retire <id> --reason "why" [--superseded-by <id>]
   feedback reindex
   feedback path
+
+Entries are partitioned by repository. search covers --repo (default: the
+current directory's GitHub remote) plus cross-repository lessons; --all-repos
+searches everything. --all includes retired and superseded entries.
 
 Environment:
   FEEDBACK_HOME   store location (default ~/.feedback)
@@ -1143,7 +1426,8 @@ export async function main(argv: string[]) {
     case "search": {
       const res = await search({
         query: positional.join(" "),
-        repo: typeof flags.repo === "string" ? flags.repo : undefined,
+        repo: typeof flags.repo === "string" ? flags.repo : inferRepo(process.cwd()),
+        all_repos: Boolean(flags["all-repos"]),
         paths: list(flags.paths),
         symbols: list(flags.symbols),
         kind: typeof flags.kind === "string" ? flags.kind : undefined,
@@ -1159,7 +1443,9 @@ export async function main(argv: string[]) {
       console.log(await show(positional))
       return
     case "recent":
-      console.log(JSON.stringify(await recent(flags.limit ? Number(flags.limit) : 10), null, 2))
+      console.log(
+        JSON.stringify(await recent(flags.limit ? Number(flags.limit) : 10, typeof flags.repo === "string" ? flags.repo : undefined), null, 2),
+      )
       return
     case "capture":
       console.log(JSON.stringify(await capture(await readPayload(flags)), null, 2))
