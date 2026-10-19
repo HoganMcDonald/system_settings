@@ -46,3 +46,6 @@ roles/nanobot/files/workspace/sessions/
 roles/nanobot/files/workspace/memory/HISTORY.md
 roles/nanobot/files/workspace/memory/MEMORY.md
 roles/nanobot/files/workspace/cron/
+
+# claude runtime files
+roles/agents/files/skills/synced/
