@@ -3,6 +3,7 @@ local pack = require("lib.pack")
 return {
   {
     src = pack.github("lewis6991/gitsigns.nvim"),
+    event = "BufReadPost",
     keys = {
       { "<leader>ghp", function() require("gitsigns").preview_hunk_inline() end, desc = "Preview hunk inline" },
       { "<leader>ghP", function() require("gitsigns").preview_hunk() end, desc = "Preview hunk" },
