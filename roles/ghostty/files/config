@@ -14,8 +14,8 @@ macos-option-as-alt = true
 font-family         = "JetBrains Mono Nerd Font"
 font-size           = 12
 font-feature        = "calt,liga,dlig"
-adjust-cell-width   = 11%
-adjust-cell-height  = 35%
+adjust-cell-width   = 19%
+adjust-cell-height  = 55%
 
 # keybindings
 keybind = opt+h=unbind
