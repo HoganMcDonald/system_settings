@@ -63,7 +63,7 @@ describe("formatDiscussion", () => {
         outdated: false,
         resolved_by: "hoganmcdonald",
         hunk: "@@ -1 +1 @@\n+x",
-        comments: [{ id: "c1", url: "https://github.com/acme/app/pull/42#discussion_r1", author: "alice", body: "nit", created: "2026-10-01T00:00:00Z", outdated: false }],
+        comments: [{ id: "c1", url: "https://github.com/acme/app/pull/42#discussion_r1", author: "alice", bot: false, body: "nit", created: "2026-10-01T00:00:00Z", outdated: false }],
       },
       {
         id: "PRRT_open",
@@ -73,11 +73,11 @@ describe("formatDiscussion", () => {
         resolved: false,
         outdated: true,
         hunk: "",
-        comments: [{ id: "c2", url: "https://github.com/acme/app/pull/42#discussion_r2", author: "bob", body: "this races", created: "2026-10-02T00:00:00Z", outdated: true }],
+        comments: [{ id: "c2", url: "https://github.com/acme/app/pull/42#discussion_r2", author: "cursor", bot: true, body: "### Race\n\n<!-- BUGBOT_BUG_ID: x -->\nthis races", created: "2026-10-02T00:00:00Z", outdated: true }],
       },
     ],
     comments: [],
-    reviews: [{ id: "PRR_1", url: "https://github.com/acme/app/pull/42#pullrequestreview-1", author: "bob", body: "Mostly good", created: "2026-10-02T00:00:00Z", outdated: false, state: "COMMENTED" }],
+    reviews: [{ id: "PRR_1", url: "https://github.com/acme/app/pull/42#pullrequestreview-1", author: "bob", bot: false, body: "Mostly good", created: "2026-10-02T00:00:00Z", outdated: false, state: "COMMENTED" }],
   }
 
   test("lists open threads first with source keys", () => {
@@ -85,13 +85,45 @@ describe("formatDiscussion", () => {
     expect(out.indexOf("PRRT_open")).toBeLessThan(out.indexOf("PRRT_resolved"))
     expect(out).toContain("source_key: github:acme/app#42:thread:PRRT_open")
     expect(out).toContain("src/b.ts:9 (original line)")
-    expect(out).toContain("1 bot comments hidden")
+    expect(out).toContain("1 bot summaries/comments hidden")
     expect(out).toContain("github:acme/app#42:review:PRR_1")
+    expect(out).toContain("raised by bot @cursor")
+    expect(out).toContain("@cursor [bot]")
+    expect(out).not.toContain("BUGBOT_BUG_ID")
   })
 
   test("filters by state", () => {
     const out = prc.formatDiscussion(d, { state: "open" })
     expect(out).not.toContain("PRRT_resolved")
+  })
+})
+
+describe("bots", () => {
+  test("account type decides, with a login fallback", () => {
+    expect(prc.isBot("cursor", "Bot")).toBe(true)
+    expect(prc.isBot("cursor-fan", "User")).toBe(false)
+    expect(prc.isBot("cursor")).toBe(true)
+    expect(prc.isBot("dependabot[bot]")).toBe(true)
+    expect(prc.isBot("alice")).toBe(false)
+  })
+
+  test("cleanBody strips bot markup but keeps the finding", () => {
+    const body = [
+      "### Item counts ignore view filtering",
+      "",
+      "**Medium Severity**",
+      "",
+      "<!-- DESCRIPTION START -->",
+      "`children` omits hidden entries but `itemCounts` does not.",
+      "<!-- DESCRIPTION END -->",
+      "",
+      '<div><a href="https://cursor.com/open?link=abc" target="_blank"><picture><source srcset="x"><img alt="Fix in Cursor" src="y"></picture></a>&nbsp;<a href="https://cursor.com/agents?link=def"><picture></picture></a></div>',
+    ].join("\n")
+    const out = prc.cleanBody(body)
+    expect(out).toContain("itemCounts")
+    expect(out).toContain("Medium Severity")
+    expect(out).not.toContain("cursor.com")
+    expect(out).not.toContain("<!--")
   })
 })
 

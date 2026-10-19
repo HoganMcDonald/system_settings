@@ -43,6 +43,7 @@ when scope changes; this describes what to pass to `feedback_capture`.
 | `disposition` | `pending`, `addressed`, `declined`, `disputed`, `acknowledged`. |
 | `handled_pr` / `handled_url` | Where and how it was handled (fixing commit or reply). Only with evidence. |
 | `excerpt` | Short quote of the reviewer's point, under 300 characters. |
+| `reviewer_kind` / `captured_via` | Set automatically: `bot` for automated reviewers (which require `disposition: addressed` plus `handled_url`), `backfill` for captures from merged PRs. |
 
 ## Example capture
 

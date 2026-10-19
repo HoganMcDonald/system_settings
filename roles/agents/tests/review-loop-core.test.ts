@@ -80,3 +80,22 @@ describe("findings", () => {
     expect(line).toContain("comment · 1 major · Looks solid.")
   })
 })
+
+describe("count footer", () => {
+  const receipts = [
+    { id: "fb-1", notice: "One" },
+    { id: "fb-2", notice: "Two" },
+    { id: "fb-2", notice: "Two" },
+  ]
+
+  test("shows only the number of unique items", () => {
+    expect(core.formatFooter(receipts, "count")).toBe("💡 feedback captured\n- 2 feedback items captured")
+    expect(core.formatFooter([receipts[0]], "count")).toBe("💡 feedback captured\n- 1 feedback item captured")
+  })
+
+  test("replaces a listed footer with the count", () => {
+    const text = "Captured lessons.\n\n💡 feedback captured\n- One\n- Two"
+    expect(core.appendFooter(text, receipts, "count")).toBe("Captured lessons.\n\n💡 feedback captured\n- 2 feedback items captured")
+    expect(core.appendFooter(core.appendFooter(text, receipts, "count")!, receipts, "count")).toBeNull()
+  })
+})

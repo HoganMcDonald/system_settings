@@ -375,3 +375,48 @@ describe("partitions", () => {
     expect(fb.repoFromPrUrl("https://github.com/Acme/App/pull/3/files")).toBe("acme/app")
   })
 })
+
+describe("bots and backfill", () => {
+  test("bot feedback needs a fix commit as evidence", async () => {
+    const input = cacheAuth()
+    Object.assign(input.source, { reviewer: "cursor", reviewer_kind: "bot" })
+    await expect(fb.capture(input)).rejects.toThrow(/legitimate and incorporated/)
+    Object.assign(input.source, { disposition: "addressed", thread_state: "resolved", handled_url: "https://github.com/acme/app/pull/123/commits/abc" })
+    const res = await fb.capture(input)
+    expect(res.action).toBe("created")
+  })
+
+  test("backfilled lessons start as likely and confirm on recurrence", async () => {
+    const first = cacheAuth()
+    Object.assign(first.source, { captured_via: "backfill" })
+    const created = await fb.capture(first)
+    if (created.action !== "created") throw new Error("expected create")
+    expect(await fb.show([created.receipt.id])).toContain("confidence: likely")
+
+    const again = cacheAuth("github:acme/app#200:thread:PRRT_9")
+    Object.assign(again.source, { pr: "https://github.com/acme/app/pull/200", captured_via: "backfill" })
+    await fb.capture({ ...again, merge_into: created.receipt.id })
+    expect(await fb.show([created.receipt.id])).toContain("confidence: confirmed")
+  })
+
+  test("purge removes only backfilled captures and allows re-capture", async () => {
+    const live = await fb.capture({
+      ...cacheAuth("github:acme/app#300:thread:PRRT_live"),
+      source: { ...cacheAuth().source, key: "github:acme/app#300:thread:PRRT_live", pr: "https://github.com/acme/app/pull/300" },
+      entry: { ...cacheAuth().entry, title: "Live lesson about retries", summary: "Retry with backoff on rate limits.", concepts: ["retries"], notice: "Back off when rate limited" },
+    })
+    expect(live.action).toBe("created")
+    const back = cacheAuth()
+    Object.assign(back.source, { captured_via: "backfill" })
+    expect((await fb.capture({ ...back, force_new: true })).action).toBe("created")
+
+    const preview = await fb.purgeBackfill("acme/app", true)
+    expect(preview).toMatchObject({ entries_deleted: 1, sources_removed: 1 })
+    expect((await entryFiles()).length).toBe(2)
+
+    const res = await fb.purgeBackfill("acme/app")
+    expect(res.entries_deleted).toBe(1)
+    expect((await entryFiles()).length).toBe(1)
+    expect((await fb.capture({ ...back, force_new: true })).action).toBe("created")
+  })
+})

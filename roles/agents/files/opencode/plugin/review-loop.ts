@@ -10,8 +10,9 @@
 
 import type { Plugin } from "@opencode-ai/plugin"
 import { existsSync } from "node:fs"
-import { rename, writeFile } from "node:fs/promises"
+import { appendFile, readFile, rename, writeFile } from "node:fs/promises"
 import { join } from "node:path"
+import * as bf from "../lib/feedback-backfill.ts"
 import * as fb from "../lib/feedback-store.ts"
 import * as prc from "../lib/pr-context.ts"
 import * as core from "../lib/review-loop-core.ts"
@@ -28,6 +29,10 @@ const RUN_DIR = process.env.REVIEW_RUN_DIR || ""
 const RUN_ID = process.env.REVIEW_RUN_ID || ""
 const REVIEW_BIN = process.env.REVIEW_BIN || `${process.env.HOME}/.config/zsh/bin/review`
 const POLL_MS = 20000
+// Set by `feedback backfill run` for its headless child sessions.
+const CAPTURE_VIA = process.env.FEEDBACK_CAPTURE_VIA === "backfill" ? "backfill" : "live"
+const RESULTS_FILE = process.env.FEEDBACK_RESULTS_FILE || ""
+const FOOTER_MODE = core.footerMode(process.env.FEEDBACK_FOOTER_MODE)
 
 type Receipt = { id: string; notice: string; action: string; pr?: string; at: string; shown: boolean; via?: string }
 
@@ -178,7 +183,7 @@ export default (async ({ client, directory }) => {
       const last = [...messages].reverse().find((m) => m?.info?.role === "assistant")
       const textPart = last && [...(last.parts ?? [])].reverse().find((p: any) => p?.type === "text" && !p.synthetic)
       if (!textPart) return
-      const next = core.appendFooter(String(textPart.text ?? ""), unshown)
+      const next = core.appendFooter(String(textPart.text ?? ""), unshown, FOOTER_MODE)
       if (next !== null) {
         await request(
           "PATCH",
@@ -301,6 +306,14 @@ export default (async ({ client, directory }) => {
       if (changed) await save(l)
     }
     if ((status.counts?.queued ?? 0) > 0) await reviewCli(["dispatch", "--json"], directory).catch(() => {})
+  }
+
+  // Backfill children report every capture outcome to the runner.
+  async function recordResult(line: Record<string, unknown>) {
+    if (!RESULTS_FILE) return
+    await appendFile(RESULTS_FILE, JSON.stringify({ ...line, at: new Date().toISOString() }) + "\n").catch((err) =>
+      log("warn", `could not record backfill result: ${err}`),
+    )
   }
 
   // --- Child review run status ---------------------------------------------------------
@@ -457,7 +470,19 @@ export default (async ({ client, directory }) => {
         force_new: s.boolean().optional(),
       },
       async execute(args, ctx) {
-        const res = await fb.capture(args as fb.CaptureInput)
+        // The reviewer's account type comes from GitHub (pr_context threads),
+        // not from the model, so bot feedback cannot be passed off as human.
+        const reviewer = String(args.source.reviewer ?? "")
+        const reviewer_kind = prc.knownBots.has(reviewer.toLowerCase()) || prc.isBot(reviewer) ? "bot" : "human"
+        const input = { ...args, source: { ...args.source, reviewer_kind, captured_via: CAPTURE_VIA } } as fb.CaptureInput
+        let res: fb.CaptureResult
+        try {
+          res = await fb.capture(input)
+        } catch (err: any) {
+          await recordResult({ kind: "error", error: String(err?.message ?? err).slice(0, 300) })
+          throw err
+        }
+        await recordResult("receipt" in res ? { kind: res.action, id: res.receipt.id, notice: res.receipt.notice } : { kind: res.action, id: (res as any).id })
         const root = await rootOf(ctx.sessionID)
         const l = await ledger(root)
         clearPending(l, args.source.pr)
@@ -465,7 +490,7 @@ export default (async ({ client, directory }) => {
         await save(l)
         const reminder =
           "receipt" in res
-            ? `\nEnd your final response with the footer:\n${core.formatFooter(l.receipts.filter((r) => !r.shown))}`
+            ? `\nEnd your final response with the footer:\n${core.formatFooter(l.receipts.filter((r) => !r.shown), FOOTER_MODE)}`
             : ""
         return JSON.stringify(res, null, 2) + reminder
       },
@@ -478,6 +503,7 @@ export default (async ({ client, directory }) => {
         const l = await ledger(await rootOf(ctx.sessionID))
         clearPending(l, args.pr)
         await save(l)
+        await recordResult({ kind: "reviewed", note: args.note.slice(0, 300) })
         return `Marked ${args.pr} as processed: ${args.note}`
       },
     }),
@@ -506,6 +532,71 @@ export default (async ({ client, directory }) => {
       args: { id: s.string(), reason: s.string(), superseded_by: s.string().optional() },
       async execute(args) {
         return JSON.stringify(await fb.retire(args.id, args.reason, args.superseded_by), null, 2)
+      },
+    }),
+
+    feedback_backfill: tool({
+      description: [
+        "Prefill feedback memory from review feedback on Hogan's merged PRs in one repository.",
+        "plan queues merged PRs with review discussion (no model involved); start processes queued PRs one at a time in",
+        "fresh headless sessions inside a detached tmux session (pass prs for a trial, or limit); status reports progress;",
+        "purge removes everything backfill captured and requeues every PR (ask the user first).",
+      ].join(" "),
+      args: {
+        action: s.enum(["plan", "start", "status", "purge"]),
+        repo: s.string().describe("owner/repo, e.g. hex-inc/hex"),
+        since: s.string().optional().describe("plan: YYYY-MM-DD (default 9 months ago)"),
+        prs: s.array(s.number().int()).optional().describe("start: specific PR numbers (a trial)"),
+        limit: s.number().int().optional().describe("start: at most this many queued PRs"),
+        retry_failed: s.boolean().optional(),
+        dry_run: s.boolean().optional().describe("purge: preview only"),
+      },
+      async execute(args, ctx) {
+        const cwd = ctx.directory || directory
+        const repo = fb.normalizeRepo(args.repo)
+        if (!repo) throw new Error("repo must be owner/repo")
+        if (args.action === "plan") {
+          const res = await bf.plan({ repo, since: args.since, cwd })
+          const pending = res.state.prs.filter((p) => p.status === "pending")
+          return `Planned ${repo}: ${res.merged_prs} merged PRs since ${res.state.since}, ${res.with_feedback} with review discussion, ${pending.length} queued.\n${bf.formatStatus(await bf.status(repo))}`
+        }
+        if (args.action === "start") {
+          if (CAPTURE_VIA === "backfill") return "This session is itself a backfill run; do not start another."
+          const cli = ["--repo", repo, "--dir", cwd]
+          if (args.prs?.length) cli.push("--prs", args.prs.join(","))
+          if (args.limit) cli.push("--limit", String(args.limit))
+          if (args.retry_failed) cli.push("--retry-failed")
+          const session = await bf.detach(cli, cwd, repo)
+          const l = await ledger(await rootOf(ctx.sessionID))
+          await save(l)
+          return `Backfill started in tmux session '${session}' (one PR at a time). Ask for status any time; it is resumable if interrupted.`
+        }
+        if (args.action === "purge") {
+          return JSON.stringify(await bf.purge(repo, args.dry_run), null, 2)
+        }
+        const st = await bf.status(repo)
+        let text = bf.formatStatus(st)
+        // When a backfill run has finished, announce it as a count-only footer.
+        const state = await bf.readState(repo)
+        const last = state?.runs?.at(-1)
+        if (last?.finished_at && last.captured > 0 && !(await bf.runningPid(repo))) {
+          const l = await ledger(await rootOf(ctx.sessionID))
+          const key = `backfill:${repo}:${last.started_at}`
+          if (!l.relayed_runs.includes(key)) {
+            l.relayed_runs.push(key)
+            l.receipts.push({
+              id: key,
+              notice: `${last.captured} feedback item${last.captured === 1 ? "" : "s"} captured by backfill`,
+              action: "created",
+              at: new Date().toISOString(),
+              shown: false,
+              via: "backfill",
+            })
+            await save(l)
+            text += `\nThe latest run captured ${last.captured} item(s). End your response with the footer:\n${core.formatFooter([{ id: key, notice: `${last.captured} feedback item${last.captured === 1 ? "" : "s"} captured by backfill` }])}`
+          }
+        }
+        return text
       },
     }),
 
@@ -687,6 +778,36 @@ export default (async ({ client, directory }) => {
   return {
     tool: tools,
 
+    // The backfill agent exists only inside `feedback backfill` child
+    // processes, so it never shows up in the interactive agent list.
+    config: async (cfg: any) => {
+      if (CAPTURE_VIA !== "backfill") return
+      const prompt = await readFile(join(import.meta.dir, "..", "lib", "prompts", "feedback-backfill.md"), "utf8")
+      cfg.agent = cfg.agent ?? {}
+      cfg.agent[bf.BACKFILL_AGENT] = {
+        description: "Internal: distills lessons from one merged PR for `feedback backfill`.",
+        mode: "primary",
+        model: "anthropic/claude-opus-5-5",
+        variant: "medium",
+        prompt,
+        permission: {
+          "*": "deny",
+          invalid: "allow",
+          read: "allow",
+          glob: "allow",
+          grep: "allow",
+          skill: "allow",
+          todowrite: "allow",
+          pr_context: "allow",
+          feedback_search: "allow",
+          feedback_show: "allow",
+          feedback_capture: "allow",
+          feedback_mark_reviewed: "allow",
+          feedback_revise: "allow",
+        },
+      }
+    },
+
     event: async ({ event }) => {
       const e = event as any
       const type = e.type as string
@@ -765,7 +886,7 @@ export default (async ({ client, directory }) => {
       const unshown = l.receipts.filter((r) => !r.shown)
       if (unshown.length) {
         lines.push(
-          `[feedback-loop] Feedback was captured in this session. End your final response to the user with exactly:\n${core.formatFooter(unshown)}`,
+          `[feedback-loop] Feedback was captured in this session. End your final response to the user with exactly:\n${core.formatFooter(unshown, FOOTER_MODE)}`,
         )
       }
       if (l.unsummarized.length) {

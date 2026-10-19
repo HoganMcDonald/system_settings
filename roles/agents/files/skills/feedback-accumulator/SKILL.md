@@ -20,8 +20,11 @@ Tools: in OpenCode use `pr_context` and `feedback_*`; elsewhere use the
    each thread's replies and the code it points at before interpreting it.
 3. **Classify each thread, review summary, and conversation comment:**
    - Actionable lesson or recurring concern → capture.
-   - Praise, acknowledgements, "done", bot output, pure questions with no
-     lesson, or one-off typos → skip.
+   - Praise, acknowledgements, "done", pure questions with no lesson, or
+     one-off typos → skip.
+   - Bot-raised threads (marked `raised by bot`, e.g. Cursor Bugbot) →
+     capture only when the finding was legitimate and a later commit fixed
+     it; record that commit as `handled_url`. Otherwise skip.
    - Feedback already in the store (same `source_key`) → re-capture with its
      current `thread_state` and `disposition` so handling is tracked.
 4. **Search before creating.** `feedback_search` with the lesson's concepts
@@ -67,6 +70,13 @@ Tools: in OpenCode use `pr_context` and `feedback_*`; elsewhere use the
   ("authz"), and the reviewer's own wording. Add symbols and path globs when
   the lesson is tied to code.
 - **Never invent links.** Every URL must come from tool output.
+
+## Backfill
+
+Prefilling the memory from merged PRs (`feedback backfill`, or the
+`feedback_backfill` tool) follows `reference/backfill.md`. Runs process one
+PR per headless session, oldest first, and announce only a count:
+`💡 feedback captured` / `- N feedback items captured`.
 
 ## User-directed edits
 

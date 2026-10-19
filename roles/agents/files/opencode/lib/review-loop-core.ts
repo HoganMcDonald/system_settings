@@ -44,15 +44,28 @@ export function detectFeedbackUrl(url: string): FeedbackRead | null {
 
 export type ReceiptLike = { id: string; notice: string }
 
-export function formatFooter(receipts: ReceiptLike[]): string {
+// "list" shows one bullet per captured item; "count" (used for bulk runs such
+// as backfills) shows only how many items were captured.
+export type FooterMode = "list" | "count"
+
+export function footerMode(value: string | undefined): FooterMode {
+  return value === "count" ? "count" : "list"
+}
+
+function unique(receipts: ReceiptLike[]): ReceiptLike[] {
   const seen = new Set<string>()
-  const lines: string[] = []
-  for (const r of receipts) {
-    if (seen.has(r.id)) continue
-    seen.add(r.id)
-    lines.push(`- ${r.notice}`)
-  }
-  return lines.length ? `${FOOTER_TITLE}\n${lines.join("\n")}` : ""
+  return receipts.filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)))
+}
+
+export function countLine(n: number): string {
+  return `- ${n} feedback item${n === 1 ? "" : "s"} captured`
+}
+
+export function formatFooter(receipts: ReceiptLike[], mode: FooterMode = "list"): string {
+  const items = unique(receipts)
+  if (!items.length) return ""
+  if (mode === "count") return `${FOOTER_TITLE}\n${countLine(items.length)}`
+  return `${FOOTER_TITLE}\n${items.map((r) => `- ${r.notice}`).join("\n")}`
 }
 
 // Receipts whose notice does not already appear after the footer title.
@@ -66,7 +79,16 @@ export function missingFromFooter(text: string, receipts: ReceiptLike[]): Receip
 
 // Append a footer to an assistant message, or a supplement when the model
 // wrote the footer but left some captured items out.
-export function appendFooter(text: string, receipts: ReceiptLike[]): string | null {
+export function appendFooter(text: string, receipts: ReceiptLike[], mode: FooterMode = "list"): string | null {
+  if (mode === "count") {
+    const items = unique(receipts)
+    if (!items.length) return null
+    const idx = text.lastIndexOf(FOOTER_TITLE)
+    // Replace whatever footer the model wrote with the authoritative count.
+    const body = (idx < 0 ? text : text.slice(0, idx)).trimEnd()
+    const next = `${body}\n\n${formatFooter(items, "count")}`
+    return next === text ? null : next
+  }
   const missing = missingFromFooter(text, receipts)
   if (!missing.length) return null
   if (text.includes(FOOTER_TITLE)) {

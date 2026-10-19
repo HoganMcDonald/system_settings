@@ -50,6 +50,7 @@ export type ThreadComment = {
   id: string
   url: string
   author: string
+  bot: boolean
   body: string
   created: string
   commit?: string
@@ -332,29 +333,33 @@ export function formatOverview(o: Overview): string {
 
 const THREADS_QUERY = `query($owner:String!,$name:String!,$number:Int!,$after:String){
   repository(owner:$owner,name:$name){ pullRequest(number:$number){
-    author{login} headRefOid
+    author{login __typename} headRefOid
     reviewThreads(first:40,after:$after){ pageInfo{hasNextPage endCursor} nodes{
       id isResolved isOutdated path line originalLine resolvedBy{login}
       comments(first:100){ pageInfo{hasNextPage endCursor} nodes{
-        id url body createdAt outdated author{login} commit{oid} originalCommit{oid} diffHunk } } } } } } }`
+        id url body createdAt outdated author{login __typename} commit{oid} originalCommit{oid} diffHunk } } } } } } }`
 
 const THREAD_COMMENTS_QUERY = `query($id:ID!,$after:String){ node(id:$id){ ... on PullRequestReviewThread{
   comments(first:100,after:$after){ pageInfo{hasNextPage endCursor} nodes{
-    id url body createdAt outdated author{login} commit{oid} originalCommit{oid} diffHunk } } } } }`
+    id url body createdAt outdated author{login __typename} commit{oid} originalCommit{oid} diffHunk } } } } }`
 
 const CONVERSATION_QUERY = `query($owner:String!,$name:String!,$number:Int!,$after:String){
   repository(owner:$owner,name:$name){ pullRequest(number:$number){
-    comments(first:100,after:$after){ pageInfo{hasNextPage endCursor} nodes{ id url body createdAt author{login} } } } } }`
+    comments(first:100,after:$after){ pageInfo{hasNextPage endCursor} nodes{ id url body createdAt author{login __typename} } } } } }`
 
 const REVIEWS_QUERY = `query($owner:String!,$name:String!,$number:Int!,$after:String){
   repository(owner:$owner,name:$name){ pullRequest(number:$number){
-    reviews(first:100,after:$after){ pageInfo{hasNextPage endCursor} nodes{ id url body state submittedAt author{login} commit{oid} } } } } }`
+    reviews(first:100,after:$after){ pageInfo{hasNextPage endCursor} nodes{ id url body state submittedAt author{login __typename} commit{oid} } } } } }`
 
 function toComment(n: any): ThreadComment {
+  const author = n.author?.login ?? "ghost"
+  const bot = isBot(author, n.author?.__typename)
+  if (bot) knownBots.add(author.toLowerCase())
   return {
     id: n.id,
     url: n.url,
-    author: n.author?.login ?? "ghost",
+    author,
+    bot,
     body: n.body ?? "",
     created: n.createdAt ?? n.submittedAt ?? "",
     commit: n.commit?.oid ?? n.originalCommit?.oid,
@@ -362,8 +367,30 @@ function toComment(n: any): ThreadComment {
   }
 }
 
-function isBot(login: string): boolean {
-  return /\[bot\]$|-bot$|^(github-actions|dependabot|codecov|vercel|linear|netlify|sonarcloud)/i.test(login)
+// GitHub reports app accounts (Cursor Bugbot, CodeRabbit, ...) as type Bot,
+// usually without a "[bot]" suffix on the login, so the type is authoritative;
+// the name pattern only covers payloads fetched without __typename.
+export function isBot(login: string, typename?: string): boolean {
+  if (typename) return typename === "Bot"
+  return /\[bot\]$|-bot$|^(github-actions|dependabot|codecov|vercel|linear|netlify|sonarcloud|cursor|coderabbitai|graphite-app|greptile)/i.test(login)
+}
+
+// Bot logins seen in discussions this process has loaded (lowercase).
+export const knownBots = new Set<string>()
+
+// Strip machine markup from review comments: HTML comments (bot metadata),
+// "Fix in Cursor"-style link buttons, and stray tags, keeping the prose.
+export function cleanBody(body: string): string {
+  return String(body ?? "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<div>\s*<a [^>]*href="https:\/\/cursor\.com[\s\S]*?<\/div>/gi, "")
+    .replace(/<picture>[\s\S]*?<\/picture>/gi, "")
+    .replace(/<img [^>]*>/gi, "")
+    .replace(/<\/?(details|summary|div|p|sup|sub|br)\b[^>]*>/gi, "")
+    .replace(/<a [^>]*>\s*<\/a>/gi, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
 }
 
 export async function fetchDiscussion(pr: PrRef, cwd: string, includeBots = false): Promise<Discussion> {
@@ -413,7 +440,7 @@ export async function fetchDiscussion(pr: PrRef, cwd: string, includeBots = fals
   }
   const rawComments = (await collect(CONVERSATION_QUERY, "comments")).map(toComment)
   const rawReviews = (await collect(REVIEWS_QUERY, "reviews")).map((n) => ({ ...toComment(n), state: n.state }))
-  const keep = (c: ThreadComment) => includeBots || !isBot(c.author)
+  const keep = (c: ThreadComment) => includeBots || !c.bot
   const comments = rawComments.filter(keep)
   const reviews = rawReviews.filter((r) => r.body.trim() && keep(r))
   return {
@@ -449,18 +476,20 @@ export function formatDiscussion(d: Discussion, f: DiscussionFilter = {}): strin
   const lines = [
     `# Discussion for ${d.ref.repo}#${d.ref.number} (author @${d.author}, head ${d.head_sha.slice(0, 10)})`,
     `review threads: ${d.threads.length} total · ${open.length} open · ${d.threads.length - open.length} resolved · ${d.threads.filter((t) => t.outdated).length} outdated · showing ${state} (${selected.length})`,
-    `conversation comments: ${d.comments.length} · review summaries with text: ${d.reviews.length}${d.bot_comments_hidden ? ` · ${d.bot_comments_hidden} bot comments hidden` : ""}`,
+    `conversation comments: ${d.comments.length} · review summaries with text: ${d.reviews.length}${d.bot_comments_hidden ? ` · ${d.bot_comments_hidden} bot summaries/comments hidden (include_bots shows them)` : ""}`,
+    `bot-raised threads: ${d.threads.filter((t) => t.comments[0]?.bot).length} (capture these only if the feedback was legitimate and incorporated)`,
     "",
   ]
   for (const t of selected) {
     const where = `${t.path}:${t.line ?? t.original_line ?? "?"}${t.line === null && t.original_line ? " (original line)" : ""}`
     const flags = [t.resolved ? `resolved${t.resolved_by ? ` by @${t.resolved_by}` : ""}` : "OPEN", t.outdated ? "outdated" : ""].filter(Boolean)
-    lines.push(`## [${flags.join(", ")}] ${where}`)
+    const opener = t.comments[0]
+    lines.push(`## [${flags.join(", ")}] ${where}${opener?.bot ? ` · raised by bot @${opener.author}` : ""}`)
     lines.push(`source_key: ${sourceKey(d.ref, "thread", t.id)}`)
     const hunk = t.hunk.split("\n").slice(-6).join("\n")
     if (hunk.trim()) lines.push("```diff", hunk, "```")
     for (const c of t.comments) {
-      lines.push(`- @${c.author} ${c.created.slice(0, 10)}${c.commit ? ` @${c.commit.slice(0, 7)}` : ""}: ${clip(c.body, maxBody).replace(/\n/g, "\n  ")}`)
+      lines.push(`- @${c.author}${c.bot ? " [bot]" : ""} ${c.created.slice(0, 10)}${c.commit ? ` @${c.commit.slice(0, 7)}` : ""}: ${clip(cleanBody(c.body), maxBody).replace(/\n/g, "\n  ")}`)
       lines.push(`  ${c.url}`)
     }
     lines.push("")
@@ -468,7 +497,7 @@ export function formatDiscussion(d: Discussion, f: DiscussionFilter = {}): strin
   if (d.reviews.length) {
     lines.push("# Review summaries")
     for (const r of d.reviews) {
-      lines.push(`- @${r.author} ${r.state.toLowerCase()} ${r.created.slice(0, 10)}${r.commit ? ` @${r.commit.slice(0, 7)}` : ""}: ${clip(r.body, maxBody).replace(/\n/g, "\n  ")}`)
+      lines.push(`- @${r.author}${r.bot ? " [bot]" : ""} ${r.state.toLowerCase()} ${r.created.slice(0, 10)}${r.commit ? ` @${r.commit.slice(0, 7)}` : ""}: ${clip(cleanBody(r.body), maxBody).replace(/\n/g, "\n  ")}`)
       lines.push(`  ${r.url} · source_key: ${sourceKey(d.ref, "review", r.id)}`)
     }
     lines.push("")
@@ -476,7 +505,7 @@ export function formatDiscussion(d: Discussion, f: DiscussionFilter = {}): strin
   if (d.comments.length) {
     lines.push("# Conversation comments")
     for (const c of d.comments) {
-      lines.push(`- @${c.author} ${c.created.slice(0, 10)}: ${clip(c.body, maxBody).replace(/\n/g, "\n  ")}`)
+      lines.push(`- @${c.author}${c.bot ? " [bot]" : ""} ${c.created.slice(0, 10)}: ${clip(cleanBody(c.body), maxBody).replace(/\n/g, "\n  ")}`)
       lines.push(`  ${c.url} · source_key: ${sourceKey(d.ref, "comment", c.id)}`)
     }
   }
@@ -576,7 +605,26 @@ export async function grep(pr: PrRef, cwd: string, opts: GrepOptions): Promise<s
 
 // --- Single entry point used by the tool and CLI ------------------------------------
 
-export type ContextOp = "overview" | "threads" | "diff" | "file" | "grep"
+// One commit of the PR: message, files, and (paged) patch. Used to verify how
+// review feedback was handled after it was raised.
+export async function commit(pr: PrRef, cwd: string, opts: { ref?: string; path?: string; offset?: number; limit?: number }): Promise<string> {
+  const sha = opts.ref ?? ""
+  if (!/^[0-9a-f]{7,40}$/.test(sha)) throw new Error("ref must be a commit SHA (see overview or threads output)")
+  let header: string
+  let patch: string
+  if (await hasLocalCommit(sha, cwd)) {
+    header = (await run(["git", "show", "-s", "--format=%H%n%an %aI%n%n%B", sha], cwd)).out.trim()
+    patch = (await run(["git", "show", "--no-color", "--no-ext-diff", "--format=", sha], cwd)).out
+  } else {
+    const meta = JSON.parse(await gh(["api", `repos/${pr.repo}/commits/${sha}`], cwd))
+    header = `${meta.sha}\n${meta.commit?.author?.name ?? ""} ${meta.commit?.author?.date ?? ""}\n\n${meta.commit?.message ?? ""}`.trim()
+    patch = await gh(["api", "-H", "Accept: application/vnd.github.diff", `repos/${pr.repo}/commits/${sha}`], cwd)
+  }
+  const full = /^[0-9a-f]{40}/.exec(header)?.[0] ?? sha
+  return `commit ${full}\nurl: https://github.com/${pr.repo}/pull/${pr.number}/commits/${full}\n${header.split("\n").slice(1).join("\n")}\n\n${sliceDiff(patch, opts)}`
+}
+
+export type ContextOp = "overview" | "threads" | "diff" | "file" | "grep" | "commit"
 
 export type ContextArgs = {
   op: ContextOp
@@ -610,6 +658,8 @@ export async function context(args: ContextArgs, cwd: string) {
       return { pr, text: await file(pr, cwd, { path: args.path ?? "", ref: args.ref, start: args.start, end: args.end }) }
     case "grep":
       return { pr, text: await grep(pr, cwd, { pattern: args.pattern ?? "", ref: args.ref, path: args.path, limit: args.limit }) }
+    case "commit":
+      return { pr, text: await commit(pr, cwd, { ref: args.ref, path: args.path, offset: args.offset, limit: args.limit }) }
     default:
       throw new Error(`unknown op '${(args as any).op}'`)
   }
@@ -623,6 +673,7 @@ Usage:
   pr-context diff     [PR] [--path P] [--offset N] [--limit N]
   pr-context file     [PR] --path P [--ref head|base|SHA] [--start N] [--end N]
   pr-context grep     [PR] --pattern RE [--ref head|base|SHA] [--path P]
+  pr-context commit   [PR] --ref SHA [--path P] [--offset N]
 
 PR is a URL, owner/repo#N, or a number in the current repository; omit it
 to use the current branch's published PR. Add --json for raw data.

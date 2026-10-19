@@ -41,6 +41,8 @@ export const CONFIDENCES = ["confirmed", "likely", "tentative"] as const
 export const SCOPE_LEVELS = ["global", "language", "repository", "subsystem"] as const
 export const THREAD_STATES = ["open", "resolved", "outdated", "none"] as const
 export const DISPOSITIONS = ["pending", "addressed", "declined", "disputed", "acknowledged"] as const
+export const REVIEWER_KINDS = ["human", "bot"] as const
+export const CAPTURE_VIAS = ["live", "backfill"] as const
 
 export type Kind = (typeof KINDS)[number]
 export type Status = (typeof STATUSES)[number]
@@ -55,6 +57,10 @@ export type Source = {
   handled_pr?: string
   handled_url?: string
   excerpt?: string
+  /** bot = an automated reviewer such as Cursor Bugbot */
+  reviewer_kind?: (typeof REVIEWER_KINDS)[number]
+  /** backfill = captured from historical (merged) PRs rather than live */
+  captured_via?: (typeof CAPTURE_VIAS)[number]
   captured_at: string
   updated_at?: string
 }
@@ -380,6 +386,8 @@ function normalizeSource(raw: any): Source {
     handled_pr: raw?.handled_pr ? String(raw.handled_pr) : undefined,
     handled_url: raw?.handled_url ? String(raw.handled_url) : undefined,
     excerpt: raw?.excerpt ? String(raw.excerpt).slice(0, 500) : undefined,
+    reviewer_kind: raw?.reviewer_kind === "bot" ? "bot" : raw?.reviewer_kind === "human" ? "human" : undefined,
+    captured_via: raw?.captured_via === "backfill" ? "backfill" : raw?.captured_via === "live" ? "live" : undefined,
     captured_at: String(raw?.captured_at ?? today()),
     updated_at: raw?.updated_at ? String(raw.updated_at) : undefined,
   }
@@ -481,6 +489,11 @@ export function validateEntry(e: Entry): string[] {
   for (const s of e.sources) {
     if (!SOURCE_KEY_RE.test(s.key)) errors.push(`invalid source key '${s.key}'`)
     if (!repoFromPrUrl(s.pr)) errors.push(`source ${s.key} needs a GitHub PR URL`)
+    if (s.reviewer_kind === "bot" && (s.disposition !== "addressed" || !s.handled_url)) {
+      errors.push(
+        `source ${s.key} is from a bot reviewer: capture it only once the feedback was legitimate and incorporated (disposition addressed, with handled_url pointing at the fixing commit)`,
+      )
+    }
   }
   if (isRepoScoped(e.scope.level)) {
     const repos = e.scope.repos.map(normalizeRepo)
@@ -1185,7 +1198,8 @@ export async function capture(input: CaptureInput, home = feedbackHome()): Promi
       e.sources.push(source)
       if (target === GLOBAL_PARTITION) e.scope.repos = uniq([...e.scope.repos, srcRepo])
       applyTags(e, input.entry)
-      if (e.status === "proposed" && e.sources.length > 1) e.confidence = "confirmed"
+      // A lesson that recurs on a different PR is confirmed by repetition.
+      if (e.confidence === "likely" && new Set(e.sources.map((x) => x.pr)).size > 1) e.confidence = "confirmed"
       e.updated = today()
       e.body.history.push(`${today()}: merged recurrence from ${source.url ?? source.pr}`)
       const file = await saveEntry(e, loaded.file, home)
@@ -1240,6 +1254,9 @@ export async function capture(input: CaptureInput, home = feedbackHome()): Promi
     }
 
     const { source } = mergeSource(undefined, src)
+    // Historical feedback reflects code that may have moved on; one sighting
+    // stays "likely" until it recurs (see the merge path above).
+    const confidence = source.captured_via === "backfill" && ei.confidence === "confirmed" ? "likely" : ei.confidence
     const e = normalizeEntry(
       {
         schema: SCHEMA_VERSION,
@@ -1249,7 +1266,7 @@ export async function capture(input: CaptureInput, home = feedbackHome()): Promi
         summary: ei.summary,
         kind: ei.kind,
         status: ei.status ?? (source.disposition === "disputed" ? "disputed" : "active"),
-        confidence: ei.confidence,
+        confidence,
         scope: { ...scopeIn, level, repos },
         concepts: ei.concepts ?? [],
         aliases: ei.aliases ?? [],
@@ -1345,6 +1362,54 @@ export async function retire(id: string, reason: string, supersededBy?: string, 
   }, home)
 }
 
+// --- Backfill purge ---------------------------------------------------------------
+
+// Remove everything captured by backfill (optionally for one repository's
+// PRs): backfill sources are dropped, entries left without sources are
+// deleted, and their source keys are forgotten so a re-run captures them
+// again. Live captures are never touched.
+export async function purgeBackfill(repo?: string, dryRun = false, home = feedbackHome()) {
+  const target = repo ? normalizeRepo(repo) : undefined
+  if (repo && !target) throw new Error(`repo must be owner/repo, got '${repo}'`)
+  return withLock(async () => {
+    const p = await ensureStore(home)
+    const { entries } = await loadAll(home)
+    const isPurged = (src: Source) => src.captured_via === "backfill" && (!target || repoFromPrUrl(src.pr) === target)
+    const removedKeys: string[] = []
+    let deleted = 0
+    let trimmed = 0
+    for (const { entry, file } of entries) {
+      const purged = entry.sources.filter(isPurged)
+      if (!purged.length) continue
+      removedKeys.push(...purged.map((x) => x.key))
+      const kept = entry.sources.filter((x) => !isPurged(x))
+      if (dryRun) {
+        if (kept.length) trimmed++
+        else deleted++
+        continue
+      }
+      if (!kept.length) {
+        await rm(file, { force: true })
+        await pruneEmptyDirs(dirname(file), home)
+        deleted++
+      } else {
+        entry.sources = kept
+        entry.updated = today()
+        entry.body.history.push(`${today()}: removed ${purged.length} backfilled source(s)`)
+        await saveEntry(entry, file, home)
+        trimmed++
+      }
+    }
+    if (!dryRun) {
+      const sources = await readJson<Record<string, string>>(p.sources, {})
+      for (const k of removedKeys) delete sources[k]
+      await atomicWrite(p.sources, JSON.stringify(sources, null, 2) + "\n")
+      await reindexUnlocked(home)
+    }
+    return { dry_run: dryRun, entries_deleted: deleted, entries_trimmed: trimmed, sources_removed: removedKeys.length }
+  }, home)
+}
+
 // --- Store README (for humans and agents that browse the directory) -----------
 
 const README = `# Feedback memory
@@ -1408,6 +1473,7 @@ Usage:
   feedback revise <id> --note "why" --json '<changes>'
   feedback retire <id> --reason "why" [--superseded-by <id>]
   feedback reindex
+  feedback backfill <plan|run|status|purge> ...   (feedback backfill --help)
   feedback path
 
 Entries are partitioned by repository. search covers --repo (default: the
@@ -1471,6 +1537,11 @@ export async function main(argv: string[]) {
     case "reindex":
       console.log(JSON.stringify(await reindex(), null, 2))
       return
+    case "backfill": {
+      const { main: backfill } = await import("./feedback-backfill.ts")
+      await backfill(rest)
+      return
+    }
     case "path":
       console.log(feedbackHome())
       return
