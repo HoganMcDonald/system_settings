@@ -1,7 +1,7 @@
 ---
 description: Thorough, read-only reviews of published GitHub pull requests, informed by Linear tickets, PR descriptions, commits, existing review threads, and accumulated feedback memory. Can also launch reviews in dedicated worktrees.
 mode: primary
-model: anthropic/claude-opus-5-5
+model: openai/gpt-6.1-sol
 variant: medium
 color: "#c792ea"
 permission:
