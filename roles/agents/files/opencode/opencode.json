@@ -5,6 +5,12 @@
   "autoupdate": true,
   "snapshot": true,
   "lsp": true,
+  "instructions": ["/Users/hoganmcdonald/.config/agents/HEX.md"],
+  "permission": {
+    "external_directory": {
+      "/Users/hoganmcdonald/.config/agents/**": "allow"
+    }
+  },
   "plugin": [
     "opencode-vibeguard",
     "opencode-dynamic-context-pruning",
