@@ -33,4 +33,6 @@ eval "$(starship init zsh)"
 export EDITOR="nvim"
 export PATH="$HOME/.local/bin:$PATH"
 
+[[ -f "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
+
 [[ -n "$ZSH_PROFILE" ]] && zprof
