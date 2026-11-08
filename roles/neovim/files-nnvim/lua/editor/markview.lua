@@ -9,5 +9,18 @@ return {
   dependencies = pack.github("nvim-tree/nvim-web-devicons"),
   config = function()
     require("markview").setup()
+    require("markview.extras.checkboxes").setup()
+
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = "markdown",
+      callback = function(args)
+        vim.keymap.set(
+          { "n", "x" },
+          "<C-Space>",
+          "<cmd>Checkbox toggle<cr>",
+          { buffer = args.buf, desc = "Toggle checkbox" }
+        )
+      end,
+    })
   end,
 }
