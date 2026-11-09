@@ -56,6 +56,8 @@ This is a macOS system setup repository containing an Ansible playbook for autom
 - `plugin/review-loop.ts` exposes `pr_context`, `feedback_*`, and `review_*` tools, triggers feedback capture on `hoganmcdonald`'s PRs, and appends the `💡 feedback captured` footer
 - Shared logic in `opencode/lib/` (`feedback-store.ts`, `pr-context.ts`, `review-loop-core.ts`), also exposed as the `feedback` and `pr-context` CLIs
 - Feedback memory lives in `~/.feedback` (never in git): one Markdown lesson per file, partitioned into `entries/<owner>/<repo>/` and `entries/_global/`, plus a generated index; searches cover one repo plus `_global`
+- `plugin/schedule.ts` exposes `schedule_wakeup`, `schedule_list`, and `schedule_cancel`: the agent ends its turn and a timer re-prompts the same session later (e.g. "check CI in 30m") via `client.session.promptAsync`; pending wakeups persist in `~/.local/state/opencode-schedule/pending.json` (override with `OPENCODE_SCHEDULE_FILE`), re-arm on the next start in the same directory, and only fire while OpenCode is running; store logic in `opencode/lib/schedule-store.ts`
+- `opencode-pty` (third-party, listed in `opencode.json`) provides `pty_spawn`/`pty_read`/`pty_write`/`pty_kill`; `pty_spawn` with `notifyOnExit` wakes the session when a background process exits (e.g. `gh run watch`)
 - Tests: `bun test roles/agents/tests`
 
 ### apps

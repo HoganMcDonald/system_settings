@@ -14,7 +14,8 @@
     "opencode-vibeguard",
     "opencode-dynamic-context-pruning",
     "opencode-mermaid-renderer",
-    "@datadog/opencode-plugin"
+    "@datadog/opencode-plugin",
+    "opencode-pty"
   ],
   "mcp": {
     "linear": {
