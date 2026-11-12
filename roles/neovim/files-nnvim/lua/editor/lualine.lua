@@ -140,6 +140,27 @@ return {
       color = { fg = "#ffffff", gui = "bold" },
     })
 
+    -- nvim-recorder: active slot and recording state. Wrapped in pcall so the
+    -- statusline never errors if the plugin is missing or not yet set up.
+    ins_right({
+      function()
+        local ok, status = pcall(function()
+          return require("recorder").displaySlots()
+        end)
+        return ok and status or ""
+      end,
+      color = { fg = colors.yellow, gui = "bold" },
+    })
+    ins_right({
+      function()
+        local ok, status = pcall(function()
+          return require("recorder").recordingStatus()
+        end)
+        return ok and status or ""
+      end,
+      color = { fg = colors.red, gui = "bold" },
+    })
+
     ins_right({
       "o:encoding",
       fmt = string.upper,

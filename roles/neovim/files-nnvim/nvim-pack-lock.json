@@ -145,6 +145,10 @@
       "rev": "a137d35eaabb7cd7be89228229c1aa5b057f5ed7",
       "src": "https://github.com/chrisgrieser/nvim-origami"
     },
+    "nvim-recorder": {
+      "rev": "bbde095eef8d0beab4f0b0e242825305832d8c30",
+      "src": "https://github.com/chrisgrieser/nvim-recorder"
+    },
     "nvim-surround": {
       "rev": "2e93e154de9ff326def6480a4358bfc149d5da2c",
       "src": "https://github.com/kylechui/nvim-surround",
