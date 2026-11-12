@@ -31,6 +31,16 @@
     "playwright": {
       "type": "local",
       "command": ["npx", "@playwright/mcp@latest"]
+    },
+    "detritus": {
+      "type": "local",
+      "command": [
+        "nvim",
+        "--headless",
+        "--clean",
+        "-l",
+        "/Users/hoganmcdonald/detritus.nvim/bin/detritus-mcp.lua"
+      ]
     }
   },
   "agent": {

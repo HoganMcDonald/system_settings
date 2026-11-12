@@ -24,6 +24,7 @@ return {
       "<leader>aa",
       function()
         require("lib.edgy").close_filetype("neotest-summary")
+        require("lib.edgy").close_filetype("detritus")
 
         local chat = require("codecompanion.interactions.chat")
         local is_visual = vim.fn.mode():find("[vV\22]") ~= nil

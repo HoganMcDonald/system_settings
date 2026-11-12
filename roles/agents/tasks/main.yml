@@ -168,6 +168,26 @@
     - "{{ feedback_home }}/state"
     - "{{ feedback_home }}/state/sessions"
 
+# Claude Code keeps user-scope MCP servers in ~/.claude.json, which is not part
+# of the symlinked ~/.claude directory, so register detritus through the CLI.
+- name: Check for the detritus.nvim plugin
+  stat:
+    path: "{{ detritus_nvim_dir }}/bin/detritus-mcp.lua"
+  register: detritus_mcp_script
+
+- name: Check whether Claude Code already has the detritus MCP server
+  command: claude mcp get detritus
+  register: claude_detritus_mcp
+  failed_when: false
+  changed_when: false
+  when: detritus_mcp_script.stat.exists
+
+- name: Register the detritus MCP server with Claude Code
+  command: >-
+    claude mcp add --scope user detritus --
+    nvim --headless --clean -l {{ detritus_nvim_dir }}/bin/detritus-mcp.lua
+  when: detritus_mcp_script.stat.exists and claude_detritus_mcp.rc != 0
+
 - name: Record role in lockfile
   command: "{{ playbook_dir }}/bin/lock-role {{ ansible_role_name }}"
   changed_when: false

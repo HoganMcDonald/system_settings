@@ -37,6 +37,10 @@ return {
           title = "Tests",
           ft = "neotest-summary",
         },
+        {
+          title = "Plan",
+          ft = "detritus",
+        },
       },
       wo = {
         -- Separators are mapped to their own group so the colorscheme can blend

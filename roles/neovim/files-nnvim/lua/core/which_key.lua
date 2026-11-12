@@ -11,6 +11,7 @@ local groups = {
   { "<leader>go", group = "GitHub" },
   { "<leader>m", group = "Marks" },
   { "<leader>n", group = "Notes" },
+  { "<leader>p", group = "Plan" },
   { "<leader>q", group = "Quit / sessions" },
   { "<leader>s", group = "Search" },
   { "<leader>t", group = "Tests" },

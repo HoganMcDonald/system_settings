@@ -59,6 +59,7 @@ This is a macOS system setup repository containing an Ansible playbook for autom
 - `plugin/schedule.ts` exposes `schedule_wakeup`, `schedule_list`, and `schedule_cancel`: the agent ends its turn and a timer re-prompts the same session later (e.g. "check CI in 30m") via `client.session.promptAsync`; pending wakeups persist in `~/.local/state/opencode-schedule/pending.json` (override with `OPENCODE_SCHEDULE_FILE`), re-arm on the next start in the same directory, and only fire while OpenCode is running; store logic in `opencode/lib/schedule-store.ts`
 - `opencode-pty` (third-party, listed in `opencode.json`) provides `pty_spawn`/`pty_read`/`pty_write`/`pty_kill`; `pty_spawn` with `notifyOnExit` wakes the session when a background process exits (e.g. `gh run watch`)
 - Tests: `bun test roles/agents/tests`
+- `detritus` MCP server (local, from `~/detritus.nvim/bin/detritus-mcp.lua` via `nvim --headless --clean -l`) is registered for OpenCode in `opencode/opencode.json` and for Claude Code by a `claude mcp add --scope user` task in `tasks/main.yml` (`~/.claude.json` is outside the symlinked `~/.claude`); the Claude task is skipped if the plugin checkout is missing
 
 ### apps
 - Installs general GUI applications via Homebrew casks
@@ -106,6 +107,7 @@ This is a macOS system setup repository containing an Ansible playbook for autom
 
 ### neovim
 - Neovim installed via devbox global; `nnvim` launcher uses `NVIM_APPNAME=nnvim` with config from `roles/neovim/files-nnvim/`
+- `detritus.nvim` (`~/detritus.nvim`, its own repo) is loaded lazily via `pack.dir` in `files-nnvim/lua/editor/detritus.lua`: a persistent plan panel in the right edgy bar (`<leader>pp` toggle, `pb` branch, `pc` clear, `pr` refresh) fed by its MCP server; opening it closes the CodeCompanion and neotest panels and vice versa
 - Requires the `tree-sitter` CLI (installed via devbox global) for nvim-treesitter main branch parser builds
 
 ### pgcli

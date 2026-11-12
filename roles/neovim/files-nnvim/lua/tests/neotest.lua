@@ -83,6 +83,7 @@ return {
       "<leader>ts",
       function()
         require("lib.edgy").close_filetype("codecompanion")
+        require("lib.edgy").close_filetype("detritus")
         require("neotest").summary.toggle()
       end,
       desc = "Test summary",
