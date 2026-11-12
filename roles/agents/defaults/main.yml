@@ -4,4 +4,5 @@ opencode_config_dir: "{{ ansible_facts.env.HOME }}/.config/opencode"
 agents_skills_dir: "{{ ansible_facts.env.HOME }}/.agents/skills"
 shared_skills_dir: "{{ dotfiles_home }}/roles/agents/files/skills"
 feedback_home: "{{ ansible_facts.env.HOME }}/.feedback"
-detritus_nvim_dir: "{{ ansible_facts.env.HOME }}/detritus.nvim"
+# vim.pack checkout made by nnvim (NVIM_APPNAME=nnvim) on its first start.
+detritus_nvim_dir: "{{ ansible_facts.env.HOME }}/.local/share/nnvim/site/pack/core/opt/detritus.nvim"

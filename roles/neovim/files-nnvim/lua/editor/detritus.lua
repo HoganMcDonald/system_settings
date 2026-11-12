@@ -8,8 +8,7 @@ local function close_siblings()
 end
 
 return {
-  src = pack.dir("~/detritus.nvim"),
-  name = "detritus.nvim",
+  src = pack.github("HoganMcDonald/detritus.nvim"),
   cmd = "Detritus",
   keys = {
     {

@@ -39,7 +39,7 @@
         "--headless",
         "--clean",
         "-l",
-        "/Users/hoganmcdonald/detritus.nvim/bin/detritus-mcp.lua"
+        "/Users/hoganmcdonald/.local/share/nnvim/site/pack/core/opt/detritus.nvim/bin/detritus-mcp.lua"
       ]
     }
   },
